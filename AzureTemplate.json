@@ -16,6 +16,12 @@
         "description": "VM Size. "
       }
     },
+    "vmdisk": {
+      "type": "string",
+      "metadata": {
+        "description": "VM disk. "
+      }
+    },
     "subnetname": {
       "type": "string",
       "metadata": {
@@ -175,7 +181,7 @@
     },
     "vmrole": "[parameters('role')]",
     "vmname": "[parameters('servername')]",
-    "vmDiskType": "Premium_LRS",
+    "vmDiskType": "[parameters('vmDisk')]",
     "vmSize": "[parameters('vmsize')]",
 
     "imageReference": {
