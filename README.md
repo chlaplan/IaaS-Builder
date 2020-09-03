@@ -8,3 +8,5 @@ System Center Endpoint Protection (SCEP/SCCM)
 Active Directory Federation Services (ADFS)
 *SharePoint - Coming Soon
 Workstation - Domain Join
+
+![IaaS Builder](https://github.com/chlaplan/IaaS-Builder/blob/master/Imgs/v1.5.2.JPG)
