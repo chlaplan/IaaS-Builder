@@ -1,7 +1,7 @@
 # IaaS-Builder
 Azure Automation IaaS Builder is a GUI based script that allows you to enter basic information about the domain and servers you want to build in Azure.
 
-Current DSC Packs:
+Current DSC Packs:<br/>
 Domain Controller (DC)
 Certification Authority (CA)
 Exchange 2016
