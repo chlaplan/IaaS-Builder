@@ -4,6 +4,7 @@ Azure Automation IaaS Builder is a GUI based script that allows you to enter bas
 Current DSC Packs:
 Domain Controller (DC)
 Certification Authority (CA)
+Exchange 2016
 System Center Endpoint Protection (SCEP/SCCM)
 Active Directory Federation Services (ADFS)
 *SharePoint - Coming Soon
