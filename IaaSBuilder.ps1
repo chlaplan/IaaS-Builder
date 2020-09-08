@@ -4,15 +4,15 @@ $DefaultOSImage = "2019-Datacenter"
 $DefaultOSWSImage = "19h2-ent"
 
 $AzureModule = Get-Module -ListAvailable -Name Az.*
-if ($AzureModule.Name -notlike "Az.*"){
-Write-Host "Can't find Azure Module, installing module"
-Install-Module Az -Force -Verbose -Scope CurrentUser
-Import-Module Az
-}
-else
-{
-Write-Host "Found Azure Module"
-#Import-Module Az
+    if ($AzureModule.Name -notlike "Az.*"){
+    Write-Host "Can't find Azure Module, installing module"
+    Install-Module Az -Force -Verbose -Scope CurrentUser
+    Import-Module Az
+    }
+    else
+    {
+    Write-Host "Found Azure Module"
+    #Import-Module Az
 }
 
 ############  LOGIN SECTION  #############
@@ -186,98 +186,90 @@ $WPFgithub.Add_MouseLeave({$WPFgithub.Foreground = 'DarkBlue'})
 
 $WPFLocations1.Add_SelectionChanged({
 
-#$vmsize = Get-AzVMSize -Location $WPFLocations1.SelectedItem | Where Name -Like "*f2s*"
-$vmsize = Get-AzComputeResourceSku | Where-Object {$_.Locations -eq ($WPFLocations1.SelectedItem) -and $_.Restrictions.ReasonCode -ne 'NotAvailableForSubscription' -and $_.ResourceType.Contains("virtualMachines")}
+    #$vmsize = Get-AzVMSize -Location $WPFLocations1.SelectedItem | Where Name -Like "*f2s*"
+    $vmsize = Get-AzComputeResourceSku | Where-Object {$_.Locations -eq ($WPFLocations1.SelectedItem) -and $_.Restrictions.ReasonCode -ne 'NotAvailableForSubscription' -and $_.ResourceType.Contains("virtualMachines")}
+    
+    $SQLoffers = Get-AzVMImageOffer -Location $WPFLocations1.SelectedItem -PublisherName "MicrosoftSQLServer" | Select offer
+    $serverskus = Get-AzVMImageSku -Location $WPFLocations1.SelectedItem -Offer "WindowsServer" -PublisherName "MicrosoftWindowsServer" | Select Skus    
+    $clientskus = Get-AzVMImageSku -Location $WPFLocations1.SelectedItem -Offer "Windows-10" -PublisherName "MicrosoftWindowsDesktop" | Select Skus
+    $sharePointSkus = Get-AzVMImageSku -Location $WPFLocations1.SelectedItem -PublisherName MicrosoftSharePoint -Offer MicrosoftSharePointServer
 
-$SQLoffers = Get-AzVMImageOffer -Location $WPFLocations1.SelectedItem -PublisherName "MicrosoftSQLServer" | Select offer
-$serverskus = Get-AzVMImageSku -Location $WPFLocations1.SelectedItem -Offer "WindowsServer" -PublisherName "MicrosoftWindowsServer" | Select Skus    
-$clientskus = Get-AzVMImageSku -Location $WPFLocations1.SelectedItem -Offer "Windows-10" -PublisherName "MicrosoftWindowsDesktop" | Select Skus
-
-$WPFserver1disk.AddChild($DefaultVMDisk)
-$WPFadfsdisk.AddChild($DefaultVMDisk)
-$WPFsccm_ps_disk.AddChild($DefaultVMDisk)
-$WPFsccm_mpdp_disk.AddChild($DefaultVMDisk)
-$WPFsharepoint_disk.AddChild($DefaultVMDisk)
-$WPFserver5disk.AddChild($DefaultVMDisk)
-$WPFworkstationdisk.AddChild($DefaultVMDisk)
+    $WPFserver1disk.AddChild($DefaultVMDisk)
+    $WPFadfsdisk.AddChild($DefaultVMDisk)
+    $WPFexdisk.AddChild($DefaultVMDisk)
+    $WPFsccm_ps_disk.AddChild($DefaultVMDisk)
+    $WPFsccm_mpdp_disk.AddChild($DefaultVMDisk)
+    $WPFsharepoint_disk.AddChild($DefaultVMDisk)
+    $WPFserver5disk.AddChild($DefaultVMDisk)
+    $WPFworkstationdisk.AddChild($DefaultVMDisk)
    
     #############Load VMSize and Select Default#############
     Write-Host "Loading VMsizes and Disk information" -ForegroundColor Green
 
     $WPFserver1vmsize.items.Clear()
-    foreach ($Size in $vmsize)
-    {
-    $WPFserver1vmsize.AddChild($size.Name)
-    }
+    $WPFadfssize.items.Clear()
+    $WPFexsize.items.Clear()
+    $WPFsscm_ps_size.items.Clear()
+    $WPFsccm_mpdp_size.items.Clear()
+    $WPFsharepoint_size.items.Clear()
+    $WPFSQLsize.items.Clear()
+    $WPFserver5size.items.Clear()
+    $WPFworkstationsize.items.Clear()
+        foreach ($Size in $vmsize)
+            {
+                $WPFserver1vmsize.AddChild($size.Name)
+                $WPFadfssize.AddChild($size.Name)
+                $WPFexsize.AddChild($size.Name)
+                $WPFsscm_ps_size.AddChild($size.Name)
+                $WPFsccm_mpdp_size.AddChild($size.Name)
+                $WPFsharepoint_size.AddChild($size.Name)
+                $WPFSQLsize.AddChild($size.Name)
+                $WPFserver5size.AddChild($size.Name)
+                $WPFworkstationsize.AddChild($size.Name)
+            }
     $WPFserver1vmsize.SelectedItem = $DefaultVMSize
     $WPFserver1disk.SelectedItem = $DefaultVMDisk
-    
-    $WPFadfssize.items.Clear()    
-    foreach ($Size in $vmsize)
-    {
-    $WPFadfssize.AddChild($size.Name)
-    }
     $WPFadfssize.SelectedItem = $DefaultVMSize
     $WPFadfsdisk.SelectedItem = $DefaultVMDisk
-    
-    $WPFsscm_ps_size.items.Clear()
-        foreach ($Size in $vmsize){
-    $WPFsscm_ps_size.AddChild($size.Name)
-    }
+    $WPFexsize.SelectedItem = "Standard_F4s"
+    $WPFexdisk.SelectedItem = $DefaultVMDisk
     $WPFsscm_ps_size.SelectedItem = $DefaultVMSize
-    $WPFsccm_ps_disk.SelectedItem = $DefaultVMDisk
-
-    $WPFsccm_mpdp_size.items.Clear()
-        foreach ($Size in $vmsize){
-    $WPFsccm_mpdp_size.AddChild($size.Name)
-    }
+    $WPFsccm_ps_disk.SelectedItem = $DefaultVMDisk   
     $WPFsccm_mpdp_size.SelectedItem = $DefaultVMSize
     $WPFsccm_mpdp_disk.SelectedItem = $DefaultVMDisk
-    
-    $WPFsharepoint_size.items.Clear()
-        foreach ($Size in $vmsize){
-    $WPFsharepoint_size.AddChild($size.Name)
-    }
     $WPFsharepoint_size.SelectedItem = "Standard_F4s"
-    $WPFsharepoint_disk.SelectedItem = $DefaultVMDisk
-
-    $WPFSQLsize.items.Clear()
-        foreach ($Size in $vmsize){
-    $WPFSQLsize.AddChild($size.Name)
-    }
+    $WPFsharepoint_disk.SelectedItem = $DefaultVMDisk    
     $WPFSQLsize.SelectedItem = $DefaultVMSize
     $WPFSQLsize.SelectedItem = $DefaultVMDisk
-
-    $WPFserver5size.items.Clear()
-            foreach ($Size in $vmsize){
-    $WPFserver5size.AddChild($size.Name)
-    }
     $WPFserver5size.SelectedItem = $DefaultVMSize
-    $WPFserver5disk.SelectedItem = $DefaultVMDisk
-
-    $WPFworkstationsize.items.Clear()
-            foreach ($Size in $vmsize){
-    $WPFworkstationsize.AddChild($size.Name)
-    }
+    $WPFserver5disk.SelectedItem = $DefaultVMDisk    
     $WPFworkstationsize.SelectedItem = $DefaultVMSize
-    $WPFworkstationdisk.SelectedItem = $DefaultVMDisk
+    $WPFworkstationdisk.SelectedItem = $DefaultVMDisk 
+
+
     
-#Load Images and Select Default
+    #Load Images and Select Default
     Write-Host "Loading Images and SKUs" -ForegroundColor Green
 
     $WPFserver1image.Items.Clear()
-    foreach ($serversku in $serverskus){
-    $WPFserver1image.AddChild($serversku.skus)
-    }
-    $WPFserver1image.SelectedItem = "$DefaultOSImage"
-
     $WPFADFSimage.Items.Clear()
+    $WPFeximage.Items.Clear()
+    $WPFsccmdpimage.Items.Clear()
+    $WPFserver5image.Items.Clear()
         foreach ($serversku in $serverskus){
-    $WPFADFSimage.AddChild($serversku.skus)   
-    }
+            $WPFserver1image.AddChild($serversku.skus)
+            $WPFADFSimage.AddChild($serversku.skus)
+            $WPFeximage.AddChild($serversku.skus)
+            $WPFsccmdpimage.AddChild($serversku.skus)
+            $WPFserver5image.AddChild($serversku.skus)
+        }
+    $WPFserver1image.SelectedItem = "$DefaultOSImage"
     $WPFADFSimage.SelectedItem = "$DefaultOSImage"
+    $WPFeximage.SelectedItem = "2016-Datacenter"
+    $WPFsccmdpimage.SelectedItem = "$DefaultOSImage"
+    $WPFserver5image.SelectedItem = "$DefaultOSImage"
 
-    $WPFsccmimageoffer.Items.Clear()
+
         foreach ($SQLoffer in $SQLoffers){
     $WPFsccmimageoffer.AddChild($SQLoffer.offer)
     }
@@ -290,14 +282,6 @@ $WPFworkstationdisk.AddChild($DefaultVMDisk)
     $WPFsccmimagesku.AddChild($SQLsku.skus)
     }
     $WPFsccmimagesku.SelectedItem = "standard"
-
-    $WPFsccmdpimage.Items.Clear()
-        foreach ($serversku in $serverskus){
-    $WPFsccmdpimage.AddChild($serversku.skus)
-    }
-    $WPFsccmdpimage.SelectedItem = "$DefaultOSImage"
-
-    $sharePointSkus = Get-AzVMImageSku -Location $WPFLocations1.SelectedItem -PublisherName MicrosoftSharePoint -Offer MicrosoftSharePointServer
 
     $WPFsharepointimage.Items.Clear()
         foreach ($sharePointSku in $sharePointSkus){
@@ -316,12 +300,6 @@ $WPFworkstationdisk.AddChild($DefaultVMDisk)
     $WPFSQLsku.AddChild($SQLsku.skus)
     }
     $WPFSQLsku.SelectedItem = "standard"
-
-    $WPFserver5image.Items.Clear()
-        foreach ($serversku in $serverskus){
-    $WPFserver5image.AddChild($serversku.skus)
-    }
-    $WPFserver5image.SelectedItem = "$DefaultOSImage"
 
     $WPFworkstationimage.Items.Clear()
     foreach ($clientsku in $clientskus){
@@ -396,6 +374,21 @@ $WPFworkstationdisk.AddChild($DefaultVMDisk)
         {
         $WPFadfsdisk.AddChild("Standard_LRS")
         $WPFadfsdisk.SelectedItem = "Standard_LRS"
+        }
+    })
+
+    $WPFexsize.Add_SelectionChanged({
+    $WPFexdisk.Items.Clear()
+    $diskinfo = Get-AzComputeResourceSku | Where-Object {$_.Locations -eq ($WPFLocations1.SelectedItem) -and $_.Name.Contains($WPFserver1vmsize.SelectedItem) -and $_.ResourceType.Contains("virtualMachines")} | Select -ExpandProperty Capabilities
+
+        if($diskinfo[7].Value -eq $True){
+        $WPFexdisk.AddChild("Premium_LRS")
+        $WPFexdisk.SelectedItem = "Premium_LRS"
+        }
+        else
+        {
+        $WPFexdisk.AddChild("Standard_LRS")
+        $WPFexdisk.SelectedItem = "Standard_LRS"
         }
     })
 
@@ -516,323 +509,340 @@ $WPFworkstationdisk.AddChild($DefaultVMDisk)
 
 $WPFBuild1.Add_Click({
 
-#-------------------------------------------------------------------------------------------------------------------
-#Set variables
-$rg = $WPFresourcegroup1.Text
-$Sub = $WPFSubscription1.SelectedItem
-$saname = $WPFsaname1.Text
-$adminAccount = $WPFadminaccount1.Text
-$AdminPassword = $WPFadminpassword1.SecurePassword
-$AzureLocation = $WPFLocations1.SelectedItem
-$storagetype = 'Standard_GRS' # Other Options: 'Standard_GRS' , 'Standard_RAGRS' , 'Standard_ZRS' and 'Premium_LRS'
-$DomainName = $WPFDname1.Text
-$Prefix = $WPFprefix1.Text  # All computers will start with prefix
-$DCName = $WPFprefix1.Text+'dc01'
-$VMSize = $WPFVMSize.SelectedItem
-$addressubnet = $WPFaddresssubnet1.text
-$addressprefix = $WPFaddressprefix1.text
-$subnetname = $WPFsubnetName1.text
+    #-------------------------------------------------------------------------------------------------------------------
+    #Set variables
+    $rg = $WPFresourcegroup1.Text
+    $Sub = $WPFSubscription1.SelectedItem
+    $saname = $WPFsaname1.Text
+    $adminAccount = $WPFadminaccount1.Text
+    $AdminPassword = $WPFadminpassword1.SecurePassword
+    $AzureLocation = $WPFLocations1.SelectedItem
+    $storagetype = 'Standard_GRS' # Other Options: 'Standard_GRS' , 'Standard_RAGRS' , 'Standard_ZRS' and 'Premium_LRS'
+    $DomainName = $WPFDname1.Text
+    $Prefix = $WPFprefix1.Text  # All computers will start with prefix
+    $DCName = $WPFprefix1.Text+'dc01'
+    $VMSize = $WPFVMSize.SelectedItem
+    $addressubnet = $WPFaddresssubnet1.text
+    $addressprefix = $WPFaddressprefix1.text
+    $subnetname = $WPFsubnetName1.text
+    $bastionsubnet = $WPFbastionsubnet.text
 
 
-#-------------------------------------------------------------------------------------------------------------------
-# Grab Custom Image ResourceID for Windows 10 images and feed it into JSON
-#$ImageID = Find-AzureRmResource | Where 'ResourceType' -eq 'Microsoft.Compute/images'
+    #-------------------------------------------------------------------------------------------------------------------
+    # Grab Custom Image ResourceID for Windows 10 images and feed it into JSON
+    #$ImageID = Find-AzureRmResource | Where 'ResourceType' -eq 'Microsoft.Compute/images'
 
-#
-Select-AzSubscription -Subscription $WPFSubscription1.SelectedItem
-#-------------------------------------------------------------------------------------------------------------------
-# Creating new Resource Group
-$Getrg = Get-AzResourceGroup -Verbose
+    #
+    Select-AzSubscription -Subscription $WPFSubscription1.SelectedItem
+    #-------------------------------------------------------------------------------------------------------------------
+    # Creating new Resource Group
+    $Getrg = Get-AzResourceGroup -Verbose
 
-  if ($Getrg.ResourceGroupName -eq $rg) {
-    $newrg = Get-AzResourceGroup -Name $rg -Verbose
-    write-host "Resource group already exist" -ForegroundColor Green
-  }
-  else
-  {
-    $newrg = New-AzResourceGroup -Name $rg -Location $AzureLocation -Force -Verbose
-    write-host "Created new resource group" -ForegroundColor Green
-  }
+      if ($Getrg.ResourceGroupName -eq $rg) {
+        $newrg = Get-AzResourceGroup -Name $rg -Verbose
+        write-host "Resource group already exist" -ForegroundColor Green
+      }
+      else
+      {
+        $newrg = New-AzResourceGroup -Name $rg -Location $AzureLocation -Force -Verbose
+        write-host "Created new resource group" -ForegroundColor Green
+      }
 
 
-#-------------------------------------------------------------------------------------------------------------------
-# Creating new storage Account to upload files
-$GetSA = Get-AzStorageAccount -Verbose
+    #-------------------------------------------------------------------------------------------------------------------
+    # Creating new storage Account to upload files
+    $GetSA = Get-AzStorageAccount -Verbose
   
-  if ($GetSA.StorageAccountName -eq $saname) {
-  write-host "Storage Account already exist" -ForegroundColor Green
-    $storageaccount = Get-AzStorageAccount -ResourceGroupName $rg -Name $saname -Verbose
-  }
-  else
-  {
-  $storageaccount = New-AzStorageAccount -ResourceGroupName $rg -Name $saname -Location $AzureLocation -SkuName $storagetype -Verbose
-  write-host "Creating new storage account for DSC files" -ForegroundColor Green
-  }
+      if ($GetSA.StorageAccountName -eq $saname) {
+      write-host "Storage Account already exist" -ForegroundColor Green
+        $storageaccount = Get-AzStorageAccount -ResourceGroupName $rg -Name $saname -Verbose
+      }
+      else
+      {
+      $storageaccount = New-AzStorageAccount -ResourceGroupName $rg -Name $saname -Location $AzureLocation -SkuName $storagetype -Verbose
+      write-host "Creating new storage account for DSC files" -ForegroundColor Green
+      }
 
-#-------------------------------------------------------------------------------------------------------------------
-# Creating new File Share to upload files and scripts
-  $GetFS = Get-AzStorageShare -Context $storageaccount.Context -Verbose
+    #-------------------------------------------------------------------------------------------------------------------
+    # Creating new File Share to upload files and scripts
+      $GetFS = Get-AzStorageShare -Context $storageaccount.Context -Verbose
   
-  if ($GetFS.Name -eq "dscstatus") {
-  $fs = Get-AzStorageShare -Name "dscstatus" -Context $storageaccount.Context
-  }
-  else
-  {
-  $fs = New-AzStorageShare -Name "dscstatus" -Context $storageaccount.Context
-  }
+      if ($GetFS.Name -eq "dscstatus") {
+      $fs = Get-AzStorageShare -Name "dscstatus" -Context $storageaccount.Context
+      }
+      else
+      {
+      $fs = New-AzStorageShare -Name "dscstatus" -Context $storageaccount.Context
+      }
 
 
-#-------------------------------------------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------------------------------------------------
 
-# Creating storage containers
-$GetSC = Get-AzStorageContainer -Context $storageaccount.Context -Verbose
+    # Creating storage containers
+    $GetSC = Get-AzStorageContainer -Context $storageaccount.Context -Verbose
   
-  if ($GetSC.Name -eq "dsc") {
-  write-host "Storage container already exist" -ForegroundColor Green
-  $dsccontainer = Get-AzStorageContainer -Name dsc -Context $storageaccount.Context -Verbose
-  }
-  else
-  {
-  write-host "Creating new storage container for DSC files" -ForegroundColor Green
-  $dsccontainer = New-AzStorageContainer -Name dsc -Permission Blob -Context $storageaccount.Context -Verbose
-  }
+      if ($GetSC.Name -eq "dsc") {
+      write-host "Storage container already exist" -ForegroundColor Green
+      $dsccontainer = Get-AzStorageContainer -Name dsc -Context $storageaccount.Context -Verbose
+      }
+      else
+      {
+      write-host "Creating new storage container for DSC files" -ForegroundColor Green
+      $dsccontainer = New-AzStorageContainer -Name dsc -Permission Blob -Context $storageaccount.Context -Verbose
+      }
 
 
-        ## Copying DSC to Azure Storage
-        write-host "Uploading DSC to Azure Storage Container" -ForegroundColor Green
-        Set-AzStorageBlobContent -Container $dsccontainer.Name -File .\DSC\Configuration.zip -Blob 'Configuration.zip' -Context $dsccontainer.Context -Force -Verbose -AsJob
-        Set-AzStorageBlobContent -Container $dsccontainer.Name -File .\DSC\ServerDomainJoin.zip -Blob 'ServerDomainJoin.ps1.zip' -Context $dsccontainer.Context -Force -Verbose -AsJob
-        Get-AzStorageContainer -Name $dsccontainer.Name -Context $dsccontainer.Context -Verbose
+            ## Copying DSC to Azure Storage
+            write-host "Uploading DSC to Azure Storage Container" -ForegroundColor Green
+            Set-AzStorageBlobContent -Container $dsccontainer.Name -File .\DSC\Configuration.zip -Blob 'Configuration.zip' -Context $dsccontainer.Context -Force -Verbose -AsJob
+            Set-AzStorageBlobContent -Container $dsccontainer.Name -File .\DSC\ServerDomainJoin.zip -Blob 'ServerDomainJoin.ps1.zip' -Context $dsccontainer.Context -Force -Verbose -AsJob
+            Get-AzStorageContainer -Name $dsccontainer.Name -Context $dsccontainer.Context -Verbose
         
-        write-host "Sleeping for 30secs so the DSC files can upload" -ForegroundColor Green
-        Start-Sleep -Seconds 30
-        $DSCs = Get-AzStorageBlob -Container dsc -Context $dsccontainer.Context -Verbose
+            write-host "Sleeping for 30secs so the DSC files can upload" -ForegroundColor Green
+            Start-Sleep -Seconds 30
+            $DSCs = Get-AzStorageBlob -Container dsc -Context $dsccontainer.Context -Verbose
         
-        # Get uri DSC for Deployment
-        $assetLocation = (Get-AzStorageBlob -blob 'Configuration.zip' -Container 'dsc' -Context $dsccontainer.Context).context.BlobEndPoint #+ 'dsc/'
+            # Get uri DSC for Deployment
+            $assetLocation = (Get-AzStorageBlob -blob 'Configuration.zip' -Container 'dsc' -Context $dsccontainer.Context).context.BlobEndPoint #+ 'dsc/'
         
-        # Setting up File Share Connections for each server
-        #$Fileshare = $storageaccount.Context.FileEndPoint
-        #$Fileshare = $Fileshare -replace 'https://','\\' -replace '/',''
-        #$Fileshare = $fileshare + "\dscstatus"
-        #$storageKey = Get-AzStorageAccountKey -ResourceGroupName $rg -Name $storageaccount.storageAccountName
-        #$accountKey = ConvertTo-SecureString -String "$storageKey" -AsPlainText -Force
-        #$sacreds = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "Azure\$storageaccount.storageAccountName", $accountKey
+            # Setting up File Share Connections for each server
+            #$Fileshare = $storageaccount.Context.FileEndPoint
+            #$Fileshare = $Fileshare -replace 'https://','\\' -replace '/',''
+            #$Fileshare = $fileshare + "\dscstatus"
+            #$storageKey = Get-AzStorageAccountKey -ResourceGroupName $rg -Name $storageaccount.storageAccountName
+            #$accountKey = ConvertTo-SecureString -String "$storageKey" -AsPlainText -Force
+            #$sacreds = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "Azure\$storageaccount.storageAccountName", $accountKey
 
 
-#####################################################################################################
-#Common variables
-$commonVariables = @{
-ResourceGroupName = $rg;
-TemplateFile = ".\AzureTemplate.json";
-prefix = $Prefix;
-DomainName = $DomainName;
-adminUsername = $adminAccount;
-adminPassword = $AdminPassword;
-_artifactsLocation = $assetLocation;
-addressprefix = $addressprefix;
-addresssubnet = $addressubnet;
-subnetname = $subnetname;
-DCName = $WPFServer1Name.Text;
-DCip = $WPFserver1IP.Text;
-DPMPName = $WPFsccm_dp_name.Text;
-PSName = $WPFsccm_ps_name.Text;
-STIG = $WPFSTIGs.IsChecked;
-sharePointVersion = $WPFsharepointimage.SelectedItem;
-SQLName = $WPFSQLName.Text
-}
-# DC/CA Build
-if ($WPFserver1.IsChecked -eq $true){
-Write-Host "Building DC/CA" -ForegroundColor Green
+    #####################################################################################################
+    #Common variables
+    $commonVariables = @{
+    ResourceGroupName = $rg;
+    TemplateFile = ".\AzureTemplate.json";
+    prefix = $Prefix;
+    DomainName = $DomainName;
+    adminUsername = $adminAccount;
+    adminPassword = $AdminPassword;
+    _artifactsLocation = $assetLocation;
+    addressprefix = $addressprefix;
+    addresssubnet = $addressubnet;
+    subnetname = $subnetname;
+    DCName = $WPFServer1Name.Text;
+    DCip = $WPFserver1IP.Text;
+    DPMPName = $WPFsccm_dp_name.Text;
+    PSName = $WPFsccm_ps_name.Text;
+    STIG = $WPFSTIGs.IsChecked;
+    sharePointVersion = $WPFsharepointimage.SelectedItem;
+    SQLName = $WPFSQLName.Text
+    BastionSubnet = $bastionsubnet
+    }
+    # DC/CA Build
+    if ($WPFserver1.IsChecked -eq $true){
+    Write-Host "Building DC/CA" -ForegroundColor Green
 
-New-AzResourceGroupDeployment @commonVariables `
-                                   -Name $WPFServer1Name.Text `
-                                   -vmsize $WPFserver1vmsize.SelectedItem `
-                                   -vmdisk $WPFserver1disk.SelectedItem `
-                                   -publisher "MicrosoftWindowsServer" `
-                                   -offer "WindowsServer" `
-                                   -sku $WPFserver1image.SelectedItem `
-                                   -servername $WPFServer1Name.Text `
-                                   -ip $WPFserver1IP.Text `
-                                   -role $WPFServer1Role.Text `
-                                   -Verbose
-#write-host "Sleeping for 90secs" -ForegroundColor Green
-#Start-Sleep -Seconds 90
-}
-else
-{
-Write-Host "Not checked, not true, server 1 will always be check"
-}
-#####################################################################################################
-# ADFS Build
-if ($WPFADFS.IsChecked -eq $true){
-Write-Host "Building ADFS" -ForegroundColor Green
+    New-AzResourceGroupDeployment @commonVariables `
+                                       -Name $WPFServer1Name.Text `
+                                       -vmsize $WPFserver1vmsize.SelectedItem `
+                                       -vmdisk $WPFserver1disk.SelectedItem `
+                                       -publisher "MicrosoftWindowsServer" `
+                                       -offer "WindowsServer" `
+                                       -sku $WPFserver1image.SelectedItem `
+                                       -servername $WPFServer1Name.Text `
+                                       -ip $WPFserver1IP.Text `
+                                       -role $WPFServer1Role.Text `
+                                       -Verbose
+    #write-host "Sleeping for 90secs" -ForegroundColor Green
+    #Start-Sleep -Seconds 90
+    }
+    else
+    {
+    Write-Host "Not checked, not true, server 1 will always be check"
+    }
+    #####################################################################################################
+    # ADFS Build
+    if ($WPFADFS.IsChecked -eq $true){
+    Write-Host "Building ADFS" -ForegroundColor Green
 
-New-AzResourceGroupDeployment @commonVariables `
-                                   -Name $WPFADFSName.Text `
-                                   -vmsize $WPFadfssize.SelectedItem `
-                                   -vmdisk $WPFadfsdisk.SelectedItem `
-                                   -publisher "MicrosoftWindowsServer" `
-                                   -offer "WindowsServer" `
-                                   -sku $WPFADFSimage.SelectedItem `
-                                   -servername $WPFADFSName.Text `
-                                   -ip $WPFADFSIP.Text `
-                                   -role $WPFADFSRole.Text `
-                                   -AsJob `
-                                   -Verbose
-write-host "Sleeping for 60secs" -ForegroundColor Green
-Start-Sleep -Seconds 60
-}
-else
-{
-Write-Host "Will not build server two because someone forgot to check the box...."
-}
-#####################################################################################################                                   
-# SCCM Build
-if ($WPFSCCM.IsChecked -eq $true){
-Write-Host "Building SCCM Primary Server, SCCM Primary will take up to 45mins to install once the DSC starts" -ForegroundColor Green
+    New-AzResourceGroupDeployment @commonVariables `
+                                       -Name $WPFADFSName.Text `
+                                       -vmsize $WPFadfssize.SelectedItem `
+                                       -vmdisk $WPFadfsdisk.SelectedItem `
+                                       -publisher "MicrosoftWindowsServer" `
+                                       -offer "WindowsServer" `
+                                       -sku $WPFADFSimage.SelectedItem `
+                                       -servername $WPFADFSName.Text `
+                                       -ip $WPFADFSIP.Text `
+                                       -role $WPFADFSRole.Text `
+                                       -AsJob `
+                                       -Verbose
+    write-host "Sleeping for 60secs" -ForegroundColor Green
+    Start-Sleep -Seconds 60
+    }
+    else
+    {
+    Write-Host "Will not build server two because someone forgot to check the box...."
+    }
+    #####################################################################################################
+    # Exchange Build
+    if ($WPFExchange.IsChecked -eq $true){
+    Write-Host "Building Exchange" -ForegroundColor Green
 
-New-AzResourceGroupDeployment @commonVariables `
-                                   -Name $WPFsccm_ps_name.Text `
-                                   -vmsize $WPFsscm_ps_size.SelectedItem `
-                                   -vmdisk $WPFsccm_ps_disk.SelectedItem `
-                                   -publisher "MicrosoftSQLServer" `
-                                   -offer $WPFsccmimageoffer.SelectedItem `
-                                   -sku $WPFsccmimagesku.SelectedItem `
-                                   -servername $WPFsccm_ps_name.Text `
-                                   -ip $WPFsccm_ps_ip.Text `
-                                   -role "PS" `
-                                   -AsJob `
-                                   -Verbose 
+    New-AzResourceGroupDeployment @commonVariables `
+                                       -Name $WPFExName.Text `
+                                       -vmsize $WPFexsize.SelectedItem `
+                                       -vmdisk $WPFexdisk.SelectedItem `
+                                       -publisher "MicrosoftWindowsServer" `
+                                       -offer "WindowsServer" `
+                                       -sku $WPFeximage.SelectedItem `
+                                       -servername $WPFexName.Text `
+                                       -ip $WPFexIP.Text `
+                                       -role $WPFexRole.Text `
+                                       -AsJob `
+                                       -Verbose
+    write-host "Sleeping for 60secs" -ForegroundColor Green
+    Start-Sleep -Seconds 60
+    }
+    else
+    {
+    Write-Host "Will not build server two because someone forgot to check the box...."
+    }
+    #####################################################################################################                                   
+    # SCCM Build
+    if ($WPFSCCM.IsChecked -eq $true){
+    Write-Host "Building SCCM Primary Server, SCCM Primary will take up to 45mins to install once the DSC starts" -ForegroundColor Green
 
-write-host "Sleeping for 60secs" -ForegroundColor Green
-Start-Sleep -Seconds 60
+    New-AzResourceGroupDeployment @commonVariables `
+                                       -Name $WPFsccm_ps_name.Text `
+                                       -vmsize $WPFsscm_ps_size.SelectedItem `
+                                       -vmdisk $WPFsccm_ps_disk.SelectedItem `
+                                       -publisher "MicrosoftSQLServer" `
+                                       -offer $WPFsccmimageoffer.SelectedItem `
+                                       -sku $WPFsccmimagesku.SelectedItem `
+                                       -servername $WPFsccm_ps_name.Text `
+                                       -ip $WPFsccm_ps_ip.Text `
+                                       -role "PS" `
+                                       -AsJob `
+                                       -Verbose 
 
-Write-Host "Building SCCM DP/MP Server" -ForegroundColor Green
-New-AzResourceGroupDeployment @commonVariables `
-                                   -Name $WPFsccm_dp_name.Text `
-                                   -vmsize $WPFsccm_mpdp_size.SelectedItem `
-                                   -vmdisk $WPFsccm_mpdp_disk.SelectedItem `
-                                   -publisher "MicrosoftWindowsServer" `
-                                   -offer "WindowsServer" `
-                                   -sku $WPFsccmdpimage.SelectedItem `
-                                   -servername $WPFsccm_dp_name.Text `
-                                   -ip $WPFsccm_dp_ip.Text `
-                                   -role "DPMP" `
-                                   -AsJob `
-                                   -Verbose 
+    write-host "Sleeping for 60secs" -ForegroundColor Green
+    Start-Sleep -Seconds 60
 
-write-host "Sleeping for 60secs" -ForegroundColor Green
-Start-Sleep -Seconds 60
-}
-else
-{
-Write-Host "Will not build server two because someone forgot to check the box...."                                                                                                            
-}
-       
+    Write-Host "Building SCCM DP/MP Server" -ForegroundColor Green
+    New-AzResourceGroupDeployment @commonVariables `
+                                       -Name $WPFsccm_dp_name.Text `
+                                       -vmsize $WPFsccm_mpdp_size.SelectedItem `
+                                       -vmdisk $WPFsccm_mpdp_disk.SelectedItem `
+                                       -publisher "MicrosoftWindowsServer" `
+                                       -offer "WindowsServer" `
+                                       -sku $WPFsccmdpimage.SelectedItem `
+                                       -servername $WPFsccm_dp_name.Text `
+                                       -ip $WPFsccm_dp_ip.Text `
+                                       -role "DPMP" `
+                                       -AsJob `
+                                       -Verbose 
 
-#####################################################################################################
-# Workstation Build
-if ($WPFworkstation.IsChecked -eq $true){
-Write-Host "Building Windows Workstation" -ForegroundColor Green
+    write-host "Sleeping for 60secs" -ForegroundColor Green
+    Start-Sleep -Seconds 60
+    }
+    else
+    {
+    Write-Host "Will not build server two because someone forgot to check the box...."                                                                                                            
+    }
+    #####################################################################################################
+    # Workstation Build
+    if ($WPFworkstation.IsChecked -eq $true){
+    Write-Host "Building Windows Workstation" -ForegroundColor Green
 
-New-AzResourceGroupDeployment @commonVariables `
-                                   -Name $WPFworkstationName.Text `
-                                   -vmsize $WPFworkstationsize.SelectedItem `
-                                   -vmdisk $WPFworkstationdisk.SelectedItem `
-                                   -publisher "MicrosoftWindowsDesktop" `
-                                   -offer "windows-10" `
-                                   -sku $WPFworkstationimage.SelectedItem `
-                                   -servername $WPFworkstationName.Text `
-                                   -ip $WPFworkstationIP.Text `
-                                   -role $WPFworkstationRole.Text `
-                                   -AsJob `
-                                   -Verbose 
+    New-AzResourceGroupDeployment @commonVariables `
+                                       -Name $WPFworkstationName.Text `
+                                       -vmsize $WPFworkstationsize.SelectedItem `
+                                       -vmdisk $WPFworkstationdisk.SelectedItem `
+                                       -publisher "MicrosoftWindowsDesktop" `
+                                       -offer "windows-10" `
+                                       -sku $WPFworkstationimage.SelectedItem `
+                                       -servername $WPFworkstationName.Text `
+                                       -ip $WPFworkstationIP.Text `
+                                       -role $WPFworkstationRole.Text `
+                                       -AsJob `
+                                       -Verbose 
 
-write-host "Sleeping for 60secs" -ForegroundColor Green
-Start-Sleep -Seconds 60
-}
-else
-{
-Write-Host "Will not build server two because someone forgot to check the box...."                                                                                                            
-}
-        
-#####################################################################################################
-# SharePoint Build
-if ($WPFsharepoint.IsChecked -eq $true){
-Write-Host "Building SQL and SharePoint" -ForegroundColor Green
+    write-host "Sleeping for 60secs" -ForegroundColor Green
+    Start-Sleep -Seconds 60
+    }
+    else
+    {
+    Write-Host "Will not build server two because someone forgot to check the box...."                                                                                                            
+    }     
+    #####################################################################################################
+    # SharePoint Build
+    if ($WPFsharepoint.IsChecked -eq $true){
+    Write-Host "Building SQL and SharePoint" -ForegroundColor Green
 
-New-AzResourceGroupDeployment @commonVariables `
-                                   -Name $WPFSQLName.Text `
-                                   -vmsize $WPFsharepoint_size.SelectedItem `
-                                   -vmdisk $WPFSQLDisk.SelectedItem `
-                                   -publisher "MicrosoftSQLServer" `
-                                   -offer $WPFSQLImage.SelectedItem `
-                                   -sku $WPFSQLSKU.SelectedItem `
-                                   -servername $WPFSQLName.Text `
-                                   -ip $WPFSQLIP.Text `
-                                   -role $WPFSQLRole.Text `
-                                   -AsJob `
-                                   -Verbose 
+    New-AzResourceGroupDeployment @commonVariables `
+                                       -Name $WPFSQLName.Text `
+                                       -vmsize $WPFsharepoint_size.SelectedItem `
+                                       -vmdisk $WPFSQLDisk.SelectedItem `
+                                       -publisher "MicrosoftSQLServer" `
+                                       -offer $WPFSQLImage.SelectedItem `
+                                       -sku $WPFSQLSKU.SelectedItem `
+                                       -servername $WPFSQLName.Text `
+                                       -ip $WPFSQLIP.Text `
+                                       -role $WPFSQLRole.Text `
+                                       -AsJob `
+                                       -Verbose 
 
-write-host "Sleeping for 60secs" -ForegroundColor Green
-Start-Sleep -Seconds 60
+    write-host "Sleeping for 60secs" -ForegroundColor Green
+    Start-Sleep -Seconds 60
 
-New-AzResourceGroupDeployment @commonVariables `
-                                   -Name $WPFsharepointName.Text `
-                                   -vmsize $WPFsharepoint_size.SelectedItem `
-                                   -vmdisk $WPFsharepoint_disk.SelectedItem `
-                                   -publisher "MicrosoftSharePoint" `
-                                   -offer "MicrosoftSharePointServer" `
-                                   -sku $WPFsharepointimage.SelectedItem `
-                                   -servername $WPFsharepointName.Text `
-                                   -ip $WPFsharepointIP.Text `
-                                   -role $WPFsharepointRole.Text `
-                                   -AsJob `
-                                   -Verbose 
+    New-AzResourceGroupDeployment @commonVariables `
+                                       -Name $WPFsharepointName.Text `
+                                       -vmsize $WPFsharepoint_size.SelectedItem `
+                                       -vmdisk $WPFsharepoint_disk.SelectedItem `
+                                       -publisher "MicrosoftSharePoint" `
+                                       -offer "MicrosoftSharePointServer" `
+                                       -sku $WPFsharepointimage.SelectedItem `
+                                       -servername $WPFsharepointName.Text `
+                                       -ip $WPFsharepointIP.Text `
+                                       -role $WPFsharepointRole.Text `
+                                       -AsJob `
+                                       -Verbose 
 
-write-host "Sleeping for 60secs" -ForegroundColor Green
-Start-Sleep -Seconds 60
+    write-host "Sleeping for 60secs" -ForegroundColor Green
+    Start-Sleep -Seconds 60
 
-}
-else
-{
-Write-Host "Will not build server two because someone forgot to check the box...."
-}
+    }
+    else
+    {
+    Write-Host "Will not build server two because someone forgot to check the box...."
+    }
+    #####################################################################################################
+    # Server Build
+    if ($WPFserver5.IsChecked -eq $true){
+    Write-Host "Here we go!!  Building Server5" -ForegroundColor Green
 
-#####################################################################################################
-# Server Build
-if ($WPFserver5.IsChecked -eq $true){
-Write-Host "Here we go!!  Building Server5" -ForegroundColor Green
-
-New-AzResourceGroupDeployment @commonVariables `
-                                   -Name $rg `
-                                   -vmsize $WPFserver5size.SelectedItem `
-                                   -vmdisk $WPFserver5disk.SelectedItem `
-                                   -publisher "MicrosoftWindowsServer" `
-                                   -offer "WindowsServer" `
-                                   -sku $WPFserver5image.SelectedItem `
-                                   -servername $WPFServer5Name.Text `
-                                   -ip $WPFserver5IP.Text `
-                                   -role $WPFServer5Role.Text `
-                                   -Verbose 
+    New-AzResourceGroupDeployment @commonVariables `
+                                       -Name $rg `
+                                       -vmsize $WPFserver5size.SelectedItem `
+                                       -vmdisk $WPFserver5disk.SelectedItem `
+                                       -publisher "MicrosoftWindowsServer" `
+                                       -offer "WindowsServer" `
+                                       -sku $WPFserver5image.SelectedItem `
+                                       -servername $WPFServer5Name.Text `
+                                       -ip $WPFserver5IP.Text `
+                                       -role $WPFServer5Role.Text `
+                                       -Verbose 
                                                                                                        
-write-host "Sleeping for 60secs" -ForegroundColor Green
-Start-Sleep -Seconds 60
+    write-host "Sleeping for 60secs" -ForegroundColor Green
+    Start-Sleep -Seconds 60
 
-}
-else
-{
-Write-Host "Will not build server two because someone forgot to check the box...."
-}
-
-
-
-
-
-
-
+    }
+    else
+    {
+    Write-Host "Will not build server two because someone forgot to check the box...."
+    }
 })
+
+
 #===========================================================================
 # Shows the form
 #===========================================================================
