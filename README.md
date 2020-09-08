@@ -9,4 +9,4 @@ Active Directory Federation Services (ADFS)
 *SharePoint - Coming Soon
 Workstation - Domain Join
 
-![IaaS Builder](https://github.com/chlaplan/IaaS-Builder/blob/master/Imgs/v1.5.2.JPG)
+![IaaS Builder](https://github.com/chlaplan/IaaS-Builder/blob/master/Imgs/1.6.JPG)
