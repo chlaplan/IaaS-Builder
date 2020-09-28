@@ -2,6 +2,7 @@
 $DefaultVMDisk = "Premium_LRS"
 $DefaultOSImage = "2019-Datacenter"
 $DefaultOSWSImage = "19h2-ent"
+$DefaultWVDImage = "20h1-evd-o365pp"
 
 $AzureModule = Get-Module -ListAvailable -Name Az.*
     if ($AzureModule.Name -notlike "Az.*"){
@@ -166,14 +167,8 @@ $WPFgithub.Add_MouseLeave({$WPFgithub.Foreground = 'DarkBlue'})
   if (Get-AzContext) {
     Write-Host "We have connection, start building!!" -ForegroundColor Green
     $Sub = Get-AzSubscription | select "Name"
-    $Locations = Get-AzLocation
-
     foreach($Subs in $Sub){
         $WPFSubscription1.AddChild($Subs.Name)
-        }
-
-    foreach($Location in $Locations){
-        $WPFLocations1.AddChild($Location.DisplayName)
         }
   }
   else
@@ -181,6 +176,32 @@ $WPFgithub.Add_MouseLeave({$WPFgithub.Foreground = 'DarkBlue'})
   Write-Host "No connection to Azure, Please login" -ForegroundColor Yellow
   }
 
+# Build Location List
+    $WPFSubscription1.Add_DropDownClosed({
+    $Locations = Get-AzLocation
+    $WPFLocations1.Items.Clear()
+    foreach($Location in $Locations){
+        $WPFLocations1.AddChild($Location.Location)
+        }
+    })
+
+# Get WVD Locations
+$WVDLocations = Get-AzLocation | where providers -EQ Microsoft.DesktopVirtualization
+
+foreach ($WVDLocation in $WVDLocations){
+$WPFWVD_Metadata.Addchild($WVDLocation.Location)
+}
+
+<#if ((Get-AzContext).Environment.Name -eq 'AzureUSGovernment') {
+    $WPFWVD_Metadata.Addchild("usgovvirginia")
+    $WPFWVD_Metadata.Addchild("usgovarizona")
+    }
+    else
+    {
+        foreach($Location in $Locations){
+        $WPFWVD_Metadata.AddChild($Location.DisplayName)
+      }
+    } #>
 
 # Query VMSize and IMages After Location is Selected
 
@@ -192,6 +213,7 @@ $WPFLocations1.Add_SelectionChanged({
     $SQLoffers = Get-AzVMImageOffer -Location $WPFLocations1.SelectedItem -PublisherName "MicrosoftSQLServer" | Select offer
     $serverskus = Get-AzVMImageSku -Location $WPFLocations1.SelectedItem -Offer "WindowsServer" -PublisherName "MicrosoftWindowsServer" | Select Skus    
     $clientskus = Get-AzVMImageSku -Location $WPFLocations1.SelectedItem -Offer "Windows-10" -PublisherName "MicrosoftWindowsDesktop" | Select Skus
+    $client365skus = Get-AzVMImageSku -Location $WPFLocations1.SelectedItem -Offer "Office-365" -PublisherName "MicrosoftWindowsDesktop" | Select Skus
     $sharePointSkus = Get-AzVMImageSku -Location $WPFLocations1.SelectedItem -PublisherName MicrosoftSharePoint -Offer MicrosoftSharePointServer
 
     $WPFserver1disk.AddChild($DefaultVMDisk)
@@ -202,7 +224,8 @@ $WPFLocations1.Add_SelectionChanged({
     $WPFsharepoint_disk.AddChild($DefaultVMDisk)
     $WPFserver5disk.AddChild($DefaultVMDisk)
     $WPFworkstationdisk.AddChild($DefaultVMDisk)
-   
+    $WPFWVD_Disk.AddChild($DefaultVMDisk)
+
     #############Load VMSize and Select Default#############
     Write-Host "Loading VMsizes and Disk information" -ForegroundColor Green
 
@@ -215,6 +238,7 @@ $WPFLocations1.Add_SelectionChanged({
     $WPFSQLsize.items.Clear()
     $WPFserver5size.items.Clear()
     $WPFworkstationsize.items.Clear()
+    $WPFWVD_Size.items.Clear()
         foreach ($Size in $vmsize)
             {
                 $WPFserver1vmsize.AddChild($size.Name)
@@ -226,6 +250,7 @@ $WPFLocations1.Add_SelectionChanged({
                 $WPFSQLsize.AddChild($size.Name)
                 $WPFserver5size.AddChild($size.Name)
                 $WPFworkstationsize.AddChild($size.Name)
+                $WPFWVD_Size.AddChild($size.Name)
             }
     $WPFserver1vmsize.SelectedItem = $DefaultVMSize
     $WPFserver1disk.SelectedItem = $DefaultVMDisk
@@ -245,7 +270,8 @@ $WPFLocations1.Add_SelectionChanged({
     $WPFserver5disk.SelectedItem = $DefaultVMDisk    
     $WPFworkstationsize.SelectedItem = $DefaultVMSize
     $WPFworkstationdisk.SelectedItem = $DefaultVMDisk 
-
+    $WPFWVD_Size.SelectedItem = $DefaultVMSize
+    $WPFWVD_Disk.SelectedItem = $DefaultVMDisk 
 
     
     #Load Images and Select Default
@@ -306,6 +332,12 @@ $WPFLocations1.Add_SelectionChanged({
     $WPFworkstationimage.AddChild($clientsku.skus)
     }
     $WPFworkstationimage.SelectedItem = "$DefaultOSWSImage"
+
+    $WPFWVD_Image.Items.Clear()
+    foreach ($clientsku in $client365skus){
+    $WPFWVD_Image.AddChild($clientsku.skus)
+    }
+    $WPFWVD_Image.SelectedItem = $DefaultWVDImage
 })
 #End Load Images and Select Default
 
@@ -364,7 +396,7 @@ $WPFLocations1.Add_SelectionChanged({
 
     $WPFadfssize.Add_SelectionChanged({
     $WPFadfsdisk.Items.Clear()
-    $diskinfo = Get-AzComputeResourceSku | Where-Object {$_.Locations -eq ($WPFLocations1.SelectedItem) -and $_.Name.Contains($WPFserver1vmsize.SelectedItem) -and $_.ResourceType.Contains("virtualMachines")} | Select -ExpandProperty Capabilities
+    $diskinfo = Get-AzComputeResourceSku | Where-Object {$_.Locations -eq ($WPFLocations1.SelectedItem) -and $_.Name.Contains($WPFadfssize.SelectedItem) -and $_.ResourceType.Contains("virtualMachines")} | Select -ExpandProperty Capabilities
 
         if($diskinfo[7].Value -eq $True){
         $WPFadfsdisk.AddChild("Premium_LRS")
@@ -379,7 +411,7 @@ $WPFLocations1.Add_SelectionChanged({
 
     $WPFexsize.Add_SelectionChanged({
     $WPFexdisk.Items.Clear()
-    $diskinfo = Get-AzComputeResourceSku | Where-Object {$_.Locations -eq ($WPFLocations1.SelectedItem) -and $_.Name.Contains($WPFserver1vmsize.SelectedItem) -and $_.ResourceType.Contains("virtualMachines")} | Select -ExpandProperty Capabilities
+    $diskinfo = Get-AzComputeResourceSku | Where-Object {$_.Locations -eq ($WPFLocations1.SelectedItem) -and $_.Name.Contains($WPFexsize.SelectedItem) -and $_.ResourceType.Contains("virtualMachines")} | Select -ExpandProperty Capabilities
 
         if($diskinfo[7].Value -eq $True){
         $WPFexdisk.AddChild("Premium_LRS")
@@ -394,7 +426,7 @@ $WPFLocations1.Add_SelectionChanged({
 
     $WPFsscm_ps_size.Add_SelectionChanged({
     $WPFsccm_ps_disk.Items.Clear()
-    $diskinfo = Get-AzComputeResourceSku | Where-Object {$_.Locations -eq ($WPFLocations1.SelectedItem) -and $_.Name.Contains($WPFserver1vmsize.SelectedItem) -and $_.ResourceType.Contains("virtualMachines")} | Select -ExpandProperty Capabilities
+    $diskinfo = Get-AzComputeResourceSku | Where-Object {$_.Locations -eq ($WPFLocations1.SelectedItem) -and $_.Name.Contains($WPFsscm_ps_size.SelectedItem) -and $_.ResourceType.Contains("virtualMachines")} | Select -ExpandProperty Capabilities
 
         if($diskinfo[7].Value -eq $True){
         $WPFsccm_ps_disk.AddChild("Premium_LRS")
@@ -409,7 +441,7 @@ $WPFLocations1.Add_SelectionChanged({
 
     $WPFsccm_mpdp_size.Add_SelectionChanged({
     $WPFsccm_mpdp_disk.Items.Clear()
-    $diskinfo = Get-AzComputeResourceSku | Where-Object {$_.Locations -eq ($WPFLocations1.SelectedItem) -and $_.Name.Contains($WPFserver1vmsize.SelectedItem) -and $_.ResourceType.Contains("virtualMachines")} | Select -ExpandProperty Capabilities
+    $diskinfo = Get-AzComputeResourceSku | Where-Object {$_.Locations -eq ($WPFLocations1.SelectedItem) -and $_.Name.Contains($WPFsccm_mpdp_size.SelectedItem) -and $_.ResourceType.Contains("virtualMachines")} | Select -ExpandProperty Capabilities
 
         if($diskinfo[7].Value -eq $True){
         $WPFsccm_mpdp_disk.AddChild("Premium_LRS")
@@ -424,7 +456,7 @@ $WPFLocations1.Add_SelectionChanged({
 
     $WPFsharepoint_size.Add_SelectionChanged({
     $WPFsharepoint_disk.Items.Clear()
-    $diskinfo = Get-AzComputeResourceSku | Where-Object {$_.Locations -eq ($WPFLocations1.SelectedItem) -and $_.Name.Contains($WPFserver1vmsize.SelectedItem) -and $_.ResourceType.Contains("virtualMachines")} | Select -ExpandProperty Capabilities
+    $diskinfo = Get-AzComputeResourceSku | Where-Object {$_.Locations -eq ($WPFLocations1.SelectedItem) -and $_.Name.Contains($WPFsharepoint_size.SelectedItem) -and $_.ResourceType.Contains("virtualMachines")} | Select -ExpandProperty Capabilities
 
         if($diskinfo[7].Value -eq $True){
         $WPFsharepoint_disk.AddChild("Premium_LRS")
@@ -439,7 +471,7 @@ $WPFLocations1.Add_SelectionChanged({
 
     $WPFSQLSize.Add_SelectionChanged({
     $WPFSQLDisk.Items.Clear()
-    $diskinfo = Get-AzComputeResourceSku | Where-Object {$_.Locations -eq ($WPFLocations1.SelectedItem) -and $_.Name.Contains($WPFserver1vmsize.SelectedItem) -and $_.ResourceType.Contains("virtualMachines")} | Select -ExpandProperty Capabilities
+    $diskinfo = Get-AzComputeResourceSku | Where-Object {$_.Locations -eq ($WPFLocations1.SelectedItem) -and $_.Name.Contains($WPFSQLSize.SelectedItem) -and $_.ResourceType.Contains("virtualMachines")} | Select -ExpandProperty Capabilities
 
         if($diskinfo[7].Value -eq $True){
         $WPFSQLDisk.AddChild("Premium_LRS")
@@ -454,7 +486,7 @@ $WPFLocations1.Add_SelectionChanged({
 
     $WPFserver5size.Add_SelectionChanged({
     $WPFserver5disk.Items.Clear()
-    $diskinfo = Get-AzComputeResourceSku | Where-Object {$_.Locations -eq ($WPFLocations1.SelectedItem) -and $_.Name.Contains($WPFserver1vmsize.SelectedItem) -and $_.ResourceType.Contains("virtualMachines")} | Select -ExpandProperty Capabilities
+    $diskinfo = Get-AzComputeResourceSku | Where-Object {$_.Locations -eq ($WPFLocations1.SelectedItem) -and $_.Name.Contains($WPFserver5size.SelectedItem) -and $_.ResourceType.Contains("virtualMachines")} | Select -ExpandProperty Capabilities
 
         if($diskinfo[7].Value -eq $True){
         $WPFserver5disk.AddChild("Premium_LRS")
@@ -469,7 +501,7 @@ $WPFLocations1.Add_SelectionChanged({
 
     $WPFworkstationsize.Add_SelectionChanged({
     $WPFworkstationdisk.Items.Clear()
-    $diskinfo = Get-AzComputeResourceSku | Where-Object {$_.Locations -eq ($WPFLocations1.SelectedItem) -and $_.Name.Contains($WPFserver1vmsize.SelectedItem) -and $_.ResourceType.Contains("virtualMachines")} | Select -ExpandProperty Capabilities
+    $diskinfo = Get-AzComputeResourceSku | Where-Object {$_.Locations -eq ($WPFLocations1.SelectedItem) -and $_.Name.Contains($WPFworkstationsize.SelectedItem) -and $_.ResourceType.Contains("virtualMachines")} | Select -ExpandProperty Capabilities
 
         if($diskinfo[7].Value -eq $True){
         $WPFworkstationdisk.AddChild("Premium_LRS")
@@ -481,6 +513,21 @@ $WPFLocations1.Add_SelectionChanged({
         $WPFworkstationdisk.SelectedItem = "Standard_LRS"
         }
     })
+
+    $WPFWVD_Size.Add_SelectionChanged({
+    $WPFWVD_Disk.Items.Clear()
+    $diskinfo = Get-AzComputeResourceSku | Where-Object {$_.Locations -eq ($WPFLocations1.SelectedItem) -and $_.Name.Contains($WPFWVD_Size.SelectedItem) -and $_.ResourceType.Contains("virtualMachines")} | Select -ExpandProperty Capabilities
+        if($diskinfo[7].Value -eq $True){
+        $WPFWVD_Disk.AddChild("Premium_LRS")
+        $WPFWVD_Disk.SelectedItem = "Premium_LRS"
+        }
+        else
+        {
+        $WPFWVD_Disk.AddChild("Standard_LRS")
+        $WPFWVD_Disk.SelectedItem = "Standard_LRS"
+        }
+    })
+
 #END Query Disk type Premium_LRS or Standard_LRS
 
 #####  SCCM Image offer query   #####
@@ -497,14 +544,7 @@ $WPFLocations1.Add_SelectionChanged({
 
     })
 
-# Build Location List
-    $WPFSubscription1.Add_DropDownClosed({
-    $Locations = Get-AzLocation
-    $WPFLocations1.Items.Clear()
-    foreach($Location in $Locations){
-        $WPFLocations1.AddChild($Location.Location)
-        }
-    })
+
 
 
 $WPFBuild1.Add_Click({
@@ -526,7 +566,9 @@ $WPFBuild1.Add_Click({
     $addressprefix = $WPFaddressprefix1.text
     $subnetname = $WPFsubnetName1.text
     $bastionsubnet = $WPFbastionsubnet.text
-
+    $vnet = $prefix + '-vnet'
+    $TokenExpireDate = $((get-date).ToUniversalTime().AddDays(1).ToString('yyyy-MM-ddTHH:mm:ss.fffffffZ'))
+    $UserFQDN = $WPFadminaccount1.Text + "@" + $WPFDname1.Text
 
     #-------------------------------------------------------------------------------------------------------------------
     # Grab Custom Image ResourceID for Windows 10 images and feed it into JSON
@@ -656,7 +698,7 @@ $WPFBuild1.Add_Click({
     }
     else
     {
-    Write-Host "Not checked, not true, server 1 will always be check"
+    Write-Host "Not checked, not true, dc 1 will always be check"
     }
     #####################################################################################################
     # ADFS Build
@@ -680,7 +722,7 @@ $WPFBuild1.Add_Click({
     }
     else
     {
-    Write-Host "Will not build server two because someone forgot to check the box...."
+    Write-Host "Will not build ADFS because someone forgot to check the box...."
     }
     #####################################################################################################
     # Exchange Build
@@ -704,7 +746,7 @@ $WPFBuild1.Add_Click({
     }
     else
     {
-    Write-Host "Will not build server two because someone forgot to check the box...."
+    Write-Host "Will not build Exchange because someone forgot to check the box...."
     }
     #####################################################################################################                                   
     # SCCM Build
@@ -746,7 +788,7 @@ $WPFBuild1.Add_Click({
     }
     else
     {
-    Write-Host "Will not build server two because someone forgot to check the box...."                                                                                                            
+    Write-Host "Will not build SCCM because someone forgot to check the box...."                                                                                                            
     }
     #####################################################################################################
     # Workstation Build
@@ -771,7 +813,7 @@ $WPFBuild1.Add_Click({
     }
     else
     {
-    Write-Host "Will not build server two because someone forgot to check the box...."                                                                                                            
+    Write-Host "Will not build Workstation because someone forgot to check the box...."                                                                                                            
     }     
     #####################################################################################################
     # SharePoint Build
@@ -813,15 +855,14 @@ $WPFBuild1.Add_Click({
     }
     else
     {
-    Write-Host "Will not build server two because someone forgot to check the box...."
+    Write-Host "Will not build SharePoint because someone forgot to check the box...."
     }
     #####################################################################################################
     # Server Build
     if ($WPFserver5.IsChecked -eq $true){
-    Write-Host "Here we go!!  Building Server5" -ForegroundColor Green
-
+    Write-Host "Here we go!!  Building" $WPFServer5Name.Text -ForegroundColor Green
     New-AzResourceGroupDeployment @commonVariables `
-                                       -Name $rg `
+                                       -Name $WPFServer5Name.Text `
                                        -vmsize $WPFserver5size.SelectedItem `
                                        -vmdisk $WPFserver5disk.SelectedItem `
                                        -publisher "MicrosoftWindowsServer" `
@@ -830,6 +871,7 @@ $WPFBuild1.Add_Click({
                                        -servername $WPFServer5Name.Text `
                                        -ip $WPFserver5IP.Text `
                                        -role $WPFServer5Role.Text `
+                                       -AsJob `
                                        -Verbose 
                                                                                                        
     write-host "Sleeping for 60secs" -ForegroundColor Green
@@ -838,7 +880,48 @@ $WPFBuild1.Add_Click({
     }
     else
     {
-    Write-Host "Will not build server two because someone forgot to check the box...."
+    Write-Host "Will not build server because someone forgot to check the box...."
+    }
+    #####################################################################################################
+    # WVD Build
+    if ($WPFWVD.IsChecked -eq $true){
+    Write-Host "Building Windows Virtual Desktop" -ForegroundColor Green
+    
+    New-AzResourceGroupDeployment -TemplateFile .\AzureWVD.json -Name "WVD" `
+                                  -hostpoolName $WPFWVD_HostName.text `
+                                  -domain $DomainName `
+                                  -ResourceGroupName $rg `
+                                  -vmNamePrefix $Prefix `
+                                  -hostpoolType "Pooled" `
+                                  -vmSize $WPFWVD_Size.SelectedItem `
+                                  -vmLocation $WPFLocations1.SelectedItem `
+                                  -administratorAccountUsername $UserFQDN `
+                                  -administratorAccountPassword $AdminPassword `
+                                  -vmResourceGroup $rg `
+                                  -vmNumberOfInstances $WPFWVD_NumberVMs.Text `
+                                  -vmGalleryImageOffer "Office-365"`
+                                  -vmGalleryImagePublisher "MicrosoftWindowsDesktop" `
+                                  -vmGalleryImageSKU $WPFWVD_Image.SelectedItem `
+                                  -vmDiskType $WPFWVD_Disk.SelectedItem `
+                                  -vmImageType "Gallery" `
+                                  -loadBalancerType "BreadthFirst" `
+                                  -existingSubnetName $WPFsubnetName1.Text `
+                                  -existingVnetName $vnet `
+                                  -virtualNetworkResourceGroupName $rg `
+                                  -location $WPFWVD_Metadata.SelectedItem `
+                                  -addToWorkspace $false `
+                                  -tokenExpirationTime $TokenExpireDate `
+                                  -createAvailabilitySet $true
+
+
+                                                                                                     
+    write-host "Sleeping for 60secs" -ForegroundColor Green
+    Start-Sleep -Seconds 60
+
+    }
+    else
+    {
+    Write-Host "Will not build WVD because someone forgot to check the box...."
     }
 })
 

@@ -183,7 +183,7 @@
         "virtualNetworkAddressPrefix": "[parameters('addressprefix')]",
         "subnetAddressPrefix": "[parameters('addresssubnet')]",
         "virtualMachinesIPAddress": "[parameters('ip')]",
-        "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), 'default')]",
+        "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), parameters('subnetname'))]",
         "privateIPAllocationMethod": "Static",
         "publicIpAllocationMethod": "Dynamic"
       },
@@ -368,9 +368,17 @@
             "[variables('networkSettings').virtualNetworkAddressPrefix]"
           ]
         },
+        "dhcpOptions": {
+          "dnsServers": [
+            "[parameters('DCip')]",
+            "8.8.8.8",
+            "1.1.1.1",
+            "8.8.4.4"
+          ]
+        },
         "subnets": [
           {
-            "name": "default",
+            "name": "[parameters('subnetname')]",
             "properties": {
               "addressPrefix": "[variables('networkSettings').subnetAddressPrefix]"
             }
