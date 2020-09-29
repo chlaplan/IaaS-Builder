@@ -915,8 +915,8 @@ $WPFBuild1.Add_Click({
 
 
                                                                                                      
-    write-host "Sleeping for 60secs" -ForegroundColor Green
-    Start-Sleep -Seconds 60
+    write-host "IaaS_Builder is finished, Login to Azure Portal and check Deployments under the Resource group" -ForegroundColor Green
+    #Start-Sleep -Seconds 60
 
     }
     else
