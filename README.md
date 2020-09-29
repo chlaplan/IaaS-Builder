@@ -9,5 +9,6 @@ System Center Endpoint Protection (SCEP/SCCM)<br/>
 Active Directory Federation Services (ADFS)<br/>
 SharePoint<br/>
 Workstation - Domain Join<br/>
+Azure Windows Virtual Desktop<br/>
 
 ![IaaS Builder](https://github.com/chlaplan/IaaS-Builder/blob/master/Imgs/1.6.JPG)
