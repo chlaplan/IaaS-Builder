@@ -1,4 +1,4 @@
-﻿$DefaultVMSize = "Standard_F2s"
+$DefaultVMSize = "Standard_F2s"
 $DefaultVMDisk = "Premium_LRS"
 $DefaultOSImage = "2019-Datacenter"
 $DefaultOSWSImage = "19h2-ent"
@@ -147,7 +147,6 @@ get-variable WPF*
 $formvar = Get-FormVariables
 
 
-
 #===========================================================================
 # Use this space to add code to the various form elements in your GUI
 #===========================================================================
@@ -176,9 +175,9 @@ $WPFgithub.Add_MouseLeave({$WPFgithub.Foreground = 'DarkBlue'})
   Write-Host "No connection to Azure, Please login" -ForegroundColor Yellow
   }
 
+$Locations = Get-AzLocation
 # Build Location List
     $WPFSubscription1.Add_DropDownClosed({
-    $Locations = Get-AzLocation
     $WPFLocations1.Items.Clear()
     foreach($Location in $Locations){
         $WPFLocations1.AddChild($Location.Location)
@@ -192,18 +191,6 @@ foreach ($WVDLocation in $WVDLocations){
 $WPFWVD_Metadata.Addchild($WVDLocation.Location)
 }
 
-<#if ((Get-AzContext).Environment.Name -eq 'AzureUSGovernment') {
-    $WPFWVD_Metadata.Addchild("usgovvirginia")
-    $WPFWVD_Metadata.Addchild("usgovarizona")
-    }
-    else
-    {
-        foreach($Location in $Locations){
-        $WPFWVD_Metadata.AddChild($Location.DisplayName)
-      }
-    } #>
-
-# Query VMSize and IMages After Location is Selected
 
 $WPFLocations1.Add_SelectionChanged({
 
@@ -338,7 +325,9 @@ $WPFLocations1.Add_SelectionChanged({
     $WPFWVD_Image.AddChild($clientsku.skus)
     }
     $WPFWVD_Image.SelectedItem = $DefaultWVDImage
+    
 })
+
 #End Load Images and Select Default
 
 # Query StorageAccount Name
@@ -678,6 +667,7 @@ $WPFBuild1.Add_Click({
     SQLName = $WPFSQLName.Text
     BastionSubnet = $bastionsubnet
     }
+    #####################################################################################################    
     # DC/CA Build
     if ($WPFserver1.IsChecked -eq $true){
     Write-Host "Building DC/CA" -ForegroundColor Green
@@ -694,11 +684,11 @@ $WPFBuild1.Add_Click({
                                        -role $WPFServer1Role.Text `
                                        -Verbose
     #write-host "Sleeping for 90secs" -ForegroundColor Green
-    #Start-Sleep -Seconds 90
+    #Start-Sleep -Seconds 
     }
     else
     {
-    Write-Host "Not checked, not true, dc 1 will always be check"
+    Write-Host "Skipping DC Build" -ForegroundColor Yellow
     }
     #####################################################################################################
     # ADFS Build
@@ -717,12 +707,10 @@ $WPFBuild1.Add_Click({
                                        -role $WPFADFSRole.Text `
                                        -AsJob `
                                        -Verbose
-    write-host "Sleeping for 60secs" -ForegroundColor Green
-    Start-Sleep -Seconds 60
     }
     else
     {
-    Write-Host "Will not build ADFS because someone forgot to check the box...."
+    Write-Host "Skipping ADFS Build" -ForegroundColor Yellow
     }
     #####################################################################################################
     # Exchange Build
@@ -741,12 +729,10 @@ $WPFBuild1.Add_Click({
                                        -role $WPFexRole.Text `
                                        -AsJob `
                                        -Verbose
-    write-host "Sleeping for 60secs" -ForegroundColor Green
-    Start-Sleep -Seconds 60
     }
     else
     {
-    Write-Host "Will not build Exchange because someone forgot to check the box...."
+    Write-Host "Skipping Exchange Build" -ForegroundColor Yellow
     }
     #####################################################################################################                                   
     # SCCM Build
@@ -766,8 +752,6 @@ $WPFBuild1.Add_Click({
                                        -AsJob `
                                        -Verbose 
 
-    write-host "Sleeping for 60secs" -ForegroundColor Green
-    Start-Sleep -Seconds 60
 
     Write-Host "Building SCCM DP/MP Server" -ForegroundColor Green
     New-AzResourceGroupDeployment @commonVariables `
@@ -782,13 +766,10 @@ $WPFBuild1.Add_Click({
                                        -role "DPMP" `
                                        -AsJob `
                                        -Verbose 
-
-    write-host "Sleeping for 60secs" -ForegroundColor Green
-    Start-Sleep -Seconds 60
     }
     else
     {
-    Write-Host "Will not build SCCM because someone forgot to check the box...."                                                                                                            
+    Write-Host "Skipping SCCM Build" -ForegroundColor Yellow                                                                                                            
     }
     #####################################################################################################
     # Workstation Build
@@ -808,12 +789,10 @@ $WPFBuild1.Add_Click({
                                        -AsJob `
                                        -Verbose 
 
-    write-host "Sleeping for 60secs" -ForegroundColor Green
-    Start-Sleep -Seconds 60
     }
     else
     {
-    Write-Host "Will not build Workstation because someone forgot to check the box...."                                                                                                            
+    Write-Host "Skipping Windows Client Build" -ForegroundColor Yellow                                                                                                          
     }     
     #####################################################################################################
     # SharePoint Build
@@ -833,8 +812,6 @@ $WPFBuild1.Add_Click({
                                        -AsJob `
                                        -Verbose 
 
-    write-host "Sleeping for 60secs" -ForegroundColor Green
-    Start-Sleep -Seconds 60
 
     New-AzResourceGroupDeployment @commonVariables `
                                        -Name $WPFsharepointName.Text `
@@ -849,18 +826,16 @@ $WPFBuild1.Add_Click({
                                        -AsJob `
                                        -Verbose 
 
-    write-host "Sleeping for 60secs" -ForegroundColor Green
-    Start-Sleep -Seconds 60
 
     }
     else
     {
-    Write-Host "Will not build SharePoint because someone forgot to check the box...."
+    Write-Host "Skipping SharePoint Build" -ForegroundColor Yellow
     }
     #####################################################################################################
     # Server Build
     if ($WPFserver5.IsChecked -eq $true){
-    Write-Host "Here we go!!  Building" $WPFServer5Name.Text -ForegroundColor Green
+    Write-Host "Building" $WPFServer5Name.Text -ForegroundColor Green
     New-AzResourceGroupDeployment @commonVariables `
                                        -Name $WPFServer5Name.Text `
                                        -vmsize $WPFserver5size.SelectedItem `
@@ -874,13 +849,10 @@ $WPFBuild1.Add_Click({
                                        -AsJob `
                                        -Verbose 
                                                                                                        
-    write-host "Sleeping for 60secs" -ForegroundColor Green
-    Start-Sleep -Seconds 60
-
     }
     else
     {
-    Write-Host "Will not build server because someone forgot to check the box...."
+    Write-Host "Skipping" $WPFServer5Name.Text "Build" -ForegroundColor Yellow
     }
     #####################################################################################################
     # WVD Build
@@ -911,17 +883,16 @@ $WPFBuild1.Add_Click({
                                   -location $WPFWVD_Metadata.SelectedItem `
                                   -addToWorkspace $false `
                                   -tokenExpirationTime $TokenExpireDate `
-                                  -createAvailabilitySet $true
+                                  -createAvailabilitySet $true `
+                                  -Verbose
 
 
                                                                                                      
     write-host "IaaS_Builder is finished, Login to Azure Portal and check Deployments under the Resource group" -ForegroundColor Green
-    #Start-Sleep -Seconds 60
-
     }
     else
     {
-    Write-Host "Will not build WVD because someone forgot to check the box...."
+    Write-Host "Skipping Windows Virtual Desktop Build" -ForegroundColor Yellow
     }
 })
 
