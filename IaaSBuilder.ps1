@@ -1,4 +1,4 @@
-$DefaultVMSize = "Standard_F2s"
+﻿$DefaultVMSize = "Standard_F2s"
 $DefaultVMDisk = "Premium_LRS"
 $DefaultOSImage = "2019-Datacenter"
 $DefaultOSWSImage = "19h2-ent"
