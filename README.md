@@ -11,4 +11,4 @@ SharePoint<br/>
 Workstation - Domain Join<br/>
 Azure Windows Virtual Desktop<br/>
 
-![IaaS Builder](https://github.com/chlaplan/IaaS-Builder/blob/master/Imgs/1.7.JPG)
+![IaaS Builder](https://github.com/chlaplan/IaaS-Builder/blob/master/Imgs/2.0.JPG)
