@@ -1,0 +1,36 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "resourceName": {
+            "type": "string",
+            "metadata": {
+                "description": "The name of the Host group resource."
+            }
+        },
+        "location": {
+            "type": "string",
+            "metadata": {
+                "description": "The location of the Host group resource."
+            }
+        },
+        "platformFaultDomainCount": {
+            "type": "string",
+            "metadata": {
+                "description": "The platform fault domain count of the Host group resource."
+            }
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Compute/hostgroups",
+            "name": "[parameters('resourceName')]",
+            "apiVersion": "2019-12-01",
+            "location": "[parameters('location')]",
+            "properties": {
+                "platformFaultDomainCount": "[parameters('platformFaultDomainCount')]"
+            },
+            "tags": {}
+        }
+    ]
+}

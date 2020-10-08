@@ -1,0 +1,314 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "prefix": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 9,
+      "metadata": {
+        "description": "The prefix name of machines. "
+      }
+    },
+    "vmsize": {
+      "type": "string",
+      "metadata": {
+        "description": "VM Size. "
+      }
+    },
+    "vmdisk": {
+      "type": "string",
+      "metadata": {
+        "description": "VM disk. "
+      }
+    },
+    "VirtualNetworkName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of Virtual Network. "
+      }
+    },
+    "NSG": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of Network Security Group. "
+      }
+    },
+    "subnetname": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of Subnet. "
+      }
+    },
+    "addressprefix": {
+      "type": "string",
+      "metadata": {
+        "description": "Subnet subnet prefix  ex: 10.1.0.0/16"
+      }
+    },
+    "addresssubnet": {
+      "type": "string",
+      "metadata": {
+        "description": "Subnet for servers"
+      }
+    },
+    "bastionsubnet": {
+      "type": "string",
+      "metadata": {
+        "description": "Subnet for Bastion Connections. "
+      }
+    },
+    "role": {
+      "type": "string",
+      "metadata": {
+        "description": "DSC to run on the machine"
+      }
+    },
+    "servername": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of extra server. "
+      }
+    },
+    "DCName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of Domain Controller server. "
+      }
+    },
+    "PSName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of SCCM Primary server. "
+      }
+    },
+    "DPMPName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of SCCM DP/MP server. "
+      }
+    },
+    "ip": {
+      "type": "string",
+      "metadata": {
+        "description": "Private IP Address. "
+      }
+    },
+    "DCip": {
+      "type": "string",
+      "metadata": {
+        "description": "DC IP Address. "
+      }
+    },
+    "SQLName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of SQL Server "
+      }
+    },
+    "STIG": {
+      "type": "string",
+      "metadata": {
+        "description": "If STIG -eq $True, STIGs will be downloaded from DISA and Imported into AD "
+      }
+    },
+    "MSFTBaseline": {
+      "type": "string",
+      "metadata": {
+        "description": "If STIG -eq $True, STIGs will be downloaded from DISA and Imported into AD "
+      }
+    },
+    "sharePointVersion": {
+      "type": "string",
+      "defaultValue": "2016",
+      "metadata": {
+        "description": "Private IP Address. "
+      }
+    },
+    "publisher": {
+      "type": "string",
+      "metadata": {
+        "description": "Private IP Address. "
+      }
+    },
+    "offer": {
+      "type": "string",
+      "metadata": {
+        "description": "Private IP Address. "
+      }
+    },
+    "sku": {
+      "type": "string",
+      "metadata": {
+        "description": "Private IP Address. "
+      }
+    },
+    "adminUsername": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 10,
+      "metadata": {
+        "description": "The name of the administrator account of the new VM. The domain name is contoso.com "
+      },
+      "defaultValue": "xadmin"
+    },
+    "adminPassword": {
+      "type": "securestring",
+      "minLength": 8,
+      "metadata": {
+        "description": "Input must meet password complexity requirements as documented for property 'adminPassword' in https://docs.microsoft.com/en-us/rest/api/compute/virtualmachines/virtualmachines-create-or-update"
+      }
+    },
+    "DomainName": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the Domain Name."
+      }
+    },
+    "_artifactsLocation": {
+      "type": "string",
+      "metadata": {
+        "description": "The base URI where artifacts required by this template are located including a trailing '/'"
+      }
+    },
+    "_artifactsLocationSasToken": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The sasToken required to access _artifactsLocation.  When the template is deployed using the accompanying scripts, a sasToken will be automatically generated. Use the defaultValue if the staging location is not secured. "
+      },
+      "defaultValue": ""
+    },
+    "AdfsServiceAccountName": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the name of the ADFS service account."
+      },
+      "defaultValue": "svc.adfs"
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Location for all resources."
+      }
+    }
+  },
+  "variables": {
+    "dscScript": "dsc/Configuration.zip",
+    "VirtualNetworkName": "[parameters('VirtualNetworkName')]",
+    //"virtualNetworkName": "[concat(toLower(parameters('prefix')), '-vnet')]",
+    "domainName": "[parameters('DomainName')]",
+    "networkSettings": {
+      "virtualNetworkAddressPrefix": "[parameters('addressprefix')]",
+      "subnetAddressPrefix": "[parameters('addresssubnet')]",
+      "virtualMachinesIPAddress": "[parameters('ip')]",
+      "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), parameters('subnetname'))]",
+      "privateIPAllocationMethod": "Static",
+      "publicIpAllocationMethod": "Dynamic"
+    },
+    "spSettings": {
+      "sqlAlias": "SQLAlias",
+      "spSuperUserName": "spSuperUser",
+      "spSuperReaderName": "spSuperReader",
+      "sqlSvcUserName": "sqlsvc",
+      "sqlSvcPassword": "[parameters('adminPassword')]",
+      "spSetupUserName": "spsetup",
+      "spSetupPassword": "[parameters('adminPassword')]",
+      "spFarmUserName": "spfarm",
+      "spFarmPassword": "[parameters('adminPassword')]",
+      "spSvcUserName": "spsvc",
+      "spSvcPassword": "[parameters('adminPassword')]",
+      "spAppPoolUserName": "spapppool",
+      "spAppPoolPassword": "[parameters('adminPassword')]",
+      "spPassphrase": "[parameters('adminPassword')]"
+    },
+    //"securityGroupRule": {
+    //  "name": "default-allow-rdp",
+    //  "priority": 1000,
+    //  "sourceAddressPrefix": "*",
+    //  "protocol": "Tcp",
+    //  "destinationPortRange": "3389",
+    //  "access": "Allow",
+    //  "direction": "Inbound",
+    //  "sourcePortRange": "*",
+    //  "destinationAddressPrefix": "*"
+    //},
+    "vmrole": "[parameters('role')]",
+    "vmname": "[parameters('servername')]",
+    "vmDiskType": "[parameters('vmDisk')]",
+    "vmSize": "[parameters('vmsize')]",
+
+    "imageReference": {
+      "[parameters('role')]": {
+        "publisher": "[parameters('publisher')]",
+        "offer": "[parameters('offer')]",
+        "sku": "[parameters('sku')]",
+        "version": "latest"
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2020-05-01",
+      "name": "[variables('virtualNetworkName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[variables('networkSettings').virtualNetworkAddressPrefix]"
+          ]
+        },
+        "dhcpOptions": {
+          "dnsServers": [
+            "[parameters('DCip')]",
+            "8.8.8.8",
+            "1.1.1.1",
+            "8.8.4.4"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[parameters('subnetname')]",
+            "properties": {
+              "addressPrefix": "[variables('networkSettings').subnetAddressPrefix]"
+            }
+          },
+          {
+            "name": "AzureBastionSubnet",
+            "properties": {
+              "addressPrefix": "[parameters('bastionsubnet')]"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2020-05-01",
+      "name": "[parameters('NSG')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        //"securityRules": [
+        //  {
+        //    "name": "[variables('securityGroupRule').name]",
+        //    "properties": {
+        //      "priority": "[variables('securityGroupRule').priority]",
+        //      "sourceAddressPrefix": "[variables('securityGroupRule').sourceAddressPrefix]",
+        //      "protocol": "[variables('securityGroupRule').protocol]",
+        //      "destinationPortRange": "[variables('securityGroupRule').destinationPortRange]",
+        //      "access": "[variables('securityGroupRule').access]",
+        //      "direction": "[variables('securityGroupRule').direction]",
+        //      "sourcePortRange": "[variables('securityGroupRule').sourcePortRange]",
+        //      "destinationAddressPrefix": "[variables('securityGroupRule').destinationAddressPrefix]"
+        //    }
+        //  }
+        //]
+      }
+    }
+
+  ],
+  "outputs": {
+
+  }
+}

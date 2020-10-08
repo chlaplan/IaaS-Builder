@@ -1,0 +1,420 @@
+﻿{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "prefix": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 9,
+      "metadata": {
+        "description": "The prefix name of machines. "
+      }
+    },
+    "vmsize": {
+      "type": "string",
+      "metadata": {
+        "description": "VM Size. "
+      }
+    },
+    "vmdisk": {
+      "type": "string",
+      "metadata": {
+        "description": "VM disk. "
+      }
+    },
+    "NSG": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of Network Security Group. "
+      }
+    },
+    "VirtualNetworkName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of Virtual Network. "
+      }
+    },
+    "subnetname": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of Subnet. "
+      }
+    },
+    "addressprefix": {
+      "type": "string",
+      "metadata": {
+        "description": "Subnet subnet prefix  ex: 10.1.0.0/16"
+      }
+    },
+    "addresssubnet": {
+      "type": "string",
+      "metadata": {
+        "description": "Subnet for servers"
+      }
+    },
+    "bastionsubnet": {
+      "type": "string",
+      "metadata": {
+        "description": "Subnet for Bastion Connections. "
+      }
+    },
+    "role": {
+      "type": "string",
+      "metadata": {
+        "description": "DSC to run on the machine"
+      }
+    },
+    "servername": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of extra server. "
+      }
+    },
+    "DCName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of Domain Controller server. "
+      }
+    },
+    "PSName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of SCCM Primary server. "
+      }
+    },
+    "DPMPName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of SCCM DP/MP server. "
+      }
+    },
+    "ip": {
+      "type": "string",
+      "metadata": {
+        "description": "Private IP Address. "
+      }
+    },
+    "DCip": {
+      "type": "string",
+      "metadata": {
+        "description": "DC IP Address. "
+      }
+    },
+    "SQLName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of SQL Server "
+      }
+    },
+    "STIG": {
+      "type": "string",
+      "metadata": {
+        "description": "If STIG -eq $True, STIGs will be downloaded from DISA and Imported into AD "
+      }
+    },
+    "MSFTBaseline": {
+      "type": "string",
+      "metadata": {
+        "description": "If STIG -eq $True, STIGs will be downloaded from DISA and Imported into AD "
+      }
+    },
+    "sharePointVersion": {
+      "type": "string",
+      "defaultValue": "2016",
+      "metadata": {
+        "description": "Private IP Address. "
+      }
+    },
+    "publisher": {
+      "type": "string",
+      "metadata": {
+        "description": "Private IP Address. "
+      }
+    },
+    "offer": {
+      "type": "string",
+      "metadata": {
+        "description": "Private IP Address. "
+      }
+    },
+    "sku": {
+      "type": "string",
+      "metadata": {
+        "description": "Private IP Address. "
+      }
+    },
+    "adminUsername": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 10,
+      "metadata": {
+        "description": "The name of the administrator account of the new VM. The domain name is contoso.com "
+      },
+      "defaultValue": "xadmin"
+    },
+    "adminPassword": {
+      "type": "securestring",
+      "minLength": 8,
+      "metadata": {
+        "description": "Input must meet password complexity requirements as documented for property 'adminPassword' in https://docs.microsoft.com/en-us/rest/api/compute/virtualmachines/virtualmachines-create-or-update"
+      }
+    },
+    "DomainName": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the Domain Name."
+      }
+    },
+    "_artifactsLocation": {
+      "type": "string",
+      "metadata": {
+        "description": "The base URI where artifacts required by this template are located including a trailing '/'"
+      }
+    },
+    "_artifactsLocationSasToken": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The sasToken required to access _artifactsLocation.  When the template is deployed using the accompanying scripts, a sasToken will be automatically generated. Use the defaultValue if the staging location is not secured. "
+      },
+      "defaultValue": ""
+    },
+    "AdfsServiceAccountName": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the name of the ADFS service account."
+      },
+      "defaultValue": "svc.adfs"
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Location for all resources."
+      }
+    }
+  },
+  "variables": {
+    "dscScript": "dsc/Configuration.zip",
+    "VirtualNetworkName": "[parameters('VirtualNetworkName')]",
+    //"virtualNetworkName": "[concat(toLower(parameters('prefix')), '-vnet')]",
+    "domainName": "[parameters('DomainName')]",
+    "networkSettings": {
+      "virtualNetworkAddressPrefix": "[parameters('addressprefix')]",
+      "subnetAddressPrefix": "[parameters('addresssubnet')]",
+      "virtualMachinesIPAddress": "[parameters('ip')]",
+      "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), parameters('subnetname'))]",
+      "privateIPAllocationMethod": "Static",
+      "publicIpAllocationMethod": "Dynamic"
+    },
+    "spSettings": {
+      "sqlAlias": "SQLAlias",
+      "spSuperUserName": "spSuperUser",
+      "spSuperReaderName": "spSuperReader",
+      "sqlSvcUserName": "sqlsvc",
+      "sqlSvcPassword": "[parameters('adminPassword')]",
+      "spSetupUserName": "spsetup",
+      "spSetupPassword": "[parameters('adminPassword')]",
+      "spFarmUserName": "spfarm",
+      "spFarmPassword": "[parameters('adminPassword')]",
+      "spSvcUserName": "spsvc",
+      "spSvcPassword": "[parameters('adminPassword')]",
+      "spAppPoolUserName": "spapppool",
+      "spAppPoolPassword": "[parameters('adminPassword')]",
+      "spPassphrase": "[parameters('adminPassword')]"
+    },
+    //"securityGroupRule": {
+    //  "name": "default-allow-rdp",
+    //  "priority": 1000,
+    //  "sourceAddressPrefix": "*",
+    //  "protocol": "Tcp",
+    //  "destinationPortRange": "3389",
+    //  "access": "Allow",
+    //  "direction": "Inbound",
+    //  "sourcePortRange": "*",
+    //  "destinationAddressPrefix": "*"
+    //},
+    "vmrole": "[parameters('role')]",
+    "vmname": "[parameters('servername')]",
+    "vmDiskType": "[parameters('vmDisk')]",
+    "vmSize": "[parameters('vmsize')]",
+
+    "imageReference": {
+      "[parameters('role')]": {
+        "publisher": "[parameters('publisher')]",
+        "offer": "[parameters('offer')]",
+        "sku": "[parameters('sku')]",
+        "version": "latest"
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/publicIpAddresses",
+      "apiVersion": "2020-05-01",
+      "name": "[concat(toLower(parameters('prefix')),toLower(variables('vmname')), '-ip')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "publicIpAllocationMethod": "[variables('networkSettings').publicIpAllocationMethod]"
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[concat(toLower(parameters('prefix')),toLower(variables('vmname')), '-ni')]",
+      "apiVersion": "2020-05-01",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIpAddresses/',toLower(parameters('prefix')),toLower(variables('vmname')), '-ip')]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "subnet": {
+                "id": "[variables('networkSettings').subnetRef]"
+              },
+              "privateIPAllocationMethod": "[variables('networkSettings').privateIPAllocationMethod]",
+              "privateIPAddress": "[concat(variables('networkSettings').virtualMachinesIPAddress)]",
+              "publicIpAddress": {
+                "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIpAddresses', concat(toLower(parameters('prefix')),toLower(variables('vmname')), '-ip'))]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2019-12-01",
+      "name": "[concat(toLower(parameters('prefix')),toLower(variables('vmname')))]",
+      "location": "[parameters('location')]",
+      //"copy": {
+      // "name": "vmcopy"
+      //"count": 5
+      //},
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkInterfaces/',toLower(parameters('prefix')),toLower(variables('vmname')), '-ni')]"
+      ],
+      "properties": {
+        "osProfile": {
+          "computerName": "[concat(toLower(parameters('prefix')),toLower(variables('vmname')))]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]",
+          "windowsConfiguration": {
+            "provisionVmAgent": "true"
+          }
+        },
+        "hardwareProfile": {
+          "vmSize": "[variables('vmSize')]"
+        },
+        "storageProfile": {
+          "imageReference": "[variables('imageReference')[variables('vmrole')]]",
+          "osDisk": {
+            "osType": "Windows",
+            "name": "[concat(toLower(parameters('prefix')),toLower(variables('vmname')),'-OsDisk')]",
+            "createOption": "FromImage",
+            "caching": "ReadWrite",
+            "managedDisk": {
+              "storageAccountType": "[variables('vmDiskType')]"
+            },
+            "diskSizeGB": 150
+          },
+          "dataDisks": []
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(toLower(parameters('prefix')),toLower(variables('vmname')), '-ni'))]"
+            }
+          ]
+        },
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": false
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "apiVersion": "2019-12-01",
+      "name": "[concat(toLower(parameters('prefix')),variables('vmname'),'/WorkFlow')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/',toLower(parameters('prefix')),variables('vmname'))]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Powershell",
+        "type": "DSC",
+        "typeHandlerVersion": "2.9", //2.21
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "modulesUrl": "[Uri(parameters('_artifactsLocation'),concat(variables('dscScript'),parameters('_artifactsLocationSasToken')))]",
+          "configurationFunction": "[concat(variables('vmrole'),'Configuration.ps1\\Configuration')]",
+          "Properties": {
+            "DomainName": "[variables('domainName')]",
+            "DCName": "[concat(parameters('prefix'),parameters('DCName'))]",
+            "DCNameFQDN": "[concat(parameters('prefix'),parameters('DCName'),'.',variables('domainName'))]",
+            "DPMPName": "[concat(parameters('prefix'),parameters('DPMPName'))]",
+            //"ClientName": "[concat(parameters('prefix'),variables('vmname'))]",
+            "STIG": "[parameters('STIG')]",
+            "MSFTBaseline": "[parameters('MSFTBaseline')]",
+            "PSName": "[concat(parameters('prefix'),variables('vmname'))]",
+            "DNSIPAddress": "[parameters('DCip')]",
+            "FedServiceDisplayName": "[concat(parameters('prefix'),'_adfs')]",
+            "FedServiceName": "[concat('sts.',parameters('domainName'))]",
+            "AdfsSrvActName": "[parameters('AdfsServiceAccountName')]",
+            "SQLName": "[concat(parameters('prefix'),parameters('SQLName'))]",
+            "SQLAlias": "[variables('spSettings').sqlAlias]",
+            "SharePointVersion": "[parameters('sharePointVersion')]",
+            "AdminCreds": {
+              "UserName": "[parameters('adminUsername')]",
+              "Password": "PrivateSettingsRef:AdminPassword"
+            },
+            "SqlSvcCreds": {
+              "UserName": "[variables('spSettings').sqlSvcUserName]",
+              "Password": "PrivateSettingsRef:AdminPassword"
+            },
+            "SPSetupCreds": {
+              "UserName": "[variables('spSettings').spSetupUserName]",
+              "Password": "PrivateSettingsRef:AdminPassword"
+            },
+            "SPFarmCreds": {
+              "UserName": "[variables('spSettings').spFarmUserName]",
+              "Password": "PrivateSettingsRef:AdminPassword"
+            },
+            "SPSvcCreds": {
+              "UserName": "[variables('spSettings').spSvcUserName]",
+              "Password": "PrivateSettingsRef:AdminPassword"
+            },
+            "SPAppPoolCreds": {
+              "UserName": "[variables('spSettings').spAppPoolUserName]",
+              "Password": "PrivateSettingsRef:AdminPassword"
+            },
+            "SPPassphraseCreds": {
+              "UserName": "Passphrase",
+              "Password": "PrivateSettingsRef:AdminPassword"
+            },
+            "SPSuperUserCreds": {
+              "UserName": "[variables('spSettings').spSuperUserName]",
+              "Password": "PrivateSettingsRef:AdminPassword"
+            },
+            "SPSuperReaderCreds": {
+              "UserName": "[variables('spSettings').spSuperReaderName]",
+              "Password": "PrivateSettingsRef:AdminPassword"
+            }
+          }
+        },
+        "protectedSettings": {
+          "Items": {
+            "AdminPassword": "[parameters('adminPassword')]"
+          }
+        }
+      }
+    }
+
+  ],
+    "outputs": {
+
+    }
+  }
