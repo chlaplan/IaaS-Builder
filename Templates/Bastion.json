@@ -206,6 +206,9 @@
       "privateIPAllocationMethod": "Static",
       "publicIpAllocationMethod": "Dynamic"
     },
+    "vnetId": "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]",
+    "BastionSubnetId": "[concat(variables('vnetId'), '/subnets/', 'AzureBastionSubnet')]",
+
     "spSettings": {
       "sqlAlias": "SQLAlias",
       "spSuperUserName": "spSuperUser",
@@ -257,6 +260,7 @@
       "location": "[parameters('location')]",
       "dependsOn": [
         "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIpAddresses', 'AzureBastionSubnet-ip')]",
+        "[variables('BastionSubnetId')]"
       ],
       "properties": {
         "ipConfigurations": [
@@ -274,6 +278,15 @@
         ]
       },
       "tags": {}
+    },
+    {
+      "apiVersion": "2019-06-01",
+      "type": "Microsoft.Network/virtualNetworks/subnets",
+      "name": "[concat(parameters('VirtualNetworkName'), '/', 'AzureBastionSubnet')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "addressPrefix": "[parameters('BastionSubnet')]"
+      }
     }
   ],
   "outputs": {

@@ -256,7 +256,7 @@
       "properties": {
         "addressSpace": {
           "addressPrefixes": [
-            "[variables('networkSettings').virtualNetworkAddressPrefix]"
+            "[variables('networkSettings').subnetAddressPrefix]"
           ]
         },
         "dhcpOptions": {
@@ -272,12 +272,6 @@
             "name": "[parameters('subnetname')]",
             "properties": {
               "addressPrefix": "[variables('networkSettings').subnetAddressPrefix]"
-            }
-          },
-          {
-            "name": "AzureBastionSubnet",
-            "properties": {
-              "addressPrefix": "[parameters('bastionsubnet')]"
             }
           }
         ]
