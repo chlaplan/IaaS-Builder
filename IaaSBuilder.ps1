@@ -592,9 +592,9 @@ $WPFBuild1.Add_Click({
     $VMTemplate = ".\Templates\AzureTemplate.json"
     
     if ($WPFSACA.IsChecked -eq $true -and $WPFSACA_Tier.SelectionBoxItem -eq "SACA 1 Tier"){
-    $addressubnet = "192.168.3.0/24"
+    $addressubnet = "192.168.4.0/24"
     $VirtualNetworkName = $VirtualNetworkNameSACA
-    $subnetname = "Internal"
+    $subnetname = "VDMS"
     $NSG = $NSGSACA
     $VMTemplate = ".\Templates\AzureTemplateSACA.json"
     }
@@ -778,6 +778,10 @@ $WPFBuild1.Add_Click({
     # Bastion Build
     if ($WPFBastion.IsChecked -eq $true){
     Write-Host "Building Bastion Host" -ForegroundColor Green
+
+    $vnet = Get-AzVirtualNetwork -Name $VirtualNetworkName -ResourceGroupName $WPFresourcegroup1.Text
+    $vnet.AddressSpace.AddressPrefixes.Add($bastionsubnet)
+    Set-AzVirtualNetwork -VirtualNetwork $vnet
 
     New-AzResourceGroupDeployment @commonVariables `
                                        -Name "BastionHost" `
