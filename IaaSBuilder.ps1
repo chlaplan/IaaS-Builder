@@ -8,6 +8,7 @@ $DefaultOSWSImage = "19h2-ent"
 $DefaultWVDImage = "20h1-evd-o365pp"
 
 $AzureModule = Get-Module -ListAvailable -Name Az.*
+
     if ($AzureModule.Name -notlike "Az.*"){
     Write-Host "Can't find Azure Module, installing module"
     Install-Module Az -Force -Verbose -Scope CurrentUser
@@ -16,6 +17,16 @@ $AzureModule = Get-Module -ListAvailable -Name Az.*
     else
     {
     Write-Host "Found Azure Module"
+    $StorageModule = Get-InstalledModule -Name Az.Storage
+    if($StorageModule.Version -ne "3.0.0"){
+    Write-Host "Updating Azure Storage Module"
+    Update-Module -Name Az.Storage -Force -Scope CurrentUser -WarningAction Ignore
+    Import-Module -Name Az.Storage -RequiredVersion 3.0.0
+    }
+    else
+    {
+    Write-Host "No Updates needed for Az Modules"
+    }
     #Import-Module Az
 }
 
