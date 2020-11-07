@@ -113,8 +113,8 @@
         <ComboBox x:Name="sccmdp" HorizontalAlignment="Left" Margin="288.667,357,0,0" VerticalAlignment="Top" Width="120" IsReadOnly="True" SelectedIndex="0" Height="22" IsEnabled="False" Grid.Column="2">
             <Button Content="DPMP"/>
         </ComboBox>
-        <CheckBox x:Name="STIGs" Content="" HorizontalAlignment="Left" Margin="670.333,17,0,0" VerticalAlignment="Top" Height="16" Width="34" Grid.Column="2" FontWeight="Bold"/>
-        <Label Content="STIG GPOs" HorizontalAlignment="Left" Height="24" Margin="538.333,12,0,0" VerticalAlignment="Top" Width="115" Grid.Column="2" FontWeight="Bold"/>
+        <CheckBox x:Name="STIGs" Content="" HorizontalAlignment="Left" Margin="842,17,0,0" VerticalAlignment="Top" Height="16" Width="34" Grid.Column="2" FontWeight="Bold"/>
+        <Label Content="STIG GPOs" HorizontalAlignment="Left" Height="24" Margin="710,12,0,0" VerticalAlignment="Top" Width="115" Grid.Column="2" FontWeight="Bold"/>
         <Label Content="1" Grid.Column="1" HorizontalAlignment="Left" Margin="88,12,0,0" VerticalAlignment="Top" Width="23" FontSize="20" FontWeight="Bold" Background="#FFFCFCFC" Foreground="Red" Height="36" Grid.ColumnSpan="2"/>
         <Label Content="2" Grid.Column="2" HorizontalAlignment="Left" Margin="315.333,13,0,0" VerticalAlignment="Top" Width="23" FontSize="20" FontWeight="Bold" Background="#FFFCFCFC" Foreground="Red" Height="36"/>
         <Label Content="3" Grid.Column="2" HorizontalAlignment="Left" Margin="350.333,116,0,0" VerticalAlignment="Top" Width="20" FontSize="20" FontWeight="Bold" Background="#FFFCFCFC" Foreground="Red" Height="32" RenderTransformOrigin="-0.587,0.583"/>
@@ -218,23 +218,23 @@
         <TextBox x:Name="WVD_HostName_Copy" HorizontalAlignment="Left" Height="23" Margin="22.333,560,0,0" TextWrapping="Wrap" Text="20" VerticalAlignment="Top" Width="132" UndoLimit="3" Grid.Column="2"/>
         <Label Content="WVD Disk" HorizontalAlignment="Left" Height="24" Margin="167.333,585,0,0" VerticalAlignment="Top" Width="115" Grid.Column="2" FontWeight="Bold"/>
         <ComboBox x:Name="WVD_Disk" HorizontalAlignment="Left" Margin="285.333,587,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2" SelectedIndex="0"/>
-        <Rectangle Grid.Column="2" Fill="#FFF4F4F5" HorizontalAlignment="Left" Height="151" Margin="544.333,61,0,0" Stroke="Black" VerticalAlignment="Top" Width="241"/>
-        <CheckBox x:Name="SACA" Content="SACA (Preview)" HorizontalAlignment="Left" Margin="552.667,66,0,0" VerticalAlignment="Top" Height="16" Width="113" FontWeight="Bold" Grid.Column="2"/>
-        <ComboBox x:Name="SACA_Tier" HorizontalAlignment="Left" Margin="625.333,92,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2" SelectedIndex="0">
+        <Rectangle Grid.Column="2" Fill="#FFF4F4F5" HorizontalAlignment="Left" Height="151" Margin="716,61,0,0" Stroke="Black" VerticalAlignment="Top" Width="241"/>
+        <CheckBox x:Name="SACA" Content="SACA (Preview)" HorizontalAlignment="Left" Margin="725,66,0,0" VerticalAlignment="Top" Height="16" Width="113" FontWeight="Bold" Grid.Column="2"/>
+        <ComboBox x:Name="SACA_Tier" HorizontalAlignment="Left" Margin="797,92,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2" SelectedIndex="0">
             <ListBoxItem Content="SACA 1 Tier"/>
             <ListBoxItem Content="SACA 3 Tier"/>
         </ComboBox>
-        <Label Content="SACA Tier" HorizontalAlignment="Left" Height="24" Margin="549.333,92,0,0" VerticalAlignment="Top" Width="65" Grid.Column="2" FontWeight="Bold"/>
-        <Label Content="DNS Label" HorizontalAlignment="Left" Height="24" Margin="549.333,115,0,0" VerticalAlignment="Top" Width="74" Grid.Column="2" FontWeight="Bold"/>
-        <TextBox x:Name="SACA_DNS" HorizontalAlignment="Left" Height="23" Margin="625.333,118,0,0" TextWrapping="Wrap" Text="f5dns01" VerticalAlignment="Top" Width="150" UndoLimit="20" Grid.Column="2" BorderBrush="#FFABACAB"/>
-        <TextBlock x:Name="SACA_label" HorizontalAlignment="Left" Margin="790.333,120,0,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="14" FontWeight="Bold" Foreground="#FF068113" Grid.Column="2" Height="19" Width="97"/>
-        <ComboBox x:Name="sacavmsize" HorizontalAlignment="Left" Margin="625.333,146,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2" SelectedIndex="28">
+        <Label Content="SACA Tier" HorizontalAlignment="Left" Height="24" Margin="721,92,0,0" VerticalAlignment="Top" Width="65" Grid.Column="2" FontWeight="Bold"/>
+        <Label Content="DNS Label" HorizontalAlignment="Left" Height="24" Margin="721,115,0,0" VerticalAlignment="Top" Width="74" Grid.Column="2" FontWeight="Bold"/>
+        <TextBox x:Name="SACA_DNS" HorizontalAlignment="Left" Height="23" Margin="797,118,0,0" TextWrapping="Wrap" Text="f5dns01" VerticalAlignment="Top" Width="150" UndoLimit="20" Grid.Column="2" BorderBrush="#FFABACAB"/>
+        <TextBlock x:Name="SACA_label" HorizontalAlignment="Left" Margin="962,120,0,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="14" FontWeight="Bold" Foreground="#FF068113" Grid.Column="2" Height="19" Width="97"/>
+        <ComboBox x:Name="sacavmsize" HorizontalAlignment="Left" Margin="797,146,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2" SelectedIndex="28">
             <MenuItem/>
         </ComboBox>
-        <Label Content="VMSize" HorizontalAlignment="Left" Height="24" Margin="549.333,144,0,0" VerticalAlignment="Top" Width="74" Grid.Column="2" FontWeight="Bold"/>
+        <Label Content="VMSize" HorizontalAlignment="Left" Height="24" Margin="721,144,0,0" VerticalAlignment="Top" Width="74" Grid.Column="2" FontWeight="Bold"/>
         <CheckBox x:Name="Bastion" Content="Bastion" HorizontalAlignment="Left" Margin="257.333,189,0,0" VerticalAlignment="Top" Height="16" Width="99" FontWeight="Bold" Grid.Column="2" IsChecked="True"/>
-        <CheckBox x:Name="MSFTBaseline" Content="" HorizontalAlignment="Left" Margin="670.333,37,0,0" VerticalAlignment="Top" IsChecked="True" Height="16" Width="34" Grid.Column="2" FontWeight="Bold"/>
-        <Label Content="MSFT Baseline GPOs" HorizontalAlignment="Left" Height="24" Margin="538.333,32,0,0" VerticalAlignment="Top" Width="127" Grid.Column="2" FontWeight="Bold"/>
+        <CheckBox x:Name="MSFTBaseline" Content="" HorizontalAlignment="Left" Margin="842,37,0,0" VerticalAlignment="Top" IsChecked="True" Height="16" Width="34" Grid.Column="2" FontWeight="Bold"/>
+        <Label Content="MSFT Baseline GPOs" HorizontalAlignment="Left" Height="24" Margin="710,32,0,0" VerticalAlignment="Top" Width="127" Grid.Column="2" FontWeight="Bold"/>
         <Label Grid.ColumnSpan="3" Content="Count" HorizontalAlignment="Left" Margin="100,227,0,0" VerticalAlignment="Top" Height="27" Width="47" FontWeight="Bold" RenderTransformOrigin="-0.313,-2.291"/>
         <ComboBox x:Name="DC_Count" HorizontalAlignment="Left" Margin="105,256,0,0" VerticalAlignment="Top" Width="39" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="1" SelectedIndex="0" Grid.ColumnSpan="2">
             <ListBoxItem Content="1"/>
@@ -252,6 +252,7 @@
         <ComboBox x:Name="WS_Count" HorizontalAlignment="Left" Margin="105,468,0,0" VerticalAlignment="Top" Width="39" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="1" SelectedIndex="0" Grid.ColumnSpan="2" IsEnabled="False">
             <ListBoxItem Content="1"/>
         </ComboBox>
+        <TextBlock x:Name="PW" HorizontalAlignment="Left" Margin="533,129,0,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="14" FontWeight="Bold" Foreground="#FF068113" Grid.Column="2" Height="19" Width="149"/>
 
     </Grid>
 </Window>
