@@ -252,7 +252,7 @@
         <ComboBox x:Name="WS_Count" HorizontalAlignment="Left" Margin="105,468,0,0" VerticalAlignment="Top" Width="39" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="1" SelectedIndex="0" Grid.ColumnSpan="2" IsEnabled="False">
             <ListBoxItem Content="1"/>
         </ComboBox>
-        <TextBlock x:Name="PW" HorizontalAlignment="Left" Margin="533,129,0,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="14" FontWeight="Bold" Foreground="#FF068113" Grid.Column="2" Height="19" Width="149"/>
+        <TextBlock x:Name="PW" HorizontalAlignment="Left" Margin="533,129,0,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="14" FontWeight="Bold" Foreground="#FF068113" Grid.Column="2" Height="19" Width="260"/>
 
     </Grid>
 </Window>
