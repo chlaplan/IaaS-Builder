@@ -206,6 +206,17 @@ foreach ($WVDLocation in $WVDLocations){
 $WPFWVD_Metadata.Addchild($WVDLocation.Location)
 }
 
+# https://docs.microsoft.com/en-us/azure/virtual-machines/windows/faq#what-are-the-password-requirements-when-creating-a-vm
+$WPFadminpassword1.Add_LostFocus({
+    if(($WPFadminpassword1.Password -cmatch '[a-z]') -and ($WPFadminpassword1.Password -cmatch '[A-Z]') -and ($WPFadminpassword1.Password -match '\d') -and ($WPFadminpassword1.Password.length -ge 8) -and ($WPFadminpassword1.Password.length -le 64) -and ($WPFadminpassword1.Password -match '!|@|#|%|^|&|$') -and ($WPFadminpassword1.Password -notmatch 'abc@123|iloveyou!|P@$$w0rd|P@ssw0rd|P@ssword123|Pa$$word|pass@word1|Password!|Password1|Password22'))
+    {
+        Write-Host "Admin Password meets password complexity"  -ForegroundColor Green
+    }
+    else
+    {
+        Write-Host "Admin Password does not meet password complexity"  -ForegroundColor Yellow
+    }
+})
 
 $WPFLocations1.Add_SelectionChanged({
     
