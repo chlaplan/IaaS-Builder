@@ -210,11 +210,17 @@ $WPFWVD_Metadata.Addchild($WVDLocation.Location)
 $WPFadminpassword1.Add_LostFocus({
     if(($WPFadminpassword1.Password -cmatch '[a-z]') -and ($WPFadminpassword1.Password -cmatch '[A-Z]') -and ($WPFadminpassword1.Password -match '\d') -and ($WPFadminpassword1.Password.length -ge 8) -and ($WPFadminpassword1.Password.length -le 64) -and ($WPFadminpassword1.Password -match '!|@|#|%|^|&|$') -and ($WPFadminpassword1.Password -notmatch 'abc@123|iloveyou!|P@$$w0rd|P@ssw0rd|P@ssword123|Pa$$word|pass@word1|Password!|Password1|Password22'))
     {
-        Write-Host "Admin Password meets password complexity"  -ForegroundColor Green
+        Write-Host "Admin Password meets complexity"  -ForegroundColor Green
+        $WPFPW.Foreground = "#FF068113" #Green
+        $WPFPW.Text = "Password meets complexity"
+        $WPFadminpassword1.BorderBrush = "#FF068113"
     }
     else
     {
-        Write-Host "Admin Password does not meet password complexity"  -ForegroundColor Yellow
+        Write-Host "Admin Password does not meet complexity"  -ForegroundColor Yellow
+        $WPFPW.Foreground = "#FFF21802" #Red
+        $WPFPW.Text = "Password does not meet complexity"
+        $WPFadminpassword1.BorderBrush = '#FFF21802'
     }
 })
 
