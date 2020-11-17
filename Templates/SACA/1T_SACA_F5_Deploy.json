@@ -1,0 +1,1258 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "governmentCloudRegion": {
+      "defaultValue": true,
+      "metadata": {
+        "description": "Type of cloud this template will deploy into, ensure to select false for commercial."
+      },
+      "type": "bool"
+    },
+    "Tier3bigIpModules": {
+      "defaultValue": "ltm:nominal,afm:nominal",
+      "metadata": {
+        "description": "Comma separated list of modules and levels to provision, for example, ltm:nominal,asm:nominal"
+      },
+      "type": "string"
+    },
+    "Tier1bigIpModules": {
+      "defaultValue": "ltm:nominal,asm:nominal,afm:nominal",
+      "metadata": {
+        "description": "Comma separated list of modules and levels to provision, for example, ltm:nominal,asm:nominal"
+      },
+      "type": "string"
+    },
+    "STIGDevice": {
+      "defaultValue": true,
+      "metadata": {
+        "description": "This setting will determine whether STIGS/SRGS will be applied at Onboarding."
+      },
+      "type": "bool"
+    },
+    "StorageAccountName": {
+      "type": "String"
+    },
+    "adminUsername": {
+      "defaultValue": "xadmin",
+      "metadata": {
+        "description": "User name for the Virtual Machine."
+      },
+      "type": "string"
+    },
+    "adminPassword": {
+      "metadata": {
+        "description": "Password or SSH public key to login to the Virtual Machine. Note: There are a number of special characters that you should avoid using for F5 product user accounts.  See [K2873](https://support.f5.com/csp/article/K2873) for details. Note: If using key-based authentication, this should be the public key as a string, typically starting with **---- BEGIN SSH2 PUBLIC KEY ----** and ending with **---- END SSH2 PUBLIC KEY ----**."
+      },
+      "type": "securestring"
+    },
+    "VNetName": {
+      "defaultValue": "SCCA_VNet",
+      "type": "String"
+    },
+    "DNSLabel": {
+      "type": "String"
+    },
+    "Location": {
+      "type": "String"
+    },
+    "Subnet_Management_Name": {
+      "type": "String"
+    },
+    "Subnet_External_Name": {
+      "type": "String"
+    },
+    "Subnet_InternalS_Name": {
+      "type": "String"
+    },
+    "Subnet_VDMS_Name": {
+      "type": "String"
+    },
+    "BigIP_VM1_Name": {
+      "defaultValue": "f5dnst3-bigip0",
+      "type": "String"
+    },
+    "BigIP_VM1_Size": {
+      "defaultValue": "f5dnst3-bigip0",
+      "type": "String"
+    },
+    "BigIP_VM2_Size": {
+      "defaultValue": "f5dnst3-bigip0",
+      "type": "String"
+    },
+    "BigIP_VM2_Name": {
+      "defaultValue": "f5dnst3-bigip1",
+      "type": "String"
+    },
+    "availabilitySet0_Name": {
+      "defaultValue": "BIGIP-avset0",
+      "type": "String"
+    },
+    "availabilitySet1_Name": {
+      "defaultValue": "BIGIP-avset1",
+      "type": "String"
+    },
+    "availabilitySet2_Name": {
+      "defaultValue": "FW-avset2",
+      "type": "String"
+    },
+    "availabilitySet3_Name": {
+      "defaultValue": "f5dnst3-avset3",
+      "type": "String"
+    },
+    "SB_LB_Name": {
+      "defaultValue": "SB-LB",
+      "type": "String"
+    },
+    "SB_LB_IP": {
+      "defaultValue": "SB-LB",
+      "type": "String"
+    },
+    "NB_LB_Name": {
+      "defaultValue": "NB-LB",
+      "type": "String"
+    },
+    "BIGIP_VM1_ExternalPri_IP": {
+      "type": "String"
+    },
+    "BIGIP_VM1_ExternalSec_IP": {
+      "type": "String"
+    },
+    "BIGIP_VM1_InternalPri_IP": {
+      "type": "String"
+    },
+    "BIGIP_VM1_InternalSec_IP": {
+      "type": "String"
+    },
+    "BIGIP_VM2_ExternalPri_IP": {
+      "type": "String"
+    },
+    "BIGIP_VM2_ExternalSec_IP": {
+      "type": "String"
+    },
+    "BIGIP_VM2_InternalPri_IP": {
+      "type": "String"
+    },
+    "BIGIP_VM2_InternalSec_IP": {
+      "type": "String"
+    },
+    "BIGIP_VM1_Management_IP": {
+      "type": "String"
+    },
+    "BIGIP_VM2_Management_IP": {
+      "type": "String"
+    },
+    "licenseKey1": {
+      "defaultValue": "",
+      "metadata": {
+        "description": "The license token for the F5 BIG-IP VE (BYOL)."
+      },
+      "type": "string"
+    },
+    "licenseKey2": {
+      "defaultValue": "",
+      "metadata": {
+        "description": "The license token for the F5 BIG-IP VE (BYOL). This field is required when deploying two or more devices."
+      },
+      "type": "string"
+    },
+    "licenseKey3": {
+      "defaultValue": "",
+      "metadata": {
+        "description": "The license token for the F5 BIG-IP VE (BYOL)."
+      },
+      "type": "string"
+    },
+    "licenseKey4": {
+      "defaultValue": "",
+      "metadata": {
+        "description": "The license token for the F5 BIG-IP VE (BYOL)."
+      },
+      "type": "string"
+    },
+    "ntpServer": {
+      "defaultValue": "0.pool.ntp.org",
+      "metadata": {
+        "description": "Leave the default NTP server the BIG-IP uses, or replace the default NTP server with the one you want to use."
+      },
+      "type": "string"
+    },
+    "timeZone": {
+      "defaultValue": "UTC",
+      "metadata": {
+        "description": "If you would like to change the time zone the BIG-IP uses, enter the time zone you want to use. This is based on the tz database found in /usr/share/zoneinfo (see the full list [here](https://github.com/F5Networks/f5-azure-arm-templates/blob/master/azure-timezone-list.md)). Example values: UTC, US/Pacific, US/Eastern, Europe/London or Asia/Singapore."
+      },
+      "type": "string"
+    },
+    "Tier1DeclarationUrl": {
+      "defaultValue": "https://raw.githubusercontent.com/Mikej81/f5-bigip-hardening-AS3/master/dist/arm/3.16.0/byolsccaBaseline.json",
+      "metadata": {
+        "description": "URL for the AS3 (https://clouddocs.f5.com/products/extensions/f5-appsvcs-extension/3.16.0/) declaration JSON file to be deployed. Leave as **NOT_SPECIFIED** to deploy without a service configuration."
+      },
+      "type": "string"
+    },
+    "Tier3DeclarationUrl": {
+      "defaultValue": "NOT_SPECIFIED",
+      "metadata": {
+        "description": "URL for the AS3 (https://clouddocs.f5.com/products/extensions/f5-appsvcs-extension/3.5.1/) declaration JSON file to be deployed. Leave as **NOT_SPECIFIED** to deploy without a service configuration."
+      },
+      "type": "string"
+    },
+    "bigIpVersion": {
+      "allowedValues": [
+        "15.0.100000",
+        "14.1.200000",
+        "latest"
+      ],
+      "defaultValue": "14.1.200000",
+      "metadata": {
+        "description": "F5 BIG-IP version you want to use."
+      },
+      "type": "string"
+    },
+    "allowUsageAnalytics": {
+      "allowedValues": [
+        "Yes",
+        "No"
+      ],
+      "defaultValue": "Yes",
+      "metadata": {
+        "description": "This deployment can send anonymous statistics to F5 to help us determine how to improve our solutions. If you select **No** statistics are not sent."
+      },
+      "type": "string"
+    }
+  },
+  "variables": {
+    // Device Names
+    "availabilitySetName0": "[concat(parameters('dnsLabel'), '-avset0')]",
+    "availabilitySetName1": "[concat(parameters('dnsLabel'), '-avset1')]",
+    "availabilitySetName2": "[concat(parameters('dnsLabel'), '-avset2')]",
+    "availabilitySetName3": "[concat(parameters('dnsLabel'), '-avset3')]",
+    "extNicName": "[concat(parameters('dnsLabel'), '-ext')]",
+    "NorthboundLoadBalancerName": "[concat(parameters('dnsLabel'),'-nb-alb')]",
+    "mgmtLoadBalancerName": "[concat(parameters('dnsLabel'),'-mgmt-alb')]",
+    "extpublicIPAddressNamePrefix": "[concat(parameters('dnsLabel'), '-ext-pip')]",
+    "extPublicIPAddressIdPrefix": "[resourceId('Microsoft.Network/publicIPAddresses', variables('extPublicIPAddressNamePrefix'))]",
+    "mgmtPublicIPAddressName": "[concat(parameters('dnsLabel'), '-mgmt-pip')]",
+    "intNicName": "[concat(parameters('dnsLabel'), '-int')]",
+    "numberOfExternalIps": 1,
+
+    // STIG F5
+    "SBBackEndAddressPool": {
+      "id": "[concat(variables('sbILBid'), '/backendAddressPools/', 'loadBalancerBackEnd')]"
+    },
+    "sbILBid": "[resourceId('Microsoft.Network/loadBalancers',parameters('SB_LB_Name'))]",
+    "cloudRegion": {
+      "false": ".cloudapp.azure.com",
+      "true": ".cloudapp.usgovcloudapi.net"
+    },
+    "cloudPath": "[if(parameters('governmentCloudRegion'), variables('cloudRegion').true, variables('cloudRegion').false)]",
+    "allowUsageAnalytics": {
+      "No": {
+        "hashCmd": "echo AllowUsageAnalytics:No",
+        "metricsCmd": ""
+      },
+      "Yes": {
+        "hashCmd": "[concat('custId=`echo \"', variables('subscriptionId'), '\"|sha512sum|cut -d \" \" -f 1`; deployId=`echo \"', variables('deploymentId'), '\"|sha512sum|cut -d \" \" -f 1`')]",
+        "metricsCmd": "[concat(' --metrics customerId:${custId},deploymentId:${deployId},templateName:failover_3nic-new-stack-saca-byol,templateVersion:7.2.0.0,region:', parameters('location'), ',bigIpVersion:', parameters('bigIpVersion') ,',licenseType:byol,cloudLibsVersion:', variables('f5CloudLibsTag'), ',cloudName:azure')]"
+      }
+    },
+    "subscriptionID": "[subscription().subscriptionId]",
+    "f5CloudLibsTag": "v4.9.1",
+    "enableNetworkFailover": "Yes",
+    "extSubnetPrivateAddress": "[parameters('BIGIP_VM1_ExternalPri_IP')]",
+    "mgmtSubnetPrivateAddress": "[parameters('BIGIP_VM1_Management_IP')]",
+    "tmmRouteGw": "[concat(parameters('BIGIP_VM1_InternalPri_IP'), '.1')]",
+    "intSubnetPrivateAddress": "[parameters('BIGIP_VM1_InternalPri_IP')]",
+    "f5AS3Build": "f5-appsvcs-3.23.0-5.noarch.rpm",
+    "deploymentId": "[concat(variables('subscriptionId'), resourceGroup().id, deployment().name, 'SACA_3_Tier')]",
+    "stigCmdArray": {
+      "true": "bash ./bigipstig.sh;",
+      "false": ""
+    },
+    "cmdConfigStig": "[if(parameters('STIGDevice'), variables('stigCmdArray').true, variables('stigCmdArray').false)]",
+    "createFWLogArray": {
+      "true": "tmsh create security log profile local-afm-log { network replace-all-with { local-afm-log { publisher local-db-publisher filter { log-acl-match-accept enabled log-acl-match-drop enabled log-acl-match-reject enabled } } } };",
+      "false": ""
+    },
+    "cmdcreateFWLog": "[if(contains(parameters('Tier1bigIpModules'), 'afm'), variables('createFWLogArray').true, variables('createFWLogArray').false)]",
+    "cmdcreateFWLog2": "[if(contains(parameters('Tier3bigIpModules'), 'afm'), variables('createFWLogArray').true, variables('createFWLogArray').false)]",
+    "createFWPolicyArray": {
+      "true": "tmsh create security firewall policy log_all_afm rules add { allow_all { action accept log yes place-before first } deny_all { action reject log yes place-after allow_all } };",
+      "false": ""
+    },
+    "cmdcreateFWPolicy": "[if(contains(parameters('Tier1bigIpModules'), 'afm'), variables('createFWPolicyArray').true, variables('createFWPolicyArray').false)]",
+    "cmdcreateFWPolicy2": "[if(contains(parameters('Tier1bigIpModules'), 'afm'), variables('createFWPolicyArray').true, variables('createFWPolicyArray').false)]",
+    "installDODRootCA": "unzip Certificates_PKCS7_v5.5_DoD.zip; openssl pkcs7 -print_certs -in ./Certificates_PKCS7_v5.5_DoD/Certificates_PKCS7_v5.5_DoD.pem.p7b -out DoD_Root_CA.cer; tmsh install sys crypto cert DODRoots from-local-file DoD_Root_CA.cer;",
+    "firewallConfig": "[concat(variables('cmdcreateFWLog'), variables('cmdcreateFWPolicy'))]",
+    "firewallConfig2": "[concat(variables('cmdcreateFWLog2'), variables('cmdcreateFWPolicy2'))]",
+
+    "sacaConfig": "[variables('cmdConfigStig')]",
+    "routeCmd": "route",
+    "singleQuote": "'",
+    "verifyHash64": "Y2xpIHNjcmlwdCAvQ29tbW9uL3ZlcmlmeUhhc2ggewpwcm9jIHNjcmlwdDo6cnVuIHt9IHsKICAgICAgICBpZiB7W2NhdGNoIHsKICAgICAgICAgICAgc2V0IGhhc2hlcyhhc20tcG9saWN5LWxpbnV4LnRhci5neikgNjNiNWMyYTUxY2EwOWM0M2JkODlhZjM3NzNiYmFiODdjNzFhNmU3ZjZhZDk0MTBiMjI5YjRlMGExYzQ4M2Q0NmYxYTlmZmYzOWQ5OTQ0MDQxYjAyZWU5MjYwNzI0MDI3NDE0ZGU1OTJlOTlmNGMyNDc1NDE1MzIzZTE4YTcyZTAKICAgICAgICAgICAgc2V0IGhhc2hlcyhmNS5odHRwLnYxLjIuMHJjNC50bXBsKSA0N2MxOWE4M2ViZmM3YmQxZTllOWMzNWYzNDI0OTQ1ZWY4Njk0YWE0MzdlZWRkMTdiNmEzODc3ODhkNGRiMTM5NmZlZmU0NDUxOTliNDk3MDY0ZDc2OTY3YjBkNTAyMzgxNTQxOTBjYTBiZDczOTQxMjk4ZmMyNTdkZjRkYzAzNAogICAgICAgICAgICBzZXQgaGFzaGVzKGY1Lmh0dHAudjEuMi4wcmM2LnRtcGwpIDgxMWIxNGJmZmFhYjVlZDAzNjVmMDEwNmJiNWNlNWU0ZWMyMjM4NTY1NWVhM2FjMDRkZTJhMzliZDk5NDRmNTFlMzcxNDYxOWRhZTdjYTQzNjYyYzk1NmI1MjEyMjI4ODU4ZjA1OTI2NzJhMjU3OWQ0YTg3NzY5MTg2ZTJjYmZlCiAgICAgICAgICAgIHNldCBoYXNoZXMoZjUuaHR0cC52MS4yLjByYzcudG1wbCkgMjFmNDEzMzQyZTlhN2EyODFhMGYwZTEzMDFlNzQ1YWE4NmFmMjFhNjk3ZDJlNmZkYzIxZGQyNzk3MzQ5MzY2MzFlOTJmMzRiZjFjMmQyNTA0YzIwMWY1NmNjZDc1YzVjMTNiYWEyZmU3NjUzMjEzNjg5ZWMzYzllMjdkZmY3N2QKICAgICAgICAgICAgc2V0IGhhc2hlcyhmNS5hd3NfYWR2YW5jZWRfaGEudjEuMy4wcmMxLnRtcGwpIDllNTUxNDljMDEwYzFkMzk1YWJkYWUzYzNkMmNiODNlYzEzZDMxZWQzOTQyNDY5NWU4ODY4MGNmM2VkNWEwMTNkNjI2YjMyNjcxMWQzZDQwZWYyZGY0NmI3MmQ0MTRiNGNiOGU0ZjQ0NWVhMDczOGRjYmQyNWM0Yzg0M2FjMzlkCiAgICAgICAgICAgIHNldCBoYXNoZXMoZjUuYXdzX2FkdmFuY2VkX2hhLnYxLjQuMHJjMS50bXBsKSBkZTA2ODQ1NTI1NzQxMmE5NDlmMWVhZGNjYWVlODUwNjM0N2UwNGZkNjliZmI2NDUwMDFiNzZmMjAwMTI3NjY4ZTRhMDZiZTJiYmI5NGUxMGZlZmMyMTVjZmMzNjY1YjA3OTQ1ZTZkNzMzY2JlMWE0ZmExYjg4ZTg4MTU5MDM5NgogICAgICAgICAgICBzZXQgaGFzaGVzKGY1LmF3c19hZHZhbmNlZF9oYS52MS40LjByYzIudG1wbCkgNmFiMGJmZmM0MjZkZjdkMzE5MTNmOWE0NzRiMWEwNzg2MDQzNWUzNjZiMDdkNzdiMzIwNjRhY2ZiMjk1MmMxZjIwN2JlYWVkNzcwMTNhMTVlNDRkODBkNzRmMzI1M2U3Y2Y5ZmJiZTEyYTkwZWM3MTI4ZGU2ZmFjZDA5N2Q2OGYKICAgICAgICAgICAgc2V0IGhhc2hlcyhmNS5hd3NfYWR2YW5jZWRfaGEudjEuNC4wcmMzLnRtcGwpIDJmMjMzOWI0YmMzYTIzYzljZmQ0MmFhZTJhNmRlMzliYTA2NTgzNjZmMjU5ODVkZTJlYTUzNDEwYTc0NWYwZjE4ZWVkYzQ5MWIyMGY0YThkYmE4ZGI0ODk3MDA5NmUyZWZkY2E3YjhlZmZmYTFhODNhNzhlNWFhZGYyMThiMTM0CiAgICAgICAgICAgIHNldCBoYXNoZXMoZjUuYXdzX2FkdmFuY2VkX2hhLnYxLjQuMHJjNC50bXBsKSAyNDE4YWM4YjFmMTg4NGM1YzA5NmNiYWM2YTk0ZDQwNTlhYWFmMDU5MjdhNmE0NTA4ZmQxZjI1YjhjYzYwNzc0OTg4MzlmYmRkYTgxNzZkMmNmMmQyNzRhMjdlNmExZGFlMmExZTNhMGE5OTkxYmM2NWZjNzRmYzBkMDJjZTk2MwogICAgICAgICAgICBzZXQgaGFzaGVzKGY1LmF3c19hZHZhbmNlZF9oYS52MS40LjByYzUudG1wbCkgNWU1ODIxODdhZTFhNjMyM2UwOTVkNDFlZGRkNDExNTFkNmJkMzhlYjgzYzYzNDQxMGQ0NTI3YTNkMGUyNDZhOGZjNjI2ODVhYjA4NDlkZTJhZGU2MmIwMjc1ZjUxMjY0ZDJkZWFjY2JjMTZiNzczNDE3Zjg0N2E0YTFlYTliYzQKICAgICAgICAgICAgc2V0IGhhc2hlcyhhc20tcG9saWN5LnRhci5neikgMmQzOWVjNjBkMDA2ZDA1ZDhhMTU2N2ExZDhhYWU3MjI0MTllOGIwNjJhZDc3ZDZkOWEzMTY1Mjk3MWU1ZTY3YmM0MDQzZDgxNjcxYmEyYThiMTJkZDIyOWVhNDZkMjA1MTQ0Zjc1Mzc0ZWQ0Y2FlNThjZWZhOGY5YWI2NTMzZTYKICAgICAgICAgICAgc2V0IGhhc2hlcyhkZXBsb3lfd2FmLnNoKSAxYTNhM2M2Mjc0YWIwOGE3ZGMyY2I3M2FlZGM4ZDJiMmEyM2NkOWUwZWIwNmEyZTE1MzRiMzYzMmYyNTBmMWQ4OTcwNTZmMjE5ZDViMzVkM2VlZDEyMDcwMjZlODk5ODlmNzU0ODQwZmQ5Mjk2OWM1MTVhZTRkODI5MjE0ZmI3NAogICAgICAgICAgICBzZXQgaGFzaGVzKGY1LnBvbGljeV9jcmVhdG9yLnRtcGwpIDA2NTM5ZTA4ZDExNWVmYWZlNTVhYTUwN2VjYjRlNDQzZTgzYmRiMWY1ODI1YTk1MTQ5NTRlZjZjYTU2ZDI0MGVkMDBjN2I1ZDY3YmQ4ZjY3YjgxNWVlOWRkNDY0NTE5ODQ3MDFkMDU4Yzg5ZGFlMjQzNGM4OTcxNWQzNzVhNjIwCgogICAgICAgICAgICBzZXQgZmlsZV9wYXRoIFtsaW5kZXggJHRtc2g6OmFyZ3YgMV0KICAgICAgICAgICAgc2V0IGZpbGVfbmFtZSBbZmlsZSB0YWlsICRmaWxlX3BhdGhdCgogICAgICAgICAgICBpZiB7IVtpbmZvIGV4aXN0cyBoYXNoZXMoJGZpbGVfbmFtZSldfSB7CiAgICAgICAgICAgICAgICB0bXNoOjpsb2cgZXJyICJObyBoYXNoIGZvdW5kIGZvciAkZmlsZV9uYW1lIgogICAgICAgICAgICAgICAgZXhpdCAxCiAgICAgICAgICAgIH0KCiAgICAgICAgICAgIHNldCBleHBlY3RlZF9oYXNoICRoYXNoZXMoJGZpbGVfbmFtZSkKICAgICAgICAgICAgc2V0IGNvbXB1dGVkX2hhc2ggW2xpbmRleCBbZXhlYyAvdXNyL2Jpbi9vcGVuc3NsIGRnc3QgLXIgLXNoYTUxMiAkZmlsZV9wYXRoXSAwXQogICAgICAgICAgICBpZiB7ICRleHBlY3RlZF9oYXNoIGVxICRjb21wdXRlZF9oYXNoIH0gewogICAgICAgICAgICAgICAgZXhpdCAwCiAgICAgICAgICAgIH0KICAgICAgICAgICAgdG1zaDo6bG9nIGVyciAiSGFzaCBkb2VzIG5vdCBtYXRjaCBmb3IgJGZpbGVfcGF0aCIKICAgICAgICAgICAgZXhpdCAxCiAgICAgICAgfV19IHsKICAgICAgICAgICAgdG1zaDo6bG9nIGVyciB7VW5leHBlY3RlZCBlcnJvciBpbiB2ZXJpZnlIYXNofQogICAgICAgICAgICBleGl0IDEKICAgICAgICB9CiAgICB9Cn0=",
+    "installCloudLibs64": "IyEvYmluL2Jhc2gKZWNobyAgYWJvdXQgdG8gZXhlY3V0ZQpjaGVja3M9MAp3aGlsZSBbICRjaGVja3MgLWx0IDEyMCBdOyBkbyBlY2hvIGNoZWNraW5nIG1jcGQKICAgIHRtc2ggLWEgc2hvdyBzeXMgbWNwLXN0YXRlIGZpZWxkLWZtdCB8IGdyZXAgLXEgcnVubmluZwogICBpZiBbICQ/ID09IDAgXTsgdGhlbgogICAgICAgZWNobyBtY3BkIHJlYWR5CiAgICAgICBicmVhawogICBmaQogICBlY2hvIG1jcGQgbm90IHJlYWR5IHlldAogICBsZXQgY2hlY2tzPWNoZWNrcysxCiAgIHNsZWVwIDEwCmRvbmUgCgplY2hvICBleHBhbmRpbmcgZjUtY2xvdWQtbGlicy50YXIuZ3oKdGFyIHh2ZnogL2NvbmZpZy9jbG91ZC9mNS1jbG91ZC1saWJzLnRhci5neiAtQyAvY29uZmlnL2Nsb3VkL2F6dXJlL25vZGVfbW9kdWxlcy9AZjVkZXZjZW50cmFsCmVjaG8gIGNsb3VkIGxpYnMgaW5zdGFsbCBjb21wbGV0ZQp0b3VjaCAvY29uZmlnL2Nsb3VkL2Nsb3VkTGlic1JlYWR5",
+    //"tmmRoute2Gw": "[concat(parameters('BIGIP_VM3_InternalSPri_IP'), '.1')]",
+    "commandArgs": "[concat('-o ', parameters('Tier1DeclarationUrl'), ' -u svc_user')]",
+    "commandArgs2": "[concat('-o ', parameters('Tier3DeclarationUrl'), ' -u svc_user')]",
+    "appScript": "IyEvYmluL2Jhc2gKZnVuY3Rpb24gcGFzc3dkKCkgewogIGVjaG8gfCBmNS1yZXN0LW5vZGUgL2NvbmZpZy9jbG91ZC9henVyZS9ub2RlX21vZHVsZXMvQGY1ZGV2Y2VudHJhbC9mNS1jbG91ZC1saWJzL3NjcmlwdHMvZGVjcnlwdERhdGFGcm9tRmlsZS5qcyAtLWRhdGEtZmlsZSAvY29uZmlnL2Nsb3VkLy5wYXNzd2QgfCBhd2sgJ3twcmludCAkMX0nCn0KCndoaWxlIGdldG9wdHMgbzp1OiBvcHRpb24KZG8gY2FzZSAiJG9wdGlvbiIgIGluCiAgICAgICAgbykgZGVjbGFyYXRpb25Vcmw9JE9QVEFSRzs7CiAgICAgICAgdSkgdXNlcj0kT1BUQVJHOzsKICAgIGVzYWMKZG9uZQoKZGVwbG95ZWQ9Im5vIgpmaWxlX2xvYz0iL2NvbmZpZy9jbG91ZC9jdXN0b21fY29uZmlnIgpkZmxfbWdtdF9wb3J0PWB0bXNoIGxpc3Qgc3lzIGh0dHBkIHNzbC1wb3J0IHwgZ3JlcCBzc2wtcG9ydCB8IHNlZCAncy9zc2wtcG9ydCAvLztzLyAvL2cnYAp1cmxfcmVnZXg9IihodHRwOlwvXC98aHR0cHM6XC9cLyk/W2EtejAtOV0rKFtcLVwuXXsxfVthLXowLTldKykqXC5bYS16XXsyLDV9KDpbMC05XXsxLDV9KT8oXC8uKik/JCIKCmlmIFtbICRkZWNsYXJhdGlvblVybCA9fiAkdXJsX3JlZ2V4IF1dOyB0aGVuCiAgICByZXNwb25zZV9jb2RlPSQoL3Vzci9iaW4vY3VybCAtLWludGVyZmFjZSBtZ210IC1zayAtdyAiJXtodHRwX2NvZGV9IiAkZGVjbGFyYXRpb25VcmwgLW8gJGZpbGVfbG9jKQogICAgaWYgW1sgJHJlc3BvbnNlX2NvZGUgPT0gMjAwIF1dOyB0aGVuCiAgICAgICAgIGVjaG8gIkN1c3RvbSBjb25maWcgZG93bmxvYWQgY29tcGxldGU7IGNoZWNraW5nIGZvciB2YWxpZCBKU09OLiIKICAgICAgICAgY2F0ICRmaWxlX2xvYyB8IGpxIC5jbGFzcwogICAgICAgICBpZiBbWyAkPyA9PSAwIF1dOyB0aGVuCiAgICAgICAgICAgICByZXNwb25zZV9jb2RlPSQoL3Vzci9iaW4vY3VybCAtc2t2dnUgJHVzZXI6JChwYXNzd2QpIC13ICIle2h0dHBfY29kZX0iIC1YIFBPU1QgLUggIkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbiIgLUggJ0V4cGVjdDonIC1kICJAJGZpbGVfbG9jIiBodHRwczovL2xvY2FsaG9zdDokZGZsX21nbXRfcG9ydC9tZ210L3NoYXJlZC9hcHBzdmNzL2RlY2xhcmUgLW8gL2Rldi9udWxsKQoKICAgICAgICAgICAgIGlmIFtbICRyZXNwb25zZV9jb2RlID09IDIwMCB8fCAkcmVzcG9uc2VfY29kZSA9PSAyMDcgfHwgJHJlc3BvbnNlX2NvZGUgPT0gNTAyIF1dOyB0aGVuCiAgICAgICAgICAgICAgICAgIGVjaG8gIkRlcGxveW1lbnQgb2YgYXBwbGljYXRpb24gc3VjY2VlZGVkLiAkcmVzcG9uc2VfY29kZSIKICAgICAgICAgICAgICAgICAgZGVwbG95ZWQ9InllcyIKICAgICAgICAgICAgIGVsc2UKICAgICAgICAgICAgICAgICBlY2hvICJGYWlsZWQgdG8gZGVwbG95IGFwcGxpY2F0aW9uOyBjb250aW51aW5nIHdpdGggcmVzcG9uc2UgY29kZSAnIiRyZXNwb25zZV9jb2RlIiciCiAgICAgICAgICAgICBmaQogICAgICAgICBlbHNlCiAgICAgICAgICAgICBlY2hvICJDdXN0b20gY29uZmlnIHdhcyBub3QgdmFsaWQgSlNPTiwgY29udGludWluZyIKICAgICAgICAgZmkKICAgIGVsc2UKICAgICAgICBlY2hvICJGYWlsZWQgdG8gZG93bmxvYWQgY3VzdG9tIGNvbmZpZzsgY29udGludWluZyB3aXRoIHJlc3BvbnNlIGNvZGUgJyIkcmVzcG9uc2VfY29kZSInIgogICAgZmkKZWxzZQogICAgIGVjaG8gIkN1c3RvbSBjb25maWcgd2FzIG5vdCBhIFVSTCwgY29udGludWluZy4iCmZpCgppZiBbWyAkZGVwbG95ZWQgPT0gIm5vIiAmJiAkZGVjbGFyYXRpb25VcmwgPT0gIk5PVF9TUEVDSUZJRUQiIF1dOyB0aGVuCiAgICBlY2hvICJBcHBsaWNhdGlvbiBkZXBsb3ltZW50IGZhaWxlZCBvciBjdXN0b20gVVJMIHdhcyBub3Qgc3BlY2lmaWVkLiIKZmkKCmVjaG8gIkRlcGxveW1lbnQgY29tcGxldGUuIgpleGl0",
+    "customConfig": "### START (INPUT) CUSTOM CONFIGURATION HERE\n",
+    "installCustomConfig": "[concat(variables('singleQuote'), '#!/bin/bash\n', variables('customConfig'), variables('singleQuote'))]",
+    "failoverCmdArray": {
+      "No": {
+        "first": "[concat('tmsh modify cm device ', concat(parameters('BIGIP_VM1_Name'), parameters('location'), variables('cloudPath')), ' unicast-address none')]",
+        "second": "[concat('tmsh modify cm device ', concat(parameters('BIGIP_VM2_Name'), parameters('location'), variables('cloudPath')), ' unicast-address none')]"
+      },
+      "Yes": {
+        "first": "[concat('tmsh modify cm device ', concat(parameters('BIGIP_VM1_Name'), parameters('location'), variables('cloudPath')), ' unicast-address { { ip ', parameters('BIGIP_VM1_InternalSec_IP'), ' port 1026 } } mirror-ip ', parameters('BIGIP_VM1_InternalSec_IP'))]",
+        "second": "[concat('tmsh modify cm device ', concat(parameters('BIGIP_VM2_Name'), parameters('location'), variables('cloudPath')), ' unicast-address { { ip ', parameters('BIGIP_VM2_InternalSec_IP'), ' port 1026 } } mirror-ip ', parameters('BIGIP_VM2_InternalSec_IP'))]"
+      }
+    },
+    "bigIpNicPortMap": {
+      "1": {
+        "Port": "[parameters('bigIpVersion')]"
+      },
+      "2": {
+        "Port": "443"
+      },
+      "3": {
+        "Port": "443"
+      },
+      "4": {
+        "Port": "443"
+      },
+      "5": {
+        "Port": "443"
+      },
+      "6": {
+        "Port": "443"
+      }
+    },
+    "bigIpNicPortValue": "[variables('bigIpNicPortMap')['3'].Port]",
+
+    "bigIpVersionPortMap": {
+      "443": {
+        "Port": 443
+      },
+      "15.0.100000": {
+        "Port": 8443
+      },
+      "14.1.200000": {
+        "Port": 8443
+      },
+      "latest": {
+        "Port": 8443
+      }
+    },
+
+    "bigIpMgmtPort": "[variables('bigIpVersionPortMap')[variables('bigIpNicPortValue')].Port]"
+
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Compute/availabilitySets",
+      "apiVersion": "2019-07-01",
+      "name": "[parameters('availabilitySet0_Name')]",
+      "location": "[parameters('Location')]",
+      "dependsOn": [],
+      "tags": {
+        "application": "APP",
+        "cost": "COST",
+        "environment": "ENV",
+        "group": "GROUP",
+        "owner": "OWNER"
+      },
+      "sku": {
+        "name": "Aligned"
+      },
+      "properties": {
+        "platformUpdateDomainCount": 2,
+        "platformFaultDomainCount": 2
+      }
+    },
+    {
+      "type": "Microsoft.Compute/availabilitySets",
+      "apiVersion": "2019-07-01",
+      "name": "[parameters('availabilitySet1_Name')]",
+      "location": "[parameters('Location')]",
+      "dependsOn": [],
+      "tags": {
+        "application": "APP",
+        "cost": "COST",
+        "environment": "ENV",
+        "group": "GROUP",
+        "owner": "OWNER"
+      },
+      "sku": {
+        "name": "Aligned"
+      },
+      "properties": {
+        "platformUpdateDomainCount": 2,
+        "platformFaultDomainCount": 2
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "apiVersion": "2019-07-01",
+      "name": "[concat(parameters('BigIP_VM1_Name'), '/start')]",
+      "location": "[parameters('Location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('BigIP_VM1_Name'))]"
+      ],
+      "tags": {
+        "application": "APP",
+        "cost": "COST",
+        "environment": "ENV",
+        "group": "GROUP",
+        "owner": "OWNER"
+      },
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "publisher": "Microsoft.Azure.Extensions",
+        "type": "CustomScript",
+        "typeHandlerVersion": "2.0",
+        "settings": {
+          "fileUris": [
+            "https://raw.githubusercontent.com/chlaplan/SACA/main/F5/resources/f5-appsvcs-3.23.0-5.noarch.rpm",
+            "https://cdn.f5.com/product/cloudsolutions/iapps/common/f5-service-discovery/v2.3.2/f5.service_discovery.tmpl",
+            "https://cdn.f5.com/product/cloudsolutions/iapps/common/f5-cloud-logger/v1.0.0/f5.cloud_logger.v1.0.0.tmpl",
+            "https://raw.githubusercontent.com/chlaplan/SACA/main/F5/resources/f5-cloud-libs.tar.gz",
+            "https://raw.githubusercontent.com/chlaplan/SACA/main/F5/resources/Certificates_PKCS7_v5.5_DoD.zip",
+            "https://raw.githubusercontent.com/chlaplan/SACA/main/F5/STIG/bigipstig.sh",
+            "https://raw.githubusercontent.com/chlaplan/SACA/main/F5/asm/sccaBaselineASMPolicy.xml"
+          ]
+        },
+        "protectedSettings": {
+          //"storageAccountName": "[parameters('extensions_start_storageAccountName')]",
+          //"storageAccountKey": "[parameters('extensions_start_storageAccountKey')]",
+          "commandToExecute": "[concat('function cp_logs() { cd /var/lib/waagent/custom-script/download && cp `ls -r | head -1`/std* /var/log/cloud/azure; cd /var/log/cloud/azure && cat stdout stderr > install.log; }; CLOUD_LIB_DIR=/config/cloud/azure/node_modules/@f5devcentral; mkdir -p $CLOUD_LIB_DIR && cp f5-cloud-libs*.tar.gz* /config/cloud; mkdir -p /var/config/rest/downloads && cp ', variables('f5AS3Build'), ' /var/config/rest/downloads; mkdir -p /var/log/cloud/azure; /usr/bin/install -m 400 /dev/null /config/cloud/.passwd; /usr/bin/install -b -m 755 /dev/null /config/verifyHash; /usr/bin/install -b -m 755 /dev/null /config/installCloudLibs.sh; IFS=', variables('singleQuote'), '%', variables('singleQuote'), '; echo -e ', variables('verifyHash64'), ' | base64 -d > /config/verifyHash; echo -e ', variables('installCloudLibs64'), ' | base64 -d > /config/installCloudLibs.sh; echo -e ', variables('appScript'), ' | /usr/bin/base64 -d > /config/cloud/deploy_app.sh; chmod +x /config/cloud/deploy_app.sh; echo -e ', variables('installCustomConfig'), ' >> /config/customConfig.sh; unset IFS; bash /config/installCloudLibs.sh; source $CLOUD_LIB_DIR/f5-cloud-libs/scripts/util.sh; encrypt_secret ', variables('singleQuote'), parameters('adminPassword'), variables('singleQuote'), ' \"/config/cloud/.passwd\" true; $CLOUD_LIB_DIR/f5-cloud-libs/scripts/createUser.sh --user svc_user --password-file /config/cloud/.passwd --password-encrypted; ', variables('allowUsageAnalytics')[parameters('allowUsageAnalytics')].hashCmd, '; /usr/bin/f5-rest-node $CLOUD_LIB_DIR/f5-cloud-libs/scripts/onboard.js --no-reboot --output /var/log/cloud/azure/onboard.log --signal ONBOARD_DONE --log-level info --cloud azure --install-ilx-package file:///var/config/rest/downloads/', variables('f5AS3Build'), ' --host ', variables('mgmtSubnetPrivateAddress'), ' --port ', variables('bigIpMgmtPort'), ' --ssl-port ', variables('bigIpMgmtPort'), ' -u svc_user --password-url file:///config/cloud/.passwd --password-encrypted --hostname ', parameters('BIGIP_VM1_Name'), parameters('location'), ' --license ', parameters('licenseKey1'), ' --ntp ', parameters('ntpServer'), ' --tz ', parameters('timeZone'), ' --modules ', parameters('Tier1bigIpModules'), ' --db tmm.maxremoteloglength:2048', variables('allowUsageAnalytics')[parameters('allowUsageAnalytics')].metricsCmd, '; /usr/bin/f5-rest-node $CLOUD_LIB_DIR/f5-cloud-libs/scripts/network.js --output /var/log/cloud/azure/network.log --wait-for ONBOARD_DONE --host ', variables('mgmtSubnetPrivateAddress'), ' --port ', variables('bigIpMgmtPort'), ' -u svc_user --password-url file:///config/cloud/.passwd --password-encrypted --default-gw ', variables('tmmRouteGw'), ' --vlan name:external,nic:1.1 --vlan name:internal,nic:1.2 --self-ip name:self_2nic,address:', variables('extSubnetPrivateAddress'), ',vlan:external --self-ip name:self_3nic,address:', variables('intSubnetPrivateAddress'), ',vlan:internal --log-level info; ', variables('failoverCmdArray')[variables('enableNetworkFailover')].first, '; /usr/bin/f5-rest-node $CLOUD_LIB_DIR/f5-cloud-libs/scripts/cluster.js --output /var/log/cloud/azure/cluster.log --log-level info --host ', variables('mgmtSubnetPrivateAddress'), ' --port ', variables('bigIpMgmtPort'), ' -u svc_user --password-url file:///config/cloud/.passwd --password-encrypted --config-sync-ip ', variables('intSubnetPrivateAddress'), ' --create-group --device-group Sync --sync-type sync-failover --device ', parameters('BIGIP_VM1_Name'), parameters('location'), ' --network-failover --auto-sync --save-on-auto-sync;', variables('firewallConfig'), ' bash /config/cloud/deploy_app.sh ', variables('commandArgs'), '; if [[ $? == 0 ]]; then tmsh load sys application template f5.service_discovery.tmpl; tmsh load sys application template f5.cloud_logger.v1.0.0.tmpl; ', variables('routeCmd'), '; echo -e ', variables('routeCmd'), ' >> /config/startup; bash /config/customConfig.sh; $(cp_logs); else $(cp_logs); exit 1; fi', '; if grep -i \"PUT failed\" /var/log/waagent.log -q; then echo \"Killing waagent exthandler, daemon should restart it\"; pkill -f \"python -u /usr/sbin/waagent -run-exthandlers\"; fi', ';', variables('installDODRootCA'), variables('sacaConfig'))]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "apiVersion": "2019-07-01",
+      "name": "[concat(parameters('BigIP_VM2_Name'), '/start')]",
+      "location": "[parameters('Location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('BigIP_VM2_Name'))]"
+      ],
+      "tags": {
+        "application": "APP",
+        "cost": "COST",
+        "environment": "ENV",
+        "group": "GROUP",
+        "owner": "OWNER"
+      },
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "publisher": "Microsoft.Azure.Extensions",
+        "type": "CustomScript",
+        "typeHandlerVersion": "2.0",
+        "settings": {
+          "fileUris": [
+            "https://raw.githubusercontent.com/chlaplan/SACA/main/F5/resources/f5-appsvcs-3.23.0-5.noarch.rpm",
+            "https://raw.githubusercontent.com/chlaplan/SACA/main/F5/resources/f5-cloud-libs.tar.gz",
+            "https://cdn.f5.com/product/cloudsolutions/iapps/common/f5-service-discovery/v2.3.2/f5.service_discovery.tmpl",
+            "https://cdn.f5.com/product/cloudsolutions/iapps/common/f5-cloud-logger/v1.0.0/f5.cloud_logger.v1.0.0.tmpl",
+            "https://raw.githubusercontent.com/chlaplan/SACA/main/F5/STIG/bigipstig.sh"
+          ]
+        },
+        "protectedSettings": {
+          //"storageAccountName": "[parameters('extensions_start_storageAccountName_1')]",
+          //"storageAccountKey": "[parameters('extensions_start_storageAccountKey_1')]",
+          "commandToExecute": "[concat('function cp_logs() { cd /var/lib/waagent/custom-script/download && cp `ls -r | head -1`/std* /var/log/cloud/azure; cd /var/log/cloud/azure && cat stdout stderr > install.log; }; CLOUD_LIB_DIR=/config/cloud/azure/node_modules/@f5devcentral; mkdir -p $CLOUD_LIB_DIR && cp f5-cloud-libs*.tar.gz* /config/cloud; mkdir -p /var/config/rest/downloads && cp ', variables('f5AS3Build'), ' /var/config/rest/downloads; mkdir -p /var/log/cloud/azure; /usr/bin/install -m 400 /dev/null /config/cloud/.passwd; /usr/bin/install -b -m 755 /dev/null /config/verifyHash; /usr/bin/install -b -m 755 /dev/null /config/installCloudLibs.sh; IFS=', variables('singleQuote'), '%', variables('singleQuote'), '; echo -e ', variables('verifyHash64'), ' | base64 -d > /config/verifyHash; echo -e ', variables('installCloudLibs64'), ' | base64 -d > /config/installCloudLibs.sh; echo -e ', variables('appScript'), ' | /usr/bin/base64 -d > /config/cloud/deploy_app.sh; chmod +x /config/cloud/deploy_app.sh; echo -e ', variables('installCustomConfig'), ' >> /config/customConfig.sh; unset IFS; bash /config/installCloudLibs.sh; source $CLOUD_LIB_DIR/f5-cloud-libs/scripts/util.sh; encrypt_secret ', variables('singleQuote'), parameters('adminPassword'), variables('singleQuote'), ' \"/config/cloud/.passwd\" true; $CLOUD_LIB_DIR/f5-cloud-libs/scripts/createUser.sh --user svc_user --password-file /config/cloud/.passwd --password-encrypted; ', variables('allowUsageAnalytics')[parameters('allowUsageAnalytics')].hashCmd, '; /usr/bin/f5-rest-node $CLOUD_LIB_DIR/f5-cloud-libs/scripts/onboard.js --no-reboot --output /var/log/cloud/azure/onboard.log --signal ONBOARD_DONE --log-level info --cloud azure --install-ilx-package file:///var/config/rest/downloads/', variables('f5AS3Build'), ' --host ', parameters('BIGIP_VM2_management_IP'), ' --port ', variables('bigIpMgmtPort'), ' --ssl-port ', variables('bigIpMgmtPort'), ' -u svc_user --password-url file:///config/cloud/.passwd --password-encrypted --hostname ', parameters('BIGIP_VM2_ExternalPri_IP'), parameters('location'), ' --license ', parameters('licenseKey2'), ' --ntp ', parameters('ntpServer'), ' --tz ', parameters('timeZone'), ' --modules ', parameters('Tier1bigIpModules'), ' --db tmm.maxremoteloglength:2048', variables('allowUsageAnalytics')[parameters('allowUsageAnalytics')].metricsCmd, '; /usr/bin/f5-rest-node $CLOUD_LIB_DIR/f5-cloud-libs/scripts/network.js --output /var/log/cloud/azure/network.log --wait-for ONBOARD_DONE --host ', parameters('BIGIP_VM2_management_IP'), ' --port ', variables('bigIpMgmtPort'), ' -u svc_user --password-url file:///config/cloud/.passwd --password-encrypted --default-gw ', variables('tmmRouteGw'), ' --vlan name:external,nic:1.1 --vlan name:internal,nic:1.2 --self-ip name:self_2nic,address:', parameters('BIGIP_VM2_ExternalPri_IP'), ',vlan:external --self-ip name:self_3nic,address:', parameters('BIGIP_VM2_InternalPri_IP'), ',vlan:internal --log-level info; ', variables('failoverCmdArray')[variables('enableNetworkFailover')].second, '; /usr/bin/f5-rest-node $CLOUD_LIB_DIR/f5-cloud-libs/scripts/cluster.js --output /var/log/cloud/azure/cluster.log --log-level info --host ', parameters('BIGIP_VM2_management_IP'), ' --port ', variables('bigIpMgmtPort'), ' -u svc_user --password-url file:///config/cloud/.passwd --password-encrypted --config-sync-ip ', parameters('BIGIP_VM2_InternalSec_IP'), ' --join-group --device-group Sync --sync --remote-host ', parameters('BIGIP_VM2_management_IP'), ' --remote-user svc_user --remote-password-url file:///config/cloud/.passwd', '; if [[ $? == 0 ]]; then tmsh load sys application template f5.service_discovery.tmpl; tmsh load sys application template f5.cloud_logger.v1.0.0.tmpl; ', variables('routeCmd'), '; echo -e ', variables('routeCmd'), ' >> /config/startup; bash /config/customConfig.sh; $(cp_logs); else $(cp_logs); exit 1; fi', '; if grep -i \"PUT failed\" /var/log/waagent.log -q; then echo \"Killing waagent exthandler, daemon should restart it\"; pkill -f \"python -u /usr/sbin/waagent -run-exthandlers\"; fi', ';', variables('sacaConfig'))]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2020-05-01",
+      "name": "BIGIPVM1_External1",
+      "location": "[parameters('Location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/loadBalancers', parameters('NB_LB_Name'))]"
+        //"[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), parameters('Subnet_External_Name'))]"
+      ],
+      "tags": {
+        "application": "APP",
+        "cost": "COST",
+        "environment": "ENV",
+        "group": "GROUP",
+        "owner": "OWNER"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "BIGIPVM1-ext-ipconfig-Primary",
+            "properties": {
+              "privateIPAddress": "[parameters('BIGIP_VM1_ExternalPri_IP')]",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), parameters('Subnet_External_Name'))]"
+              },
+              "loadBalancerBackendAddressPools": [
+                {
+                  "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('NB_LB_Name'), 'loadBalancerBackEnd')]"
+                }
+              ],
+              "primary": true,
+              "privateIPAddressVersion": "IPv4"
+            }
+          },
+          {
+            "name": "BIGIPVM1-ext-ipconfig-secondary",
+            "properties": {
+              "privateIPAddress": "[parameters('BIGIP_VM1_ExternalSec_IP')]",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), parameters('Subnet_External_Name'))]"
+              },
+              "primary": false,
+              "privateIPAddressVersion": "IPv4"
+            }
+          }
+        ],
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableAcceleratedNetworking": false,
+        "enableIPForwarding": true
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2020-05-01",
+      "name": "BIGIPVM1_Internal",
+      "location": "[parameters('Location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/loadBalancers', parameters('SB_LB_Name'))]"
+        //"[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), parameters('Subnet_InternalN_Name'))]"
+      ],
+      "tags": {
+        "application": "APP",
+        "cost": "COST",
+        "environment": "ENV",
+        "group": "GROUP",
+        "owner": "OWNER"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "BIGIPVM1-intN-ipconfig-Primary",
+            "properties": {
+              "privateIPAddress": "[parameters('BIGIP_VM1_InternalPri_IP')]",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), parameters('Subnet_InternalS_Name'))]"
+              },
+              "loadBalancerBackendAddressPools": [
+                {
+                  "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('SB_LB_Name'), 'loadBalancerBackEnd')]"
+                }
+              ],
+              "primary": true,
+              "privateIPAddressVersion": "IPv4"
+            }
+          },
+          {
+            "name": "BIGIPVM1-intN-ipconfig-secondary",
+            "properties": {
+              "privateIPAddress": "[parameters('BIGIP_VM1_InternalSec_IP')]",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), parameters('Subnet_InternalS_Name'))]"
+              },
+              "primary": false,
+              "privateIPAddressVersion": "IPv4"
+            }
+          }
+        ],
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableAcceleratedNetworking": false,
+        "enableIPForwarding": true
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2020-05-01",
+      "name": "BIGIPVM2_External1",
+      "location": "[parameters('Location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/loadBalancers', parameters('NB_LB_Name'))]"
+        //"[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), parameters('Subnet_External_Name'))]"
+      ],
+      "tags": {
+        "application": "APP",
+        "cost": "COST",
+        "environment": "ENV",
+        "group": "GROUP",
+        "owner": "OWNER"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "BIGIPVM2-ext-ipconfig-Primary",
+            "properties": {
+              "privateIPAddress": "[parameters('BIGIP_VM2_ExternalPri_IP')]",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), parameters('Subnet_External_Name'))]"
+              },
+              "loadBalancerBackendAddressPools": [
+                {
+                  "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('NB_LB_Name'), 'loadBalancerBackEnd')]"
+                }
+              ],
+              "primary": true,
+              "privateIPAddressVersion": "IPv4"
+            }
+          },
+          {
+            "name": "BIGIPVM2-ext-ipconfig-secondary",
+            "properties": {
+              "privateIPAddress": "[parameters('BIGIP_VM2_ExternalSec_IP')]",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), parameters('Subnet_External_Name'))]"
+              },
+              "primary": false,
+              "privateIPAddressVersion": "IPv4"
+            }
+          }
+        ],
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableAcceleratedNetworking": false,
+        "enableIPForwarding": true
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2020-05-01",
+      "name": "BIGIPVM2_Internal",
+      "location": "[parameters('Location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/loadBalancers', parameters('SB_LB_Name'))]"
+        //"[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), parameters('Subnet_InternalN_Name'))]"
+      ],
+      "tags": {
+        "application": "APP",
+        "cost": "COST",
+        "environment": "ENV",
+        "group": "GROUP",
+        "owner": "OWNER"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "BIGIPVM2-int-ipconfig-Primary",
+            "properties": {
+              "privateIPAddress": "[parameters('BIGIP_VM2_InternalPri_IP')]",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), parameters('Subnet_InternalS_Name'))]"
+              },
+              "loadBalancerBackendAddressPools": [
+                {
+                  "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('SB_LB_Name'), 'loadBalancerBackEnd')]"
+                }
+              ],
+              "primary": true,
+              "privateIPAddressVersion": "IPv4"
+            }
+          },
+          {
+            "name": "BIGIPVM2-int-ipconfig-secondary",
+            "properties": {
+              "privateIPAddress": "[parameters('BIGIP_VM2_InternalSec_IP')]",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), parameters('Subnet_InternalS_Name'))]"
+              },
+              "primary": false,
+              "privateIPAddressVersion": "IPv4"
+            }
+          }
+        ],
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableAcceleratedNetworking": false,
+        "enableIPForwarding": true
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2020-05-01",
+      "name": "BIGIPVM1_Management",
+      "location": "[parameters('Location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/loadBalancers', parameters('NB_LB_Name'))]"
+        //"[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), parameters('Subnet_Management_Name'))]"
+      ],
+      "tags": {
+        "application": "APP",
+        "cost": "COST",
+        "environment": "ENV",
+        "group": "GROUP",
+        "owner": "OWNER"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "BIGIPVM1-mgmt-ipconfig",
+            "properties": {
+              "privateIPAddress": "[parameters('BIGIP_VM1_Management_IP')]",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), parameters('Subnet_Management_Name'))]"
+              },
+              "loadBalancerBackendAddressPools": [
+                {
+                  "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('NB_LB_Name'), 'loadBalancerMgmtBackEnd')]"
+                }
+              ],
+              "primary": true,
+              "privateIPAddressVersion": "IPv4"
+            }
+          }
+        ],
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableAcceleratedNetworking": false,
+        "enableIPForwarding": false
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2020-05-01",
+      "name": "BIGIPVM2_Management",
+      "location": "[parameters('Location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/loadBalancers', parameters('NB_LB_Name'))]"
+        //"[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), parameters('Subnet_Management_Name'))]"
+      ],
+      "tags": {
+        "application": "APP",
+        "cost": "COST",
+        "environment": "ENV",
+        "group": "GROUP",
+        "owner": "OWNER"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "BIGIPVM2-mgmt-ipconfig",
+            "properties": {
+              "privateIPAddress": "[parameters('BIGIP_VM2_Management_IP')]",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), parameters('Subnet_Management_Name'))]"
+              },
+              "loadBalancerBackendAddressPools": [
+                {
+                  "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('NB_LB_Name'), 'loadBalancerMgmtBackEnd')]"
+                }
+              ],
+              "primary": true,
+              "privateIPAddressVersion": "IPv4"
+            }
+          }
+        ],
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableAcceleratedNetworking": false,
+        "enableIPForwarding": false
+      }
+    },
+    {
+      "type": "Microsoft.Network/loadBalancers",
+      "apiVersion": "2020-05-01",
+      "name": "[parameters('NB_LB_Name')]",
+      "location": "[parameters('Location')]",
+      "dependsOn": [],
+      "tags": {
+        "application": "APP",
+        "cost": "COST",
+        "environment": "ENV",
+        "group": "GROUP",
+        "owner": "OWNER"
+      },
+      "sku": {
+        "name": "Standard"
+      },
+      "properties": {
+        "copy": [
+          {
+            "count": "[if(not(equals(variables('numberOfExternalIps'), 0)), variables('numberOfExternalIps'), 1)]",
+            "input": {
+              "name": "[concat('loadBalancerFrontEnd', copyIndex('frontendIPConfigurations', 1))]",
+              "properties": {
+                "publicIPAddress": {
+                  "id": "[concat(variables('extPublicIPAddressIdPrefix'), sub(copyIndex('frontendIPConfigurations', 1), 1))]"
+                }
+              }
+            },
+            "name": "frontendIPConfigurations"
+          }
+        ],
+        "backendAddressPools": [
+          {
+            "name": "loadBalancerBackEnd",
+            "properties": {
+              "loadBalancerBackendAddresses": [
+                {
+                  "name": "rgsacat3_f5dnst3-ext0rgsacat3-ext-ipconfig0",
+                  "properties": {}
+                },
+                {
+                  "name": "rgsacat3_f5dnst3-ext1rgsacat3-ext-ipconfig1",
+                  "properties": {}
+                }
+              ]
+            }
+          },
+          {
+            "name": "loadBalancerMgmtBackEnd",
+            "properties": {
+              "loadBalancerBackendAddresses": [
+                {
+                  "name": "rgsacat3_f5dnst3-mgmt0f5dnst3-mgmt-ipconfig",
+                  "properties": {}
+                },
+                {
+                  "name": "rgsacat3_f5dnst3-mgmt3f5dnst3-mgmt-ipconfig",
+                  "properties": {}
+                }
+              ]
+            }
+          }
+        ],
+        "loadBalancingRules": [
+          {
+            "name": "rdp_vs",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('NB_LB_Name')), '/frontendIPConfigurations/loadBalancerFrontEnd1')]"
+              },
+              "frontendPort": 3389,
+              "backendPort": 3389,
+              "enableFloatingIP": false,
+              "idleTimeoutInMinutes": 4,
+              "protocol": "Tcp",
+              "enableTcpReset": false,
+              "loadDistribution": "Default",
+              "disableOutboundSnat": false,
+              "backendAddressPool": {
+                "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('NB_LB_Name'), 'loadBalancerBackEnd')]"
+              },
+              "probe": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('NB_LB_Name')), '/probes/rdp_alive')]"
+              }
+            }
+          },
+          {
+            "name": "ssh_vs",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('NB_LB_Name')), '/frontendIPConfigurations/loadBalancerFrontEnd1')]"
+              },
+              "frontendPort": 22,
+              "backendPort": 22,
+              "enableFloatingIP": false,
+              "idleTimeoutInMinutes": 4,
+              "protocol": "Tcp",
+              "enableTcpReset": false,
+              "loadDistribution": "Default",
+              "disableOutboundSnat": false,
+              "backendAddressPool": {
+                "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('NB_LB_Name'), 'loadBalancerBackEnd')]"
+              },
+              "probe": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('NB_LB_Name')), '/probes/ssh_alive')]"
+              }
+            }
+          },
+          {
+            "name": "management_outbound",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('NB_LB_Name')), '/frontendIPConfigurations/loadBalancerFrontEnd1')]"
+              },
+              "frontendPort": 8443,
+              "backendPort": 8443,
+              "enableFloatingIP": false,
+              "idleTimeoutInMinutes": 15,
+              "protocol": "Tcp",
+              "enableTcpReset": false,
+              "loadDistribution": "Default",
+              "disableOutboundSnat": false,
+              "backendAddressPool": {
+                "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('NB_LB_Name'), 'loadBalancerMgmtBackEnd')]"
+              },
+              "probe": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('NB_LB_Name')), '/probes/https_alive')]"
+              }
+            }
+          }
+        ],
+        "probes": [
+          {
+            "name": "ssh_alive",
+            "properties": {
+              "protocol": "Tcp",
+              "port": 22,
+              "intervalInSeconds": 15,
+              "numberOfProbes": 2
+            }
+          },
+          {
+            "name": "rdp_alive",
+            "properties": {
+              "protocol": "Tcp",
+              "port": 3389,
+              "intervalInSeconds": 15,
+              "numberOfProbes": 2
+            }
+          },
+          {
+            "name": "http_alive",
+            "properties": {
+              "protocol": "Http",
+              "port": 80,
+              "requestPath": "/",
+              "intervalInSeconds": 15,
+              "numberOfProbes": 2
+            }
+          },
+          {
+            "name": "https_alive",
+            "properties": {
+              "protocol": "Tcp",
+              "port": 443,
+              "intervalInSeconds": 15,
+              "numberOfProbes": 3
+            }
+          }
+        ],
+        "inboundNatRules": [],
+        "outboundRules": [],
+        "inboundNatPools": []
+      }
+    },
+    {
+      "type": "Microsoft.Network/loadBalancers",
+      "apiVersion": "2020-05-01",
+      "name": "[parameters('SB_LB_Name')]",
+      "location": "[parameters('Location')]",
+      "dependsOn": [],
+      "tags": {
+        "application": "APP",
+        "cost": "COST",
+        "environment": "ENV",
+        "group": "GROUP",
+        "owner": "OWNER"
+      },
+      "sku": {
+        "name": "Standard"
+      },
+      "properties": {
+        "frontendIPConfigurations": [
+          {
+            "name": "loadBalancerFrontEnd",
+            "properties": {
+              "privateIPAddress": "[parameters('SB_LB_IP')]",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), parameters('Subnet_InternalS_Name'))]"
+              },
+              "privateIPAddressVersion": "IPv4"
+            }
+          }
+        ],
+        "backendAddressPools": [
+          {
+            "name": "loadBalancerBackEnd",
+            "properties": {
+              "loadBalancerBackendAddresses": [
+                {
+                  "name": "BIGIPVM3-intSB-ipconfig-secondary",
+                  "properties": {}
+                },
+                {
+                  "name": "BIGIPVM4-intSB-ipconfig-secondary",
+                  "properties": {}
+                }
+              ]
+            }
+          }
+        ],
+        "loadBalancingRules": [
+          {
+            "name": "rdp_vs",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('SB_LB_Name')), '/frontendIPConfigurations/loadBalancerFrontEnd')]"
+              },
+              "frontendPort": 3389,
+              "backendPort": 3389,
+              "enableFloatingIP": false,
+              "idleTimeoutInMinutes": 4,
+              "protocol": "Tcp",
+              "enableTcpReset": false,
+              "loadDistribution": "Default",
+              "disableOutboundSnat": false,
+              "backendAddressPool": {
+                "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('SB_LB_Name'), 'loadBalancerBackEnd')]"
+              },
+              "probe": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('SB_LB_Name')), '/probes/rdp_alive')]"
+              }
+            }
+          },
+          {
+            "name": "ssh_vs",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('SB_LB_Name')), '/frontendIPConfigurations/loadBalancerFrontEnd')]"
+              },
+              "frontendPort": 22,
+              "backendPort": 22,
+              "enableFloatingIP": false,
+              "idleTimeoutInMinutes": 4,
+              "protocol": "Tcp",
+              "enableTcpReset": false,
+              "loadDistribution": "Default",
+              "disableOutboundSnat": false,
+              "backendAddressPool": {
+                "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('SB_LB_Name'), 'loadBalancerBackEnd')]"
+              },
+              "probe": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('SB_LB_Name')), '/probes/ssh_alive')]"
+              }
+            }
+          }
+        ],
+        "probes": [
+          {
+            "name": "ssh_alive",
+            "properties": {
+              "protocol": "Tcp",
+              "port": 22,
+              "intervalInSeconds": 15,
+              "numberOfProbes": 2
+            }
+          },
+          {
+            "name": "rdp_alive",
+            "properties": {
+              "protocol": "Tcp",
+              "port": 3389,
+              "intervalInSeconds": 15,
+              "numberOfProbes": 2
+            }
+          },
+          {
+            "name": "http_alive",
+            "properties": {
+              "protocol": "Http",
+              "port": 80,
+              "requestPath": "/",
+              "intervalInSeconds": 15,
+              "numberOfProbes": 2
+            }
+          }
+        ],
+        "inboundNatRules": [],
+        "outboundRules": [],
+        "inboundNatPools": []
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2019-07-01",
+      "name": "[parameters('BigIP_VM1_Name')]",
+      "location": "[parameters('Location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/availabilitySets', parameters('availabilitySet0_Name'))]",
+        "[resourceId('Microsoft.Network/networkInterfaces', 'BIGIPVM1_Management')]",
+        "[resourceId('Microsoft.Network/networkInterfaces', 'BIGIPVM1_External1')]",
+        "[resourceId('Microsoft.Network/networkInterfaces', 'BIGIPVM1_Internal')]"
+        //"[resourceId('Microsoft.Storage/StorageAccounts', parameters('StorageAccountName'))]"
+      ],
+      "tags": {
+        "application": "APP",
+        "cost": "COST",
+        "environment": "ENV",
+        "group": "GROUP",
+        "owner": "OWNER"
+      },
+      "plan": {
+        "name": "f5-big-all-2slot-byol",
+        "product": "f5-big-ip-byol",
+        "publisher": "f5-networks"
+      },
+      "properties": {
+        "availabilitySet": {
+          "id": "[resourceId('Microsoft.Compute/availabilitySets', parameters('availabilitySet0_Name'))]"
+        },
+        "hardwareProfile": {
+          "vmSize": "[parameters('BigIP_VM1_Size')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "f5-networks",
+            "offer": "f5-big-ip-byol",
+            "sku": "f5-big-all-2slot-byol",
+            "version": "14.1.200000"
+          },
+          "osDisk": {
+            "osType": "Linux",
+            "name": "[concat(parameters('BigIP_VM1_Name'), '_OsDisk_1_39c3b96967104855a6ad8c0727cf6f4b')]",
+            "createOption": "FromImage",
+            "caching": "ReadWrite",
+            "managedDisk": {
+              "storageAccountType": "Premium_LRS"
+              //"id": "[resourceId('Microsoft.Compute/disks', concat(parameters('BigIP_VM1_Name'), '_OsDisk_1_39c3b96967104855a6ad8c0727cf6f4b'))]"
+            },
+            "diskSizeGB": 78
+          },
+          "dataDisks": []
+        },
+        "osProfile": {
+          "computerName": "[parameters('BigIP_VM1_Name')]",
+          "adminPassword": "[parameters('adminPassword')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "linuxConfiguration": {
+            "disablePasswordAuthentication": false
+          },
+          "secrets": []
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', 'BIGIPVM1_Management')]",
+              "properties": {
+                "primary": true
+              }
+            },
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', 'BIGIPVM1_External1')]",
+              "properties": {
+                "primary": false
+              }
+            },
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', 'BIGIPVM1_Internal')]",
+              "properties": {
+                "primary": false
+              }
+            }
+          ]
+        },
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true,
+            "storageUri": "[concat(reference(concat('Microsoft.Storage/storageAccounts/', parameters('StorageAccountName')), '2016-01-01').primaryEndpoints.blob)]"
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2019-07-01",
+      "name": "[parameters('BigIP_VM2_Name')]",
+      "location": "[parameters('Location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/availabilitySets', parameters('availabilitySet0_Name'))]",
+        "[resourceId('Microsoft.Network/networkInterfaces', 'BIGIPVM2_Management')]",
+        "[resourceId('Microsoft.Network/networkInterfaces', 'BIGIPVM2_External1')]",
+        "[resourceId('Microsoft.Network/networkInterfaces', 'BIGIPVM2_Internal')]"
+        //"[resourceId('Microsoft.Storage/StorageAccounts', parameters('StorageAccountName'))]"
+      ],
+      "tags": {
+        "application": "APP",
+        "cost": "COST",
+        "environment": "ENV",
+        "group": "GROUP",
+        "owner": "OWNER"
+      },
+      "plan": {
+        "name": "f5-big-all-2slot-byol",
+        "product": "f5-big-ip-byol",
+        "publisher": "f5-networks"
+      },
+      "properties": {
+        "availabilitySet": {
+          "id": "[resourceId('Microsoft.Compute/availabilitySets', parameters('availabilitySet0_Name'))]"
+        },
+        "hardwareProfile": {
+          "vmSize": "[parameters('BigIP_VM2_Size')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "f5-networks",
+            "offer": "f5-big-ip-byol",
+            "sku": "f5-big-all-2slot-byol",
+            "version": "14.1.200000"
+          },
+          "osDisk": {
+            "osType": "Linux",
+            "name": "[concat(parameters('BigIP_VM2_Name'), '_OsDisk_1_426aa9f9660a4530bfccbe587b2bbcd5')]",
+            "createOption": "FromImage",
+            "caching": "ReadWrite",
+            "managedDisk": {
+              "storageAccountType": "Premium_LRS"
+              //"id": "[resourceId('Microsoft.Compute/disks', concat(parameters('BigIP_VM2_Name'), '_OsDisk_1_426aa9f9660a4530bfccbe587b2bbcd5'))]"
+            },
+            "diskSizeGB": 78
+          },
+          "dataDisks": []
+        },
+        "osProfile": {
+          "computerName": "[parameters('BigIP_VM2_Name')]",
+          "adminPassword": "[parameters('adminPassword')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "linuxConfiguration": {
+            "disablePasswordAuthentication": false
+          },
+          "secrets": []
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', 'BIGIPVM2_Management')]",
+              "properties": {
+                "primary": true
+              }
+            },
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', 'BIGIPVM2_External1')]",
+              "properties": {
+                "primary": false
+              }
+            },
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', 'BIGIPVM2_Internal')]",
+              "properties": {
+                "primary": false
+              }
+            }
+          ]
+        },
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true,
+            "storageUri": "[concat(reference(concat('Microsoft.Storage/storageAccounts/', parameters('StorageAccountName')), '2016-01-01').primaryEndpoints.blob)]"
+          }
+        }
+      }
+    }
+  ]
+}

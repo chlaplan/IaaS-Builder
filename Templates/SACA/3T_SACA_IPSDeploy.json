@@ -1,0 +1,758 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "StorageAccountName": {
+      "type": "String"
+    },
+    "adminUsername": {
+      "defaultValue": "xadmin",
+      "metadata": {
+        "description": "User name for the Virtual Machine."
+      },
+      "type": "string"
+    },
+    "adminPassword": {
+      "metadata": {
+        "description": "Password or SSH public key to login to the Virtual Machine. Note: There are a number of special characters that you should avoid using for F5 product user accounts.  See [K2873](https://support.f5.com/csp/article/K2873) for details. Note: If using key-based authentication, this should be the public key as a string, typically starting with **---- BEGIN SSH2 PUBLIC KEY ----** and ending with **---- END SSH2 PUBLIC KEY ----**."
+      },
+      "type": "securestring"
+    },
+    "VNetName": {
+      "defaultValue": "SCCA_VNet",
+      "type": "String"
+    },
+    "DNSLabel": {
+      "type": "String"
+    },
+    "Location": {
+      "type": "String"
+    },
+    "Subnet_Management_Name": {
+      "type": "String"
+    },
+    "Subnet_External_Name": {
+      "type": "String"
+    },
+    "Subnet_External2_Name": {
+      "type": "String"
+    },
+    "Subnet_InternalN_Name": {
+      "type": "String"
+    },
+    "Subnet_InternalS_Name": {
+      "type": "String"
+    },
+    "Subnet_IPSInt_Name": {
+      "type": "String"
+    },
+    "Subnet_IPSExt_Name": {
+      "type": "String"
+    },
+    "Subnet_VDMS_Name": {
+      "type": "String"
+    },
+    "IPS1ExtPri_IP": {
+      "type": "String"
+    },
+    "IPS1ExtSec_IP": {
+      "type": "String"
+    },
+    "IPS2ExtPri_IP": {
+      "type": "String"
+    },
+    "IPS2ExtSec_IP": {
+      "type": "String"
+    },
+    "IPSLB_IP": {
+      "type": "String"
+    },
+    "IPS1IntPri_IP": {
+      "type": "String"
+    },
+    "IPS1IntSec_IP": {
+      "type": "String"
+    },
+    "IPS2IntPri_IP": {
+      "type": "String"
+    },
+    "IPS2IntSec_IP": {
+      "type": "String"
+    },
+    "IPS1MGMT_IP": {
+      "type": "String"
+    },
+    "IPS2MGMT_IP": {
+      "type": "String"
+    },
+    "availabilitySet2_Name": {
+      "defaultValue": "FW-avset2",
+      "type": "String"
+    },
+    "IPS_FW0_Name": {
+      "defaultValue": "f5dnst3-ips-fw0",
+      "type": "String"
+    },
+    "IPS_FW1_Name": {
+      "defaultValue": "f5dnst3-ips-fw1",
+      "type": "String"
+    },
+    "IPS_FW0_Size": {
+      "type": "String"
+    },
+    "IPS_FW1_Size": {
+      "type": "String"
+    },
+    "IPS_LB_Name": {
+      "defaultValue": "f5dnst3-ips-fw0",
+      "type": "String"
+    }
+  },
+  "variables": {
+    // Device Names
+    "availabilitySetName0": "[concat(parameters('dnsLabel'), '-avset0')]",
+    "availabilitySetName1": "[concat(parameters('dnsLabel'), '-avset1')]",
+    "availabilitySetName2": "IPS-avset2",
+    "availabilitySetId2": {
+      "id": "[resourceId('Microsoft.Compute/availabilitySets',variables('availabilitySetName2'))]"
+    },
+    "availabilitySetName3": "[concat(parameters('dnsLabel'), '-avset3')]",
+    "extNicName": "[concat(parameters('dnsLabel'), '-ext')]",
+    "NorthboundLoadBalancerName": "[concat(parameters('dnsLabel'),'-nb-alb')]",
+    "mgmtLoadBalancerName": "[concat(parameters('dnsLabel'),'-mgmt-alb')]",
+    "extpublicIPAddressNamePrefix": "[concat(parameters('dnsLabel'), '-ext-pip')]",
+    "mgmtPublicIPAddressName": "[concat(parameters('dnsLabel'), '-mgmt-pip')]",
+    "intNicName": "[concat(parameters('dnsLabel'), '-int')]",
+    "IPSBackEndAddressPool": {
+      "id": "[concat(variables('IPSILBid'), '/backendAddressPools/', 'loadBalancerBackEnd')]"
+    },
+    "IPSILBid": "[resourceId('Microsoft.Network/loadBalancers',parameters('IPS_LB_Name'))]"
+
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/loadBalancers",
+      "apiVersion": "2020-05-01",
+      "name": "[parameters('IPS_LB_Name')]",
+      "location": "[parameters('Location')]",
+      "dependsOn": [
+        //"[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), parameters('Subnet_IPSExt_Name'))]",
+        //"[resourceId('Microsoft.Network/networkInterfaces', 'IPS1_External')]",
+        //"[resourceId('Microsoft.Network/networkInterfaces', 'IPS2_External')]"
+      ],
+      "tags": {
+        "application": "APP",
+        "cost": "COST",
+        "environment": "ENV",
+        "group": "GROUP",
+        "owner": "OWNER"
+      },
+      "sku": {
+        "name": "Standard"
+      },
+      "properties": {
+        "frontendIPConfigurations": [
+          {
+            "name": "loadBalancerFrontEnd",
+            "properties": {
+              "privateIPAddress": "[parameters('IPSLB_IP')]",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), parameters('Subnet_IPSExt_Name'))]"
+              },
+              "privateIPAddressVersion": "IPv4"
+            }
+          }
+        ],
+        "backendAddressPools": [
+          {
+            "name": "loadBalancerBackEnd",
+            "properties": {
+              "loadBalancerBackendAddresses": [
+                {
+                  "name": "IPS1-Ext-ipconfig-secondary",
+                  "properties": {}
+                },
+                {
+                  "name": "IPS2-Ext-ipconfig-secondary",
+                  "properties": {}
+                }
+              ]
+            }
+          }
+        ],
+        "loadBalancingRules": [
+          {
+            "name": "rdp_vs",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('IPS_LB_Name')), '/frontendIPConfigurations/loadBalancerFrontEnd')]"
+              },
+              "frontendPort": 3389,
+              "backendPort": 3389,
+              "enableFloatingIP": false,
+              "idleTimeoutInMinutes": 4,
+              "protocol": "Tcp",
+              "enableTcpReset": false,
+              "loadDistribution": "Default",
+              "disableOutboundSnat": false,
+              "backendAddressPool": {
+                "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('IPS_LB_Name'), 'loadBalancerBackEnd')]"
+              },
+              "probe": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('IPS_LB_Name')), '/probes/rdp_alive')]"
+              }
+            }
+          },
+          {
+            "name": "ssh_vs",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('IPS_LB_Name')), '/frontendIPConfigurations/loadBalancerFrontEnd')]"
+              },
+              "frontendPort": 22,
+              "backendPort": 22,
+              "enableFloatingIP": false,
+              "idleTimeoutInMinutes": 4,
+              "protocol": "Tcp",
+              "enableTcpReset": false,
+              "loadDistribution": "Default",
+              "disableOutboundSnat": false,
+              "backendAddressPool": {
+                "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('IPS_LB_Name'), 'loadBalancerBackEnd')]"
+              },
+              "probe": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('IPS_LB_Name')), '/probes/ssh_alive')]"
+              }
+            }
+          }
+        ],
+        "probes": [
+          {
+            "name": "ssh_alive",
+            "properties": {
+              "protocol": "Tcp",
+              "port": 22,
+              "intervalInSeconds": 15,
+              "numberOfProbes": 2
+            }
+          },
+          {
+            "name": "rdp_alive",
+            "properties": {
+              "protocol": "Tcp",
+              "port": 3389,
+              "intervalInSeconds": 15,
+              "numberOfProbes": 2
+            }
+          },
+          {
+            "name": "http_alive",
+            "properties": {
+              "protocol": "Http",
+              "port": 80,
+              "requestPath": "/",
+              "intervalInSeconds": 15,
+              "numberOfProbes": 2
+            }
+          },
+          {
+            "name": "https_alive",
+            "properties": {
+              "protocol": "Tcp",
+              "port": 443,
+              "intervalInSeconds": 15,
+              "numberOfProbes": 3
+            }
+          }
+        ],
+        "inboundNatRules": [],
+        "outboundRules": [],
+        "inboundNatPools": []
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2020-05-01",
+      "name": "IPS1_External",
+      "location": "[parameters('Location')]",
+      "dependsOn": [
+        //"[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), parameters('Subnet_IPSExt_Name'))]",
+        "[resourceId('Microsoft.Network/loadBalancers', parameters('IPS_LB_Name'))]"
+      ],
+      "tags": {
+        "application": "APP",
+        "cost": "COST",
+        "environment": "ENV",
+        "group": "GROUP",
+        "owner": "OWNER"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "IPS1-ext-ipconfig-Primary",
+            "properties": {
+              "privateIPAddress": "[parameters('IPS1ExtPri_IP')]",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), parameters('Subnet_IPSExt_Name'))]"
+              },
+              "primary": true,
+              "privateIPAddressVersion": "IPv4"
+            }
+          },
+          {
+            "name": "IPS1-Ext-ipconfig-secondary",
+            "properties": {
+              "privateIPAddress": "[parameters('IPS1ExtSec_IP')]",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), parameters('Subnet_IPSExt_Name'))]"
+              },
+              "primary": false,
+              "privateIPAddressVersion": "IPv4",
+              "loadBalancerBackendAddressPools": [
+                "[variables('IPSBackEndAddressPool')]"
+              ]
+            }
+          }
+        ],
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableAcceleratedNetworking": true,
+        "enableIPForwarding": true
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2020-05-01",
+      "name": "IPS2_External",
+      "location": "[parameters('Location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/loadBalancers', parameters('IPS_LB_Name'))]"
+        //"[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), parameters('Subnet_IPSExt_Name'))]",
+        //"[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('IPS_LB_Name'), 'loadBalancerBackEnd')]"
+      ],
+      "tags": {
+        "application": "APP",
+        "cost": "COST",
+        "environment": "ENV",
+        "group": "GROUP",
+        "owner": "OWNER"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "IPS2-ext-ipconfig-Primary",
+            "properties": {
+              "privateIPAddress": "[parameters('IPS2ExtPri_IP')]",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), parameters('Subnet_IPSExt_Name'))]"
+              },
+              "primary": true,
+              "privateIPAddressVersion": "IPv4"
+            }
+          },
+          {
+            "name": "IPS2-ext-ipconfig-secondary",
+            "properties": {
+              "privateIPAddress": "[parameters('IPS2ExtSec_IP')]",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), parameters('Subnet_IPSExt_Name'))]"
+              },
+              "primary": false,
+              "privateIPAddressVersion": "IPv4",
+              "loadBalancerBackendAddressPools": [
+                "[variables('IPSBackEndAddressPool')]"
+              ]
+            }
+          }
+        ],
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableAcceleratedNetworking": true,
+        "enableIPForwarding": true
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2020-05-01",
+      "name": "IPS1_Internal",
+      "location": "[parameters('Location')]",
+      "dependsOn": [
+        //"[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), parameters('Subnet_IPSInt_Name'))]",
+        //"[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('IPS_LB_Name'), 'loadBalancerBackEnd')]"
+      ],
+      "tags": {
+        "application": "APP",
+        "cost": "COST",
+        "environment": "ENV",
+        "group": "GROUP",
+        "owner": "OWNER"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "IPS1-int-ipconfig",
+            "properties": {
+              "privateIPAddress": "[parameters('IPS1IntPri_IP')]",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), parameters('Subnet_IPSInt_Name'))]"
+              },
+              "primary": true,
+              "privateIPAddressVersion": "IPv4"
+            }
+          },
+          {
+            "name": "IPS1-int-ipconfig-secondary",
+            "properties": {
+              "privateIPAddress": "[parameters('IPS1IntSec_IP')]",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), parameters('Subnet_IPSInt_Name'))]"
+              },
+              "primary": false,
+              "privateIPAddressVersion": "IPv4"
+            }
+          }
+        ],
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableAcceleratedNetworking": true,
+        "enableIPForwarding": true
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2020-05-01",
+      "name": "IPS2_Internal",
+      "location": "[parameters('Location')]",
+      "dependsOn": [
+        //"[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), parameters('Subnet_IPSInt_Name'))]"
+      ],
+      "tags": {
+        "application": "APP",
+        "cost": "COST",
+        "environment": "ENV",
+        "group": "GROUP",
+        "owner": "OWNER"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "IPS2-int-ipconfig",
+            "properties": {
+              "privateIPAddress": "[parameters('IPS2IntPri_IP')]",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), parameters('Subnet_IPSInt_Name'))]"
+              },
+              "primary": true,
+              "privateIPAddressVersion": "IPv4"
+            }
+          },
+          {
+            "name": "IPS2-int-ipconfig-secondary",
+            "properties": {
+              "privateIPAddress": "[parameters('IPS2IntSec_IP')]",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), parameters('Subnet_IPSInt_Name'))]"
+              },
+              "primary": false,
+              "privateIPAddressVersion": "IPv4"
+            }
+          }
+        ],
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableAcceleratedNetworking": true,
+        "enableIPForwarding": true
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2020-05-01",
+      "name": "IPS1_mgmt",
+      "location": "[parameters('Location')]",
+      "dependsOn": [
+        //"[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), parameters('subnet_management_Name'))]"
+      ],
+      "tags": {
+        "application": "APP",
+        "cost": "COST",
+        "environment": "ENV",
+        "group": "GROUP",
+        "owner": "OWNER"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ips01-mgmt-ipconfig",
+            "properties": {
+              "privateIPAddress": "[parameters('IPS1MGMT_IP')]",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), 'management')]"
+              },
+              "primary": true,
+              "privateIPAddressVersion": "IPv4"
+            }
+          }
+        ],
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableAcceleratedNetworking": false,
+        "enableIPForwarding": false
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2020-05-01",
+      "name": "IPS2_mgmt",
+      "location": "[parameters('Location')]",
+      "dependsOn": [
+        //"[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), 'management')]"
+      ],
+      "tags": {
+        "application": "APP",
+        "cost": "COST",
+        "environment": "ENV",
+        "group": "GROUP",
+        "owner": "OWNER"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "IPS2-mgmt-ipconfig",
+            "properties": {
+              "privateIPAddress": "[parameters('IPS2MGMT_IP')]",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNetName'), 'management')]"
+              },
+              "primary": true,
+              "privateIPAddressVersion": "IPv4"
+            }
+          }
+        ],
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableAcceleratedNetworking": false,
+        "enableIPForwarding": false
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2019-07-01",
+      "name": "[parameters('IPS_FW0_Name')]",
+      "location": "[parameters('Location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', 'IPS1_MGMT')]",
+        "[resourceId('Microsoft.Network/networkInterfaces', 'IPS1_External')]",
+        "[resourceId('Microsoft.Network/networkInterfaces', 'IPS1_Internal')]",
+        "[concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetName2'))]"
+      ],
+      "properties": {
+        "availabilitySet": {
+          "id": "[resourceId('Microsoft.Compute/availabilitySets',variables('availabilitySetName2'))]"
+        },
+        "hardwareProfile": {
+          "vmSize": "[parameters('IPS_FW0_Size')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "Canonical",
+            "offer": "UbuntuServer",
+            "sku": "18.04-LTS",
+            "version": "latest"
+          },
+          "osDisk": {
+            "osType": "Linux",
+            "name": "[concat(parameters('IPS_FW0_Name'), '_OsDisk_1_96f798637f1a4c089f1cb0cfcaccd088')]",
+            "createOption": "FromImage",
+            "caching": "ReadWrite",
+            "managedDisk": {
+              "storageAccountType": "Premium_LRS"
+            },
+            "diskSizeGB": 30
+          },
+          "dataDisks": [
+            {
+              "lun": 0,
+              "name": "[concat(parameters('IPS_FW0_Name'), '_disk2_de8effeae7534f498faddbb26746b150')]",
+              "createOption": "Empty",
+              "caching": "None",
+              "managedDisk": {
+                "storageAccountType": "Premium_LRS"
+              },
+              "diskSizeGB": 1023,
+              "toBeDetached": false
+            }
+          ]
+        },
+        "osProfile": {
+          "computerName": "[parameters('IPS_FW0_Name')]",
+          "adminUsername": "[parameters('AdminUserName')]",
+          "adminPassword": "[parameters('adminPassword')]",
+          "linuxConfiguration": {
+            "disablePasswordAuthentication": false,
+            "provisionVMAgent": true
+          },
+          "secrets": [],
+          "allowExtensionOperations": true
+          //"requireGuestProvisionSignal": true
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', 'IPS1_MGMT')]",
+              "properties": {
+                "primary": true
+              }
+            },
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', 'IPS1_External')]",
+              "properties": {
+                "primary": false
+              }
+            },
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', 'IPS1_Internal')]",
+              "properties": {
+                "primary": false
+              }
+            }
+          ]
+        },
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true,
+            "storageUri": "[concat('https://', parameters('StorageAccountName'), '.blob.core.usgovcloudapi.net/')]"
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2019-07-01",
+      "name": "[parameters('IPS_FW1_Name')]",
+      "location": "[parameters('Location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', 'IPS2_MGMT')]",
+        "[resourceId('Microsoft.Network/networkInterfaces', 'IPS2_External')]",
+        "[resourceId('Microsoft.Network/networkInterfaces', 'IPS2_Internal')]",
+        "[concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetName2'))]"
+      ],
+      "properties": {
+        "availabilitySet": {
+          "id": "[resourceId('Microsoft.Compute/availabilitySets',variables('availabilitySetName2'))]"
+        },
+        "hardwareProfile": {
+          "vmSize": "[parameters('IPS_FW1_Size')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "Canonical",
+            "offer": "UbuntuServer",
+            "sku": "18.04-LTS",
+            "version": "latest"
+          },
+          "osDisk": {
+            "osType": "Linux",
+            "name": "[concat(parameters('IPS_FW1_Name'), '_OsDisk_1_43a8a2a56c37497587c13013fc113520')]",
+            "createOption": "FromImage",
+            "caching": "ReadWrite",
+            "managedDisk": {
+              "storageAccountType": "Premium_LRS"
+            },
+            "diskSizeGB": 30
+          },
+          "dataDisks": [
+            {
+              "lun": 0,
+              "name": "[concat(parameters('IPS_FW1_Name'), '_disk2_0e956a39289f46c0b1ca32caeee6c191')]",
+              "createOption": "Empty",
+              "caching": "None",
+              "managedDisk": {
+                "storageAccountType": "Premium_LRS"
+              },
+              "diskSizeGB": 1023,
+              "toBeDetached": false
+            }
+          ]
+        },
+        "osProfile": {
+          "computerName": "[parameters('IPS_FW1_Name')]",
+          "adminUsername": "[parameters('AdminUserName')]",
+          "adminPassword": "[parameters('adminPassword')]",
+          "linuxConfiguration": {
+            "disablePasswordAuthentication": false,
+            "provisionVMAgent": true
+          },
+          "secrets": [],
+          "allowExtensionOperations": true
+          //"requireGuestProvisionSignal": true
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', 'IPS2_MGMT')]",
+              "properties": {
+                "primary": true
+              }
+            },
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', 'IPS2_External')]",
+              "properties": {
+                "primary": false
+              }
+            },
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', 'IPS2_Internal')]",
+              "properties": {
+                "primary": false
+              }
+            }
+          ]
+        },
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true,
+            "storageUri": "[concat('https://', parameters('StorageAccountName'), '.blob.core.usgovcloudapi.net/')]"
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/availabilitySets",
+      "apiVersion": "2019-07-01",
+      "name": "[variables('availabilitySetName2')]",
+      "location": "[parameters('Location')]",
+      "dependsOn": [],
+      "tags": {
+        "application": "APP",
+        "cost": "COST",
+        "environment": "ENV",
+        "group": "GROUP",
+        "owner": "OWNER"
+      },
+      "sku": {
+        "name": "Aligned"
+      },
+      "properties": {
+        "platformUpdateDomainCount": 2,
+        "platformFaultDomainCount": 2
+      }
+    }
+  ]
+}

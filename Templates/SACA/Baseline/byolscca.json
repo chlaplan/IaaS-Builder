@@ -1,0 +1,120 @@
+{
+    "class": "AS3",
+    "action": "deploy",
+    "persist": true,
+    "declaration": {
+        "class": "ADC",
+        "schemaVersion": "3.5.0",
+        "id": "urn:uuid:b92236ad-a677-4574-8bce-7d1487aeb62f",
+        "label": "Management",
+        "remark": "Management VIPs",
+        "Common": {
+            "class": "Tenant",
+            "Shared": {
+                "class": "Application",
+                "template": "shared",
+                      "ip_reputation_drop": {
+                "class": "iRule",
+                "iRule": "when CLIENT_ACCEPTED {\nif {[llength [IP::reputation [IP::client_addr]]] != 0}{\nlog local0. \"IP Intelligence for IP address [IP::client_addr]:[IP::reputation [IP::client_addr]]\"\ndrop\n}\n}\n"
+              }
+            }
+        },
+        "mgmt": {
+            "class": "Tenant",
+            "mgmt_rdp": {
+                "class": "Application",
+                "template": "generic",
+                "mgmt_rdp": {
+                    "class": "Service_TCP",
+                    "iRules": ["/Common/Shared/ip_reputation_drop"],
+                    "virtualAddresses": [
+                        "0.0.0.0"
+                    ],
+                    "virtualPort": 3389,
+                    "pool": "rdp_pool",
+                    "securityLogProfiles": [
+                    {
+                       "bigip": "/Common/local-afm-log"
+                    }
+                    ],
+                    "policyFirewallEnforced": {
+                        "bigip": "/Common/log_all_afm"
+                    }
+                },
+                "rdp_pool": {
+                    "class": "Pool",
+                    "monitors": [
+                        "tcp-half-open"
+                    ],
+                    "members": [
+                        {
+                            "servicePort": 3389,
+                            "serverAddresses": [
+                                "192.168.1.55"
+                            ]
+                        }
+                    ]
+                }
+            },
+            "mgmt_ssh": {
+                "class": "Application",
+                "template": "generic",
+                "mgmt_ssh": {
+                    "class": "Service_TCP",
+                    "iRules": ["/Common/Shared/ip_reputation_drop"],
+                    "virtualAddresses": [
+                        "0.0.0.0"
+                    ],
+                    "virtualPort": 22,
+                    "pool": "ssh_pool",
+                    "securityLogProfiles": [
+                    {
+                       "bigip": "/Common/local-afm-log"
+                    }
+                    ],
+                    "policyFirewallEnforced": {
+                        "bigip": "/Common/log_all_afm"
+                    }
+                },
+                "ssh_pool": {
+                    "class": "Pool",
+                    "monitors": [
+                        "tcp-half-open"
+                    ],
+                    "members": [
+                        {
+                            "servicePort": 22,
+                            "serverAddresses": [
+                                "192.168.1.54"
+                            ]
+                        }
+                    ]
+                }
+            },
+            "mgmt_http": {
+                "class": "Application",
+                "template": "generic",
+                "mgmt_http": {
+                    "class": "Service_HTTP",
+                    "iRules": ["health_irule"],
+                    "virtualAddresses": [
+                        "0.0.0.0"
+                    ],
+                    "virtualPort": 80,
+                    "securityLogProfiles": [
+                    {
+                       "bigip": "/Common/local-afm-log"
+                    }
+                    ],
+                    "policyFirewallEnforced": {
+                        "bigip": "/Common/log_all_afm"
+                    }
+                },
+                "health_irule": {
+                "class": "iRule",
+                "iRule": "when HTTP_REQUEST {\n   HTTP::respond 200 content {\n      <html>\n         <head>\n            <title>Health Check</title>\n         </head>\n         <body>\n            System is online.\n         </body>\n      </html>\n   }\n}"
+            }
+            }
+        }
+    }
+}

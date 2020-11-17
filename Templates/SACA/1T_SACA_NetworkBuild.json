@@ -1,0 +1,315 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "VNetName": {
+      "defaultValue": "SCCA_VNet",
+      "type": "String"
+    },
+    "DNSLabel": {
+      "type": "String"
+    },
+    "Location": {
+      "type": "String"
+    },
+    "Subnet_Management_Name": {
+      "type": "String"
+    },
+    "Subnet_Management": {
+      "type": "String"
+    },
+    "Subnet_External_Name": {
+      "type": "String"
+    },
+    "Subnet_External": {
+      "type": "String"
+    },
+    "Subnet_InternalS_Name": {
+      "type": "String"
+    },
+    "Subnet_InternalS": {
+      "type": "String"
+    },
+    "Subnet_VDMS_Name": {
+      "type": "String"
+    },
+    "Subnet_VDMS": {
+      "type": "String"
+    },
+    "SB_LB_IP": {
+      "defaultValue": "SB-LB",
+      "type": "String"
+    },
+    "publicIPAddresses_AzureBastionSubnet_ip_name": {
+      "defaultValue": "AzureBastionSubnet-ip",
+      "type": "String"
+    }
+  },
+  "variables": {
+    "publicIPAddresses_ext_pip0_name": "[concat(parameters('DNSlabel'), '-ext-pip0')]",
+    "networkSecurityGroups_ext_nsg_name": "[concat(parameters('DNSlabel'), '-ext-nsg')]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2020-05-01",
+      "name": "[variables('networkSecurityGroups_ext_nsg_name')]",
+      "location": "[parameters('Location')]",
+      "tags": {
+        "application": "APP",
+        "cost": "COST",
+        "environment": "ENV",
+        "group": "GROUP",
+        "owner": "OWNER"
+      },
+      "properties": {
+        "securityRules": [
+          {
+            "name": "ext_allow_https",
+            "properties": {
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "443",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 101,
+              "direction": "Inbound",
+              "sourcePortRanges": [],
+              "destinationPortRanges": [],
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          },
+          {
+            "name": "ssh_allow_22",
+            "properties": {
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 102,
+              "direction": "Inbound",
+              "sourcePortRanges": [],
+              "destinationPortRanges": [],
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          },
+          {
+            "name": "rdp_allow_3389",
+            "properties": {
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "3389",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 103,
+              "direction": "Inbound",
+              "sourcePortRanges": [],
+              "destinationPortRanges": [],
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2020-05-01",
+      "name": "[variables('publicIPAddresses_ext_pip0_name')]",
+      "location": "[parameters('Location')]",
+      "tags": {
+        "application": "APP",
+        "cost": "COST",
+        "environment": "ENV",
+        "group": "GROUP",
+        "owner": "OWNER"
+      },
+      "sku": {
+        "name": "Standard"
+      },
+      "properties": {
+        //"ipAddress": "52.181.32.36",
+        "publicIPAddressVersion": "IPv4",
+        "publicIPAllocationMethod": "Static",
+        "idleTimeoutInMinutes": 30,
+        "dnsSettings": {
+          "domainNameLabel": "[concat(parameters('DNSLabel'), '-pip0')]"
+          //"fqdn": "f5dnst3-0.usdodeast.cloudapp.usgovcloudapi.net"
+        },
+        "ipTags": []
+      }
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2020-05-01",
+      "name": "[parameters('VNetName')]",
+      "location": "[parameters('Location')]",
+      "dependsOn": [ "[resourceId('Microsoft.Network/routeTables', 'BasicUDR')]" ],
+      "tags": {
+        "application": "APP",
+        "cost": "COST",
+        "environment": "ENV",
+        "group": "GROUP",
+        "owner": "OWNER"
+      },
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[parameters('Subnet_External')]",
+            "[parameters('Subnet_Management')]",
+            "[parameters('Subnet_InternalS')]",
+            "[parameters('Subnet_VDMS')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[parameters('Subnet_Management_Name')]",
+            "properties": {
+              "addressPrefix": "[parameters('Subnet_Management')]",
+              "delegations": [],
+              "privateEndpointNetworkPolicies": "Enabled",
+              "privateLinkServiceNetworkPolicies": "Enabled"
+            }
+          },
+          {
+            "name": "[parameters('Subnet_External_Name')]",
+            "properties": {
+              "addressPrefix": "[parameters('Subnet_External')]",
+              "delegations": [],
+              "privateEndpointNetworkPolicies": "Enabled",
+              "privateLinkServiceNetworkPolicies": "Enabled"
+            }
+          },
+          {
+            "name": "[parameters('Subnet_InternalS_Name')]",
+            "properties": {
+              "addressPrefix": "[parameters('Subnet_InternalS')]",
+              "delegations": [],
+              "privateEndpointNetworkPolicies": "Enabled",
+              "privateLinkServiceNetworkPolicies": "Enabled"
+            }
+          },
+          {
+            "name": "[parameters('Subnet_VDMS_Name')]",
+            "properties": {
+              "routeTable": {
+                "id": "[resourceId('Microsoft.Network/routeTables', 'BasicUDR')]"
+              },
+              "addressPrefix": "[parameters('Subnet_VDMS')]",
+              "delegations": [],
+              "privateEndpointNetworkPolicies": "Enabled",
+              "privateLinkServiceNetworkPolicies": "Enabled"
+            }
+          }
+        ],
+        "virtualNetworkPeerings": [],
+        "enableDdosProtection": false,
+        "enableVmProtection": false
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups/securityRules",
+      "apiVersion": "2020-05-01",
+      "name": "[concat(variables('networkSecurityGroups_ext_nsg_name'), '/ext_allow_https')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroups_ext_nsg_name'))]"
+      ],
+      "properties": {
+        "protocol": "Tcp",
+        "sourcePortRange": "*",
+        "destinationPortRange": "443",
+        "sourceAddressPrefix": "*",
+        "destinationAddressPrefix": "*",
+        "access": "Allow",
+        "priority": 101,
+        "direction": "Inbound",
+        "sourcePortRanges": [],
+        "destinationPortRanges": [],
+        "sourceAddressPrefixes": [],
+        "destinationAddressPrefixes": []
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups/securityRules",
+      "apiVersion": "2020-05-01",
+      "name": "[concat(variables('networkSecurityGroups_ext_nsg_name'), '/rdp_allow_3389')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroups_ext_nsg_name'))]"
+      ],
+      "properties": {
+        "protocol": "Tcp",
+        "sourcePortRange": "*",
+        "destinationPortRange": "3389",
+        "sourceAddressPrefix": "*",
+        "destinationAddressPrefix": "*",
+        "access": "Allow",
+        "priority": 103,
+        "direction": "Inbound",
+        "sourcePortRanges": [],
+        "destinationPortRanges": [],
+        "sourceAddressPrefixes": [],
+        "destinationAddressPrefixes": []
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups/securityRules",
+      "apiVersion": "2020-05-01",
+      "name": "[concat(variables('networkSecurityGroups_ext_nsg_name'), '/ssh_allow_22')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroups_ext_nsg_name'))]"
+      ],
+      "properties": {
+        "protocol": "Tcp",
+        "sourcePortRange": "*",
+        "destinationPortRange": "22",
+        "sourceAddressPrefix": "*",
+        "destinationAddressPrefix": "*",
+        "access": "Allow",
+        "priority": 102,
+        "direction": "Inbound",
+        "sourcePortRanges": [],
+        "destinationPortRanges": [],
+        "sourceAddressPrefixes": [],
+        "destinationAddressPrefixes": []
+      }
+    },
+    {
+      "type": "Microsoft.Network/routeTables",
+      "apiVersion": "2020-05-01",
+      "name": "BasicUDR",
+      "location": "[parameters('Location')]",
+      "properties": {
+        "disableBgpRoutePropagation": false,
+        "routes": [
+          {
+            "name": "Default",
+            "properties": {
+              "addressPrefix": "0.0.0.0/0",
+              "nextHopType": "VirtualAppliance",
+              "nextHopIpAddress": "[parameters('SB_LB_IP')]"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/routeTables/routes",
+      "apiVersion": "2020-05-01",
+      "name": "[concat('BasicUDR', '/Default')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/routeTables', 'BasicUDR')]"
+      ],
+      "properties": {
+        "addressPrefix": "0.0.0.0/0",
+        "nextHopType": "VirtualAppliance",
+        "nextHopIpAddress": "[parameters('SB_LB_IP')]"
+      }
+    }
+  ]
+}
