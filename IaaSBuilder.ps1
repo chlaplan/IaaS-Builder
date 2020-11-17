@@ -8,6 +8,13 @@ $DefaultOSWSImage = "19h2-ent"
 $DefaultWVDImage = "20h1-evd-o365pp"
 
 $AzureModule = Get-Module -ListAvailable -Name Az.*
+$updatemodule = get-command Update-Module
+$UpdateVer = $updatemodule.Version.ToString()
+
+if($UpdateVer -le "2.2.4"){
+    Write-Host "Update-Module Function needs to be updated"
+    Install-Module -Name PowerShellGet -RequiredVersion 2.2.5 -Force
+}
 
     if ($AzureModule.Name -notlike "Az.*"){
     Write-Host "Can't find Azure Module, installing module"
@@ -18,20 +25,29 @@ $AzureModule = Get-Module -ListAvailable -Name Az.*
     {
     Write-Host "Found Azure Module"
     $StorageModule = Get-InstalledModule -Name Az.Storage
-    if($StorageModule.Version -ne "3.0.0"){
-    Write-Host "Updating Azure Storage Module"
-    Update-Module -Name Az.Storage -Force -Scope CurrentUser -WarningAction Ignore
-    Import-Module -Name Az.Storage -RequiredVersion 3.0.0
-    }
+    $AccountModule = Get-InstalledModule -Name Az.Accounts
+        if($StorageModule.Version -ne "3.0.0"){
+        Write-Host "Updating Azure Storage Module"
+        Update-Module -Name Az.Storage -Force -Scope CurrentUser -WarningAction Ignore
+        Import-Module -Name Az.Storage -RequiredVersion 3.0.0
+        #Import-Module Az -Scope Global
+        }
+        if($AccountModule.Version -ne "2.1.2"){
+        Write-Host "Updating Azure Accounts Module"
+        Update-Module -Name Az.Accounts -Force -Scope CurrentUser -WarningAction Ignore
+        Import-Module -Name Az.Accounts -RequiredVersion 2.1.2
+        #Import-Module Az -Scope Global
+        }
     else
     {
     Write-Host "No Updates needed for Az Modules"
+    #Import-Module Az -Scope Global
     }
-    #Import-Module Az
 }
 
+
 ############  LOGIN SECTION  #############
-Clear-Host
+
 
 if (Get-AzContext) {
     Write-Host "We have connection, start building!!" -ForegroundColor Green
@@ -224,18 +240,20 @@ $WPFadminpassword1.Add_LostFocus({
     }
 })
 
+
 $WPFLocations1.Add_SelectionChanged({
-    
+    $Location = $WPFLocations1.SelectedItem
     Write-Host "Building Variables " -ForegroundColor Green
     $vmsize = Get-AzVMSize -Location $WPFLocations1.SelectedItem | Where {$_.statuscode -eq "OK"}
-    #$vmsize = Get-AzComputeResourceSku | Where-Object {$_.Locations -eq ($WPFLocations1.SelectedItem) -and $_.Restrictions.ReasonCode -ne 'NotAvailableForSubscription' -and $_.ResourceType.Contains("virtualMachines")}
+    $SACAvmsize = $vmsize | Where-Object NumberofCores -GE "4"
     $SQLoffers = Get-AzVMImageOffer -Location $WPFLocations1.SelectedItem -PublisherName "MicrosoftSQLServer" | Select offer
     $serverskus = Get-AzVMImageSku -Location $WPFLocations1.SelectedItem -Offer "WindowsServer" -PublisherName "MicrosoftWindowsServer" | Select Skus    
     $clientskus = Get-AzVMImageSku -Location $WPFLocations1.SelectedItem -Offer "Windows-10" -PublisherName "MicrosoftWindowsDesktop" | Select Skus
     $client365skus = Get-AzVMImageSku -Location $WPFLocations1.SelectedItem -Offer "Office-365" -PublisherName "MicrosoftWindowsDesktop" | Select Skus
     $sharePointSkus = Get-AzVMImageSku -Location $WPFLocations1.SelectedItem -PublisherName MicrosoftSharePoint -Offer MicrosoftSharePointServer
+    #$F5Offers = Get-AzVMImageOffer -Location $WPFLocations1.SelectedItem -PublisherName "f5-networks"
+    #$F5SKUS = Get-AzVMImageSku -Location 'USDoD East' -PublisherName "f5-networks" -Offer "f5-big-ip-byol"
 
-    
     Write-Host "Adding Defaults" -ForegroundColor Green
     $WPFserver1disk.AddChild($DefaultVMDisk)
     $WPFadfsdisk.AddChild($DefaultVMDisk)
@@ -261,6 +279,12 @@ $WPFLocations1.Add_SelectionChanged({
     $WPFserver5size.items.Clear()
     $WPFworkstationsize.items.Clear()
     $WPFWVD_Size.items.Clear()
+    $WPFsacaBIGIP1vmsize.items.Clear()
+    $WPFsacaBIGIP2vmsize.items.Clear()
+    $WPFsacaBIGIP3vmsize.items.Clear()
+    $WPFsacaBIGIP4vmsize.items.Clear()
+    $WPFsacaFWIPS1vmsize.items.Clear()
+    $WPFsacaFWIPS2vmsize.items.Clear()
         foreach ($Size in $vmsize)
             {
                 $WPFserver1vmsize.AddChild($size.Name)
@@ -273,7 +297,17 @@ $WPFLocations1.Add_SelectionChanged({
                 $WPFserver5size.AddChild($size.Name)
                 $WPFworkstationsize.AddChild($size.Name)
                 $WPFWVD_Size.AddChild($size.Name)
-                $WPFsacavmsize.AddChild($size.Name)
+            }
+         foreach ($Size in $SACAvmsize)
+            {
+                $WPFsacaBIGIP1vmsize.AddChild($size.Name)
+                $WPFsacaBIGIP2vmsize.AddChild($size.Name)
+                $WPFsacaBIGIP3vmsize.AddChild($size.Name)
+                $WPFsacaBIGIP4vmsize.AddChild($size.Name)
+                $WPFsacaFWIPS1vmsize.AddChild($size.Name)
+                $WPFsacaFWIPS2vmsize.AddChild($size.Name)
+                $WPFsacaLinuxJBvmsize.AddChild($size.Name)
+                $WPFsacaWinJBvmsize.AddChild($size.Name)
             }
     
     Write-Host "Setting Default Size and Disk" -ForegroundColor Green
@@ -297,8 +331,14 @@ $WPFLocations1.Add_SelectionChanged({
     $WPFworkstationdisk.SelectedItem = $DefaultVMDisk 
     $WPFWVD_Size.SelectedItem = $DefaultVMSize
     $WPFWVD_Disk.SelectedItem = $DefaultVMDisk
-    $WPFsacavmsize.SelectedItem = "Standard_F4s"
-    
+    $WPFsacaBIGIP1vmsize.SelectedItem = "Standard_F4s"
+    $WPFsacaBIGIP2vmsize.SelectedItem = "Standard_F4s"
+    $WPFsacaBIGIP3vmsize.SelectedItem = "Standard_F4s"
+    $WPFsacaBIGIP4vmsize.SelectedItem = "Standard_F4s"
+    $WPFsacaFWIPS1vmsize.SelectedItem = "Standard_F4s"
+    $WPFsacaFWIPS2vmsize.SelectedItem = "Standard_F4s"
+    $WPFsacaLinuxJBvmsize.SelectedItem = "Standard_F4s"
+    $WPFsacaWinJBvmsize.SelectedItem = "Standard_F4s"
     
     #Load Images and Select Default
     Write-Host "Loading Images and SKUs" -ForegroundColor Green
@@ -381,27 +421,49 @@ $WPFLocations1.Add_SelectionChanged({
     $WPFSACA_DNS.BorderBrush = '#FF068113'
     }
     
+    # Query Usage
+    $NetUsage = Get-AznetworkUsage -Location $WPFLocations1.SelectedItem | Where-Object {$_.CurrentValue -gt 0} | Format-Table ResourceType, CurrentValue, Limit
+    $VMUsage = Get-AzvmUsage -Location $WPFLocations1.SelectedItem | Where-Object {$_.CurrentValue -gt 0}
+    $StorageUsage = Get-AzStorageUsage -Location $WPFLocations1.SelectedItem | Where-Object {$_.CurrentValue -gt 0}
+
+    if($NetUsage.Count -gt 0){
+    Write-Host "Network Usage" -ForegroundColor Yellow
+    $NetUsage | Format-Table | Out-String|% {Write-Host $_}
+    $WPFusage2.Text += $NetUsage | Format-Table | Out-String
+    }
+
+    if($VMUsage.Count -gt 0){
+    Write-Host "VM Usage" -ForegroundColor Yellow
+    $VMUsage | Format-Table | Out-String|% {Write-Host $_}
+    $WPFusage2.Text += $VMUsage | Format-Table | Out-String
+    }
+
+    if($StorageUsage.Count -gt 0){
+    Write-Host "Storage Usage" -ForegroundColor Yellow
+    $StorageUsage | Format-Table | Out-String|% {Write-Host $_}
+    $WPFusage2.Text += $StorageUsage | Format-Table | Out-String
+    }
 })
 
 #End Load Images and Select Default
 
 # Query StorageAccount Name
-    $WPFsaname1.Add_LostFocus({
+   $WPFsaname1.Add_LostFocus({
     $CheckSA = Get-AzStorageAccountNameAvailability -Name $WPFsaname1.Text
-    If($CheckSA.NameAvailable -eq $false){
-    Write-host "SA Name Not Available" -ForegroundColor Yellow
-    $WPFSA.Foreground = "#FFF21802" #Red
-    $WPFSA.Text = "Not Available"
-    $WPFsaname1.BorderBrush = '#FFF21802'
-    }
-    else
-    {
-    Write-Host "SA Name Available" -ForegroundColor Green
-    $WPFSA.Foreground = "#FF068113" #Green
-    $WPFSA.Text = "Available"
-    $WPFsaname1.BorderBrush = '#FF068113'
-    }
-    })
+        If($CheckSA.NameAvailable -eq $false){
+        Write-host "SA Name Not Available" -ForegroundColor Yellow
+        $WPFSA.Foreground = "#FFF21802" #Red
+        $WPFSA.Text = "Not Available"
+        $WPFsaname1.BorderBrush = '#FFF21802'
+        }
+        else
+        {
+        Write-Host "SA Name Available" -ForegroundColor Green
+        $WPFSA.Foreground = "#FF068113" #Green
+        $WPFSA.Text = "Available"
+        $WPFsaname1.BorderBrush = '#FF068113'
+        }
+   })
     
     $WPFsaname1.Add_Loaded({
     $CheckSA = Get-AzStorageAccountNameAvailability -Name $WPFsaname1.Text
@@ -610,29 +672,28 @@ $WPFBuild1.Add_Click({
     $addressprefix = $WPFaddressprefix1.text
     $subnetname = $WPFsubnetName1.text
     $bastionsubnet = $WPFbastionsubnet.text
-    $vnet = $prefix + '-vnet'
     $TokenExpireDate = $((get-date).ToUniversalTime().AddDays(1).ToString('yyyy-MM-ddTHH:mm:ss.fffffffZ'))
     $UserFQDN = $WPFadminaccount1.Text + "@" + $WPFDname1.Text
     $VirtualNetworkName = $WPFprefix1.Text + "-vnet"
-    $VirtualNetworkNameSACA = $WPFSACA_DNS.Text + "-scca-vnet"
     $NSG = $WPFprefix1.Text + "-nsg"
     $NSGSACA = $WPFSACA_DNS.Text + "-mgmt-nsg"
     $VMTemplate = ".\Templates\AzureTemplate.json"
     
     if ($WPFSACA.IsChecked -eq $true -and $WPFSACA_Tier.SelectionBoxItem -eq "SACA 1 Tier"){
-    $addressubnet = "192.168.4.0/24"
-    $VirtualNetworkName = $VirtualNetworkNameSACA
-    $subnetname = "VDMS"
+    $addressubnet = $WPFSACA_VDMS_Subnet.Text
+    $VirtualNetworkName = $WPFSACA_VNET_Name.Text
+    $subnetname = $WPFSACA_VDMS_Name.Text
     $NSG = $NSGSACA
     $VMTemplate = ".\Templates\AzureTemplateSACA.json"
     }
         if ($WPFSACA.IsChecked -eq $true -and $WPFSACA_Tier.SelectionBoxItem -eq "SACA 3 Tier"){
-    $addressubnet = "192.168.3.0/24"
-    $VirtualNetworkName = "SCCA_VNet"
-    $subnetname = "internalNorth"
+    $addressubnet = $WPFSACA_VDMS_Subnet.Text
+    $VirtualNetworkName = $WPFSACA_VNET_Name.Text
+    $subnetname = $WPFSACA_VDMS_Name.Text
     $NSG = $NSGSACA
     $VMTemplate = ".\Templates\AzureTemplateSACA.json"
     }
+    
     #-------------------------------------------------------------------------------------------------------------------
     # Grab Custom Image ResourceID for Windows 10 images and feed it into JSON
     #$ImageID = Find-AzureRmResource | Where 'ResourceType' -eq 'Microsoft.Compute/images'
@@ -707,7 +768,9 @@ $WPFBuild1.Add_Click({
             $DSCs = Get-AzStorageBlob -Container dsc -Context $dsccontainer.Context -Verbose
         
             # Get uri DSC for Deployment
-            $assetLocation = (Get-AzStorageBlob -blob 'Configuration.zip' -Container 'dsc' -Context $dsccontainer.Context).context.BlobEndPoint #+ 'dsc/'
+            $assetLocation = (Get-AzStorageBlob -blob 'Configuration.zip' -Container 'dsc' -Context $dsccontainer.Context).context.BlobEndPoint
+            #$blobURL = $assetLocation -replace "https://" -split "/"
+            #[string]$blobURL = $blobURL -replace $saname+"."
             Write-Host $assetLocation -ForegroundColor Green
 
     #####################################################################################################
@@ -753,53 +816,250 @@ $WPFBuild1.Add_Click({
                                        -role $WPFServer1Role.Text `
                                        -Verbose
     }
+    else
+    {
+    Write-Host "Skipping Normal Network Build, using SACA template" -ForegroundColor Yellow
+    }
     #####################################################################################################    
-    # Virtual Networking for SACA
-    # SACA Info: VirtualNetwork = $VirtualNetworkNameSACA (DNSLabel-scca-vnet); Subnet = Internal; IP = 192.168.3.0/24; NSG= DNSLabel-mgmt-nsg
-    # SACA 1Tier Build
+    # 3 Tier SACA Networking
+    #
+    if ($WPFSACA.IsChecked -eq $true -and $WPFSACA_Tier.SelectionBoxItem -eq "SACA 3 Tier"){
+    Write-Host "Building SACA Virtual Network" -ForegroundColor Green
+
+    New-AzResourceGroupDeployment      -TemplateFile .\Templates\SACA\3T_SACA_NetworkBuild.json `
+                                       -ResourceGroupName $rg `
+                                       -Name "SACA_Networking" `
+                                       -VNetName $WPFSACA_VNET_Name.Text `
+                                       -DNSLabel $WPFSACA_DNS.Text `
+                                       -Location $WPFLocations1.SelectedItem `
+                                       -Subnet_Management_Name $WPFSACA_MGT_Name.Text `
+                                       -Subnet_Management $WPFSACA_MGT_Subnet.Text `
+                                       -Subnet_External_Name $WPFSACA_EXT_Name.Text `
+                                       -Subnet_External $WPFSACA_Ext_Subnet.Text `
+                                       -Subnet_External2_Name $WPFSACA_EXT2_Name.Text `
+                                       -Subnet_External2 $WPFSACA_Ext2_Subnet.Text `
+                                       -Subnet_InternalN_Name $WPFSACA_INTN_Name.Text `
+                                       -Subnet_InternalN $WPFSACA_INTN_Subnet.Text `
+                                       -Subnet_InternalS_Name $WPFSACA_INTS_Name.Text `
+                                       -Subnet_InternalS $WPFSACA_INTS_Subnet.Text `
+                                       -Subnet_IPSInt_Name $WPFSACA_IPSInt_Name.Text `
+                                       -Subnet_IPSInt $WPFSACA_IPSInt_Subnet.Text `
+                                       -Subnet_IPSExt_Name $WPFSACA_IPSExt_Name.Text `
+                                       -Subnet_IPSExt $WPFSACA_IPSExt_Subnet.Text `
+                                       -Subnet_VDMS_Name $WPFSACA_VDMS_Name.Text `
+                                       -Subnet_VDMS $WPFSACA_VDMS_Subnet.Text `
+                                       -Verbose
+    }
+    else
+    {
+    Write-Host "Skipping 3 Tier SACA Networking Build" -ForegroundColor Yellow
+    }
+    #####################################################################################################    
+    # 1 Tier SACA Networking
+    #
     if ($WPFSACA.IsChecked -eq $true -and $WPFSACA_Tier.SelectionBoxItem -eq "SACA 1 Tier"){
-    Write-Host "Building 1 Tier SACA" -ForegroundColor Green
+    Write-Host "Building SACA Virtual Network" -ForegroundColor Green
+
+    New-AzResourceGroupDeployment      -TemplateFile .\Templates\SACA\1T_SACA_NetworkBuild.json `
+                                       -ResourceGroupName $rg `
+                                       -Name "SACA_Networking" `
+                                       -VNetName $WPFSACA_VNET_Name.Text `
+                                       -DNSLabel $WPFSACA_DNS.Text `
+                                       -Location $WPFLocations1.SelectedItem `
+                                       -SB_LB_IP $WPFSACA_SBLB_IP.Text `
+                                       -Subnet_Management_Name $WPFSACA_MGT_Name.Text `
+                                       -Subnet_Management $WPFSACA_MGT_Subnet.Text `
+                                       -Subnet_External_Name $WPFSACA_EXT_Name.Text `
+                                       -Subnet_External $WPFSACA_Ext_Subnet.Text `
+                                       -Subnet_InternalS_Name $WPFSACA_INTS_Name.Text `
+                                       -Subnet_InternalS $WPFSACA_INTS_Subnet.Text `
+                                       -Subnet_VDMS_Name $WPFSACA_VDMS_Name.Text `
+                                       -Subnet_VDMS $WPFSACA_VDMS_Subnet.Text `
+                                       -Verbose
+    }
+    else
+    {
+    Write-Host "Skipping 1 Tier SACA Networking Build" -ForegroundColor Yellow
+    }
+    #####################################################################################################    
+    # SACA F5 Tier 3 Build
+        if ($WPFSACA.IsChecked -eq $true -and $WPFSACA_Tier.SelectionBoxItem -eq "SACA 3 Tier"){
+    Write-Host "Building SACA F5 Tier 3 Build" -ForegroundColor Green
 
     # License BYOL
-    Get-AzMarketplaceTerms -Publisher "f5-networks" -Product "f5-big-ip-byol" -Name "f5-big-all-2slot-byol" | Set-AzMarketplaceTerms -Accept
+    Get-AzMarketplaceTerms -Publisher "f5-networks" -Product "f5-big-ip-byol" -Name "f5-big-all-2slot-byol" | Set-AzMarketplaceTerms -Accept -Verbose
     # License PAYG
-    Get-AzMarketplaceTerms -Publisher "f5-networks" -Product "f5-big-ip-best" -Name "f5-bigip-virtual-edition-1g-best-hourly" | Set-AzMarketplaceTerms -Accept
+    Get-AzMarketplaceTerms -Publisher "f5-networks" -Product "f5-big-ip-best" -Name "f5-bigip-virtual-edition-1g-best-hourly" | Set-AzMarketplaceTerms -Accept -Verbose
 
-    New-AzResourceGroupDeployment -TemplateFile .\Templates\3NIC_1Tier_HA\azureDeploy.json -Name "SACA_1Tier" `
-                                  -ResourceGroupName $rg `
-                                  -adminUsername $WPFadminaccount1.Text `
-                                  -adminPasswordOrKey $AdminPassword `
-                                  -WindowsAdminPassword $AdminPassword `
-                                  -dnsLabel $WPFSACA_DNS.Text `
-                                  -instanceType $WPFsacavmsize.SelectedItem `
-                                  -Verbose
+    New-AzResourceGroupDeployment      -TemplateFile .\Templates\SACA\3T_SACA_F5_Deploy.json `
+                                       -ResourceGroupName $rg `
+                                       -Name "F5_Build" `
+                                       -StorageAccountName $WPFsaname1.Text `
+                                       -adminUsername $WPFadminaccount1.Text `
+                                       -adminPassword $WPFadminpassword1.SecurePassword `
+                                       -BigIP_VM1_Name $WPFSACA_VM_BigIP1.Text `
+                                       -BigIP_VM2_Name $WPFSACA_VM_BigIP2.Text `
+                                       -BigIP_VM3_Name $WPFSACA_VM_BigIP3.Text `
+                                       -BigIP_VM4_Name $WPFSACA_VM_BigIP4.Text `
+                                       -IPS_FW0_Name $WPFSACA_VM_IPS1.Text `
+                                       -IPS_FW1_Name $WPFSACA_VM_IPS2.Text `
+                                       -SB_LB_Name $WPFSACA_SBLB.Text `
+                                       -NB_LB_Name $WPFSACA_NBLB.Text `
+                                       -SB_LB_IP $WPFSACA_SBLB_IP.Text `
+                                       -BigIP_VM1_Size $WPFsacaBIGIP1vmsize.SelectedItem `
+                                       -BigIP_VM2_Size $WPFsacaBIGIP2vmsize.SelectedItem `
+                                       -BigIP_VM3_Size $WPFsacaBIGIP3vmsize.SelectedItem `
+                                       -BigIP_VM4_Size $WPFsacaBIGIP4vmsize.SelectedItem `
+                                       -BIGIP_VM1_ExternalPri_IP $WPFSACA_BIGIP1Ext1Pri_IP.Text `
+                                       -BIGIP_VM1_ExternalSec_IP $WPFSACA_BIGIP1Ext1Sec_IP.Text `
+                                       -BIGIP_VM1_InternalNPri_IP $WPFSACA_BIGIP1INTNPri_IP.Text `
+                                       -BIGIP_VM1_InternalNSec_IP $WPFSACA_BIGIP1INTNSec_IP.Text `
+                                       -BIGIP_VM2_ExternalPri_IP $WPFSACA_BIGIP2Ext1Pri_IP.Text `
+                                       -BIGIP_VM2_ExternalSec_IP $WPFSACA_BIGIP2Ext1Sec_IP.Text `
+                                       -BIGIP_VM2_InternalNPri_IP $WPFSACA_BIGIP2INTNPri_IP.Text `
+                                       -BIGIP_VM2_InternalNSec_IP $WPFSACA_BIGIP2INTNSec_IP.Text `
+                                       -BIGIP_VM3_External2Pri_IP $WPFSACA_BIGIP3Ext2Pri_IP.Text `
+                                       -BIGIP_VM3_External2Sec_IP $WPFSACA_BIGIP3Ext2Sec_IP.Text `
+                                       -BIGIP_VM3_InternalSPri_IP $WPFSACA_BIGIP3INTSPri_IP.Text `
+                                       -BIGIP_VM3_InternalSSec_IP $WPFSACA_BIGIP3INTSSec_IP.Text `
+                                       -BIGIP_VM4_External2Pri_IP $WPFSACA_BIGIP4Ext2Pri_IP.Text `
+                                       -BIGIP_VM4_External2Sec_IP $WPFSACA_BIGIP4Ext2Sec_IP.Text `
+                                       -BIGIP_VM4_InternalSPri_IP $WPFSACA_BIGIP4INTSPri_IP.Text `
+                                       -BIGIP_VM4_InternalSSec_IP $WPFSACA_BIGIP4INTSSec_IP.Text `
+                                       -BIGIP_VM1_Management_IP $WPFSACA_BIGIP1MGT_IP.Text `
+                                       -BIGIP_VM2_Management_IP $WPFSACA_BIGIP2MGT_IP.Text `
+                                       -BIGIP_VM3_Management_IP $WPFSACA_BIGIP3MGT_IP.Text `
+                                       -BIGIP_VM4_Management_IP $WPFSACA_BIGIP4MGT_IP.Text `
+                                       -VNetName $WPFSACA_VNET_Name.Text `
+                                       -DNSLabel $WPFSACA_DNS.Text `
+                                       -Location $WPFLocations1.SelectedItem `
+                                       -Subnet_Management_Name $WPFSACA_MGT_Name.Text `
+                                       -Subnet_External_Name $WPFSACA_EXT_Name.Text `
+                                       -Subnet_External2_Name $WPFSACA_EXT2_Name.Text `
+                                       -Subnet_InternalN_Name $WPFSACA_INTN_Name.Text `
+                                       -Subnet_InternalS_Name $WPFSACA_INTS_Name.Text `
+                                       -Subnet_IPSInt_Name $WPFSACA_IPSInt_Name.Text `
+                                       -Subnet_IPSExt_Name $WPFSACA_IPSExt_Name.Text `
+                                       -Subnet_VDMS_Name $WPFSACA_VDMS_Name.Text `
+                                       -AsJob `
+                                       -Verbose
+    Start-Sleep -Seconds 5
+    $SACA3Job = Get-Job | Select -Last 1
+    If($SACA3Job.State -eq "Failed"){
+    Write-Host "SACA 3 Tier Failed" -ForegroundColor Red
+    Write-Host $SACA3Job.Error -ForegroundColor Red
+    }
+    Write-Host "SACA 3 Tier Job Is" $SACA3Job.State -ForegroundColor Green
+    }
+    else
+    {
+    Write-Host "Skipping SACA 3 Tier Build" -ForegroundColor Yellow
+    }
+    #####################################################################################################    
+    # SACA F5 Tier 1 Build
+        if ($WPFSACA.IsChecked -eq $true -and $WPFSACA_Tier.SelectionBoxItem -eq "SACA 1 Tier"){
+    Write-Host "Building SACA F5 Tier 1 Build" -ForegroundColor Green
 
+    # License BYOL
+    Get-AzMarketplaceTerms -Publisher "f5-networks" -Product "f5-big-ip-byol" -Name "f5-big-all-2slot-byol" | Set-AzMarketplaceTerms -Accept -Verbose
+    # License PAYG
+    Get-AzMarketplaceTerms -Publisher "f5-networks" -Product "f5-big-ip-best" -Name "f5-bigip-virtual-edition-1g-best-hourly" | Set-AzMarketplaceTerms -Accept -Verbose
+
+    New-AzResourceGroupDeployment      -TemplateFile .\Templates\SACA\1T_SACA_F5_Deploy.json `
+                                       -ResourceGroupName $rg `
+                                       -Name "F5_Build" `
+                                       -StorageAccountName $WPFsaname1.Text `
+                                       -adminUsername $WPFadminaccount1.Text `
+                                       -adminPassword $WPFadminpassword1.SecurePassword `
+                                       -BigIP_VM1_Name $WPFSACA_VM_BigIP1.Text `
+                                       -BigIP_VM2_Name $WPFSACA_VM_BigIP2.Text `
+                                       -SB_LB_Name $WPFSACA_SBLB.Text `
+                                       -NB_LB_Name $WPFSACA_NBLB.Text `
+                                       -SB_LB_IP $WPFSACA_SBLB_IP.Text `
+                                       -BigIP_VM1_Size $WPFsacaBIGIP1vmsize.SelectedItem `
+                                       -BigIP_VM2_Size $WPFsacaBIGIP2vmsize.SelectedItem `
+                                       -BIGIP_VM1_ExternalPri_IP $WPFSACA_BIGIP1Ext1Pri_IP.Text `
+                                       -BIGIP_VM1_ExternalSec_IP $WPFSACA_BIGIP1Ext1Sec_IP.Text `
+                                       -BIGIP_VM1_InternalPri_IP $WPFSACA_BIGIP1INTPri_IP.Text `
+                                       -BIGIP_VM1_InternalSec_IP $WPFSACA_BIGIP1INTSec_IP.Text `
+                                       -BIGIP_VM2_ExternalPri_IP $WPFSACA_BIGIP2Ext1Pri_IP.Text `
+                                       -BIGIP_VM2_ExternalSec_IP $WPFSACA_BIGIP2Ext1Sec_IP.Text `
+                                       -BIGIP_VM2_InternalPri_IP $WPFSACA_BIGIP2INTPri_IP.Text `
+                                       -BIGIP_VM2_InternalSec_IP $WPFSACA_BIGIP2INTSec_IP.Text `
+                                       -BIGIP_VM1_Management_IP $WPFSACA_BIGIP1MGT_IP.Text `
+                                       -BIGIP_VM2_Management_IP $WPFSACA_BIGIP2MGT_IP.Text `
+                                       -VNetName $WPFSACA_VNET_Name.Text `
+                                       -DNSLabel $WPFSACA_DNS.Text `
+                                       -Location $WPFLocations1.SelectedItem `
+                                       -Subnet_Management_Name $WPFSACA_MGT_Name.Text `
+                                       -Subnet_External_Name $WPFSACA_EXT_Name.Text `
+                                       -Subnet_InternalS_Name $WPFSACA_INTS_Name.Text `
+                                       -Subnet_VDMS_Name $WPFSACA_VDMS_Name.Text `
+                                       -AsJob `
+                                       -Verbose
+    Start-Sleep -Seconds 5
+    $SACA1Job = Get-Job | Select -Last 1
+    If($SACA1Job.State -eq "Failed"){
+    Write-Host "SACA 1 Tier Failed" -ForegroundColor Red
+    Write-Host $SACA1Job.Error -ForegroundColor Red
+    }
+    Write-Host "SACA 1 Tier Job Is" $SACA1Job.State -ForegroundColor Green
     }
     else
     {
     Write-Host "Skipping SACA 1 Tier Build" -ForegroundColor Yellow
     }
-    # SACA 1Tier Build
-    if ($WPFSACA.IsChecked -eq $true -and $WPFSACA_Tier.SelectionBoxItem -eq "SACA 3 Tier"){
-    Write-Host "Building 3 Tier SACA" -ForegroundColor Green
+    ##################################################################################################### 
+    # SACA IPS Build
+        if ($WPFSACA.IsChecked -eq $true -and $WPFSACA_Tier.SelectionBoxItem -eq "SACA 3 Tier"){
+    Write-Host "Building SACA IPS/FW Build" -ForegroundColor Green
 
-    # License BYOL
-    Get-AzMarketplaceTerms -Publisher "f5-networks" -Product "f5-big-ip-byol" -Name "f5-big-all-2slot-byol" | Set-AzMarketplaceTerms -Accept
-    # License PAYG
-    Get-AzMarketplaceTerms -Publisher "f5-networks" -Product "f5-big-ip-best" -Name "f5-bigip-virtual-edition-1g-best-hourly" | Set-AzMarketplaceTerms -Accept
-
-    New-AzResourceGroupDeployment -TemplateFile .\Templates\3NIC_3Tier_HA\azureDeploy.json -Name "SACA_3Tier" `
-                                  -ResourceGroupName $rg `
-                                  -adminUsername $WPFadminaccount1.Text `
-                                  -adminPasswordOrKey $AdminPassword `
-                                  -WindowsAdminPassword $AdminPassword `
-                                  -dnsLabel $WPFSACA_DNS.Text `
-                                  -instanceType $WPFsacavmsize.SelectedItem `
-                                  -Verbose
+    New-AzResourceGroupDeployment      -TemplateFile .\Templates\SACA\3T_SACA_IPSDeploy.json `
+                                       -ResourceGroupName $rg `
+                                       -Name "IPSFW_Build" `
+                                       -StorageAccountName $WPFsaname1.Text `
+                                       -adminUsername $WPFadminaccount1.Text `
+                                       -adminPassword $WPFadminpassword1.SecurePassword `
+                                       -VNetName $WPFSACA_VNET_Name.Text `
+                                       -DNSLabel $WPFSACA_DNS.Text `
+                                       -Location $WPFLocations1.SelectedItem `
+                                       -Subnet_Management_Name $WPFSACA_MGT_Name.Text `
+                                       -Subnet_External_Name $WPFSACA_EXT_Name.Text `
+                                       -Subnet_External2_Name $WPFSACA_EXT2_Name.Text `
+                                       -Subnet_InternalN_Name $WPFSACA_INTN_Name.Text `
+                                       -Subnet_InternalS_Name $WPFSACA_INTS_Name.Text `
+                                       -Subnet_IPSInt_Name $WPFSACA_IPSInt_Name.Text `
+                                       -Subnet_IPSExt_Name $WPFSACA_IPSExt_Name.Text `
+                                       -Subnet_VDMS_Name $WPFSACA_VDMS_Name.Text `
+                                       -IPS1ExtPri_IP $WPFSACA_IPS1ExternalPri_IP.Text `
+                                       -IPS1ExtSec_IP $WPFSACA_IPS1ExternalSec_IP.Text `
+                                       -IPS2ExtPri_IP $WPFSACA_IPS2ExternalPri_IP.Text `
+                                       -IPS2ExtSec_IP $WPFSACA_IPS2ExternalSec_IP.Text `
+                                       -IPSLB_IP $WPFSACA_IPSLB_IP.Text `
+                                       -IPS1IntPri_IP $WPFSACA_IPS1InternalPri_IP.Text `
+                                       -IPS1IntSec_IP $WPFSACA_IPS1InternalSec_IP.Text `
+                                       -IPS2IntPri_IP $WPFSACA_IPS2InternalPri_IP.Text `
+                                       -IPS2IntSec_IP $WPFSACA_IPS2InternalSec_IP.Text `
+                                       -IPS1MGMT_IP $WPFSACA_IP1SMGT_IP.Text `
+                                       -IPS2MGMT_IP $WPFSACA_IP2SMGT_IP.Text `
+                                       -IPS_FW0_Size $WPFsacaFWIPS1vmsize.Text `
+                                       -IPS_FW1_Size $WPFsacaFWIPS2vmsize.Text `
+                                       -IPS_FW0_Name $WPFSACA_VM_IPS1.Text `
+                                       -IPS_FW1_Name $WPFSACA_VM_IPS2.Text `
+                                       -IPS_LB_Name $WPFSACA_IPSLB.Text `
+                                       -AsJob `
+                                       -Verbose
+    Start-Sleep -Seconds 5
+    $IPSJob = Get-Job | Select -Last 1
+    If($IPSJob.State -eq "Failed"){
+    Write-Host "SACA IPS Failed" -ForegroundColor Red
+    Write-Host $IPSJob.Error -ForegroundColor Red
+        }
+    Write-Host "SACA IPS Job Is" $IPSJob.State -ForegroundColor Green
     }
     else
     {
-    Write-Host "Skipping SACA 3 Tier Build" -ForegroundColor Yellow
+    Write-Host "Skipping SACA 3 Tier IPS Build" -ForegroundColor Yellow
     }
 
     #####################################################################################################    
@@ -807,28 +1067,71 @@ $WPFBuild1.Add_Click({
     if ($WPFBastion.IsChecked -eq $true){
     Write-Host "Building Bastion Host" -ForegroundColor Green
 
-    $vnet = Get-AzVirtualNetwork -Name $VirtualNetworkName -ResourceGroupName $WPFresourcegroup1.Text
-    $vnet.AddressSpace.AddressPrefixes.Add($bastionsubnet)
-    Set-AzVirtualNetwork -VirtualNetwork $vnet
-
+    $bastionnet = Get-AzVirtualNetwork -Name $VirtualNetworkName -ResourceGroupName $rg
+    $bastionnet.AddressSpace.AddressPrefixes.Add($bastionsubnet)
+    Set-AzVirtualNetwork -VirtualNetwork $bastionnet    
+    #New-AzVirtualNetworkSubnetConfig -Name "AzureBastionSubnet" -AddressPrefix $bastionsubnet
+    #$bastionIP = New-AzPublicIpAddress -Name "AzureBastionSubnet-PIP" -ResourceGroupName $rg -Location $AzureLocation -Sku Standard -AllocationMethod Static -IpAddressVersion IPv4
+    #New-AzBastion -ResourceGroupName $rg -Name "Bastion" -PublicIpAddressId $bastionIP.id -VirtualNetworkId $vnet.Id
+    
     New-AzResourceGroupDeployment @commonVariables `
                                        -Name "BastionHost" `
                                        -TemplateFile .\Templates\Bastion.json `
-                                       -vmsize $WPFserver1vmsize.SelectedItem `
-                                       -vmdisk $WPFserver1disk.SelectedItem `
-                                       -publisher "MicrosoftWindowsServer" `
-                                       -offer "WindowsServer" `
-                                       -sku $WPFserver1image.SelectedItem `
-                                       -servername $WPFServer1Name.Text `
-                                       -ip $WPFserver1IP.Text `
-                                       -role $WPFServer1Role.Text `
-                                       -AsJob `
                                        -Verbose
+
     }
     else
     {
     Write-Host "Skipping Bastion Host Build" -ForegroundColor Yellow
     }
+
+    #####################################################################################################    
+    # Get Subnet info and Disable Private EndPoint network policies
+    $vnet = Get-AzVirtualNetwork -ResourceGroupName $rg -Name $VirtualNetworkName -Verbose
+    $subnet = $vnet | Select-Object -ExpandProperty subnets | Where-Object Name -eq $subnetname
+    $subnet.PrivateEndpointNetworkPolicies = "Disabled"
+    $vnet | Set-AzVirtualNetwork
+
+    # Set DNS servers on VNET
+    if ($WPFserver1.IsChecked -eq $true){
+    $array = @($WPFserver1IP.Text, "168.63.129.16")
+    $object = new-object -type PSObject -Property @{"DnsServers" = $array}
+    $vnet.DhcpOptions = $object
+    $vnet|Set-AzVirtualNetwork
+    }
+
+    if ($WPFserver1.IsChecked -eq $true -and $WPFDC_Count.SelectionBoxItem -eq "2"){
+    $IP2 = $WPFserver1IP.Text.Split('.')
+    $IP2[-1] = "40"
+    $IP2 = $IP2 -join "."
+    $array = @($WPFserver1IP.Text, $IP2, "168.63.129.16")
+    $object = new-object -type PSObject -Property @{"DnsServers" = $array}
+    $vnet.DhcpOptions = $object
+    $vnet|Set-AzVirtualNetwork
+    }
+
+    # Setup Private EndPoints and DNS Zone
+    $context = Get-AzContext
+    If($context.Environment.Name -EQ "AzureUSGovernment"){
+    $blobURL = "blob.core.usgovcloudapi.net"
+    }
+    else
+    {
+    $blobURL = "blob.core.windows.net"
+    }
+
+    $privateEndpointConnection = New-AzPrivateLinkServiceConnection -Name "PrivateConnection" -PrivateLinkServiceId $storageaccount.Id -GroupId 'blob' -Verbose
+    New-AzPrivateEndpoint -Name "PrivateStorage" -ResourceGroupName $rg -Location $AzureLocation -Subnet $Subnet -PrivateLinkServiceConnection $privateEndpointConnection -Verbose
+    $zone = New-AzPrivateDnsZone -ResourceGroupName $rg -Name $blobURL -Verbose
+    $link = New-AzPrivateDnsVirtualNetworkLink -ResourceGroupName $rg -ZoneName $blobURL -Name "Storage-Link" -VirtualNetworkId $vnet.Id -Verbose
+    $config = New-AzPrivateDnsZoneConfig -Name $blobURL -PrivateDnsZoneId $Zone.ResourceId -Verbose
+    New-AzPrivateDnsZoneGroup -ResourceGroupName $rg -Name "ZoneGroup" -PrivateEndpointName "PrivateStorage" -PrivateDnsZoneConfig $Config -Verbose
+    
+
+    # Domain Private DNS
+    New-AzPrivateDnsZone -ResourceGroupName $rg -Name $DomainName -Verbose
+    New-AzPrivateDnsVirtualNetworkLink -ResourceGroupName $rg -ZoneName $DomainName -Name "Domain-Link" -VirtualNetworkId $vnet.Id -Verbose -EnableRegistration
+
     #####################################################################################################    
     # DC/CA Build
     if ($WPFserver1.IsChecked -eq $true){
@@ -847,8 +1150,13 @@ $WPFBuild1.Add_Click({
                                        -role $WPFServer1Role.Text `
                                        -AsJob `
                                        -Verbose
-    #write-host "Sleeping for 90secs" -ForegroundColor Green
-    #Start-Sleep -Seconds 
+    Start-Sleep -Seconds 5
+    $DCJob = Get-Job | Select -Last 1
+        If($DCJob.State -eq "Failed"){
+        Write-Host "DC Failed" -ForegroundColor Red
+        Write-Host $DCJob.Error -ForegroundColor Red
+        }
+        Write-Host "DC Job Is" $DCJob.State -ForegroundColor Green
     }
     else
     {
@@ -858,10 +1166,6 @@ $WPFBuild1.Add_Click({
     # Add Another DC Build
     if ($WPFDC_Count.SelectionBoxItem -eq "2"){
     Write-Host "Adding Second DC" -ForegroundColor Green
-    $IP2 = $WPFserver1IP.Text.Split('.')
-    $IP2[-1] = "40"
-    $IP2 = $IP2 -join "."
-
     New-AzResourceGroupDeployment @commonVariables `
                                        -Name "DC02" `
                                        -TemplateFile $VMTemplate `
@@ -875,8 +1179,14 @@ $WPFBuild1.Add_Click({
                                        -role "AddDC" `
                                        -AsJob `
                                        -Verbose
-    #write-host "Sleeping for 90secs" -ForegroundColor Green
-    #Start-Sleep -Seconds 
+    Start-Sleep -Seconds 5
+    #$DCJob = Get-Job | Where Name -Like *DC* | Select -Last 1
+    $DC2Job = Get-Job | Select -Last 1
+        If($DC2Job.State -eq "Failed"){
+        Write-Host "DC2 Failed" -ForegroundColor Red
+        Write-Host $DC2Job.Error -ForegroundColor Red
+        }
+        Write-Host "DC2 Job Is" $ADFSJob.State -ForegroundColor Green
     }
     else
     {
@@ -900,6 +1210,13 @@ $WPFBuild1.Add_Click({
                                        -role $WPFADFSRole.Text `
                                        -AsJob `
                                        -Verbose
+    Start-Sleep -Seconds 5
+        $ADFSJob = Get-Job | Select -Last 1
+        If($ADFSJob.State -eq "Failed"){
+        Write-Host "ADFS Failed" -ForegroundColor Red
+        Write-Host $ADFSJob.Error -ForegroundColor Red
+        }
+        Write-Host "ADFS Job Is" $ADFSJob.State -ForegroundColor Green
     }
     else
     {
@@ -923,6 +1240,13 @@ $WPFBuild1.Add_Click({
                                        -role $WPFexRole.Text `
                                        -AsJob `
                                        -Verbose
+        Start-Sleep -Seconds 5
+        $EXJob = Get-Job | Select -Last 1
+        If($EXJob.State -eq "Failed"){
+        Write-Host "Exchange Failed" -ForegroundColor Red
+        Write-Host $EXJob.Error -ForegroundColor Red
+        }
+        Write-Host "Exchange Job Is" $EXJob.State -ForegroundColor Green
     }
     else
     {
@@ -945,7 +1269,14 @@ $WPFBuild1.Add_Click({
                                        -ip $WPFsccm_ps_ip.Text `
                                        -role "PS" `
                                        -AsJob `
-                                       -Verbose 
+                                       -Verbose
+        Start-Sleep -Seconds 5
+        $PSJob = Get-Job | Select -Last 1
+        If($PSJob.State -eq "Failed"){
+        Write-Host "SCCM Primary Failed" -ForegroundColor Red
+        Write-Host $PSJob.Error -ForegroundColor Red
+        }
+        Write-Host "SCCM Primary Job Is" $PSJob.State -ForegroundColor Green
 
 
     Write-Host "Building SCCM DP/MP Server" -ForegroundColor Green
@@ -961,7 +1292,14 @@ $WPFBuild1.Add_Click({
                                        -ip $WPFsccm_dp_ip.Text `
                                        -role "DPMP" `
                                        -AsJob `
-                                       -Verbose 
+                                       -Verbose
+        Start-Sleep -Seconds 5
+        $DPJob = Get-Job | Select -Last 1
+        If($DPJob.State -eq "Failed"){
+        Write-Host "SCCM DP/MP Failed" -ForegroundColor Red
+        Write-Host $DPJob.Error -ForegroundColor Red
+        }
+        Write-Host "SCCM DP/MP Job Is" $DPJob.State -ForegroundColor Green
     }
     else
     {
@@ -984,7 +1322,14 @@ $WPFBuild1.Add_Click({
                                        -ip $WPFworkstationIP.Text `
                                        -role $WPFworkstationRole.Text `
                                        -AsJob `
-                                       -Verbose 
+                                       -Verbose
+        Start-Sleep -Seconds 5
+        $WKJob = Get-Job | Select -Last 1
+        If($WKJob.State -eq "Failed"){
+        Write-Host "Workstation Failed" -ForegroundColor Red
+        Write-Host $WKJob.Error -ForegroundColor Red
+        }
+        Write-Host "Workstation Job Is" $WKJob.State -ForegroundColor Green
 
     }
     else
@@ -1008,7 +1353,14 @@ $WPFBuild1.Add_Click({
                                        -ip $WPFSQLIP.Text `
                                        -role $WPFSQLRole.Text `
                                        -AsJob `
-                                       -Verbose 
+                                       -Verbose
+        Start-Sleep -Seconds 5
+        $SQLJob = Get-Job | Select -Last 1
+        If($SQLJob.State -eq "Failed"){
+        Write-Host "SQL Failed" -ForegroundColor Red
+        Write-Host $SQLJob.Error -ForegroundColor Red
+        }
+        Write-Host "SQL Job Is" $SQLJob.State -ForegroundColor Green
 
 
     New-AzResourceGroupDeployment @commonVariables `
@@ -1023,7 +1375,14 @@ $WPFBuild1.Add_Click({
                                        -ip $WPFsharepointIP.Text `
                                        -role $WPFsharepointRole.Text `
                                        -AsJob `
-                                       -Verbose 
+                                       -Verbose
+        Start-Sleep -Seconds 5
+        $SPJob = Get-Job | Select -Last 1
+        If($SPJob.State -eq "Failed"){
+        Write-Host "SharePoint Failed" -ForegroundColor Red
+        Write-Host $SPJob.Error -ForegroundColor Red
+        }
+        Write-Host "SharePoint Job Is" $SPJob.State -ForegroundColor Green
 
 
     }
@@ -1032,7 +1391,7 @@ $WPFBuild1.Add_Click({
     Write-Host "Skipping SharePoint Build" -ForegroundColor Yellow
     }
     #####################################################################################################
-    # Server Build
+    # Extra Server Build
     if ($WPFserver5.IsChecked -eq $true){
     Write-Host "Building" $WPFServer5Name.Text -ForegroundColor Green
     New-AzResourceGroupDeployment @commonVariables `
@@ -1047,7 +1406,14 @@ $WPFBuild1.Add_Click({
                                        -ip $WPFserver5IP.Text `
                                        -role $WPFServer5Role.Text `
                                        -AsJob `
-                                       -Verbose 
+                                       -Verbose
+        Start-Sleep -Seconds 5
+        $SRVJob = Get-Job | Select -Last 1
+        If($SRVJob.State -eq "Failed"){
+        Write-Host $WPFServer5Name.Text "Failed" -ForegroundColor Red
+        Write-Host $SRVJob.Error -ForegroundColor Red
+        }
+        Write-Host $WPFServer5Name.Text "Job Is" $SRVJob.State -ForegroundColor Green
                                                                                                        
     }
     else
@@ -1057,8 +1423,8 @@ $WPFBuild1.Add_Click({
     #####################################################################################################
     # WVD Build
     if ($WPFWVD.IsChecked -eq $true){
-    Write-Host "Building Windows Virtual Desktop, will sleep for 10mins allow time for the DC to build." -ForegroundColor Green
-    Start-Sleep -Seconds 600 -Verbose
+    Write-Host "Building Windows Virtual Desktop, will sleep for 11mins allow time for the DC to build." -ForegroundColor Green
+    Start-Sleep -Seconds 660 -Verbose
     New-AzResourceGroupDeployment -TemplateFile .\Templates\AzureWVD.json -Name "WVD" `
                                   -hostpoolName $WPFWVD_HostName.text `
                                   -domain $DomainName `
@@ -1084,6 +1450,7 @@ $WPFBuild1.Add_Click({
                                   -addToWorkspace $false `
                                   -tokenExpirationTime $TokenExpireDate `
                                   -createAvailabilitySet $true `
+                                  -AsJob `
                                   -Verbose
 
     }
@@ -1109,7 +1476,5 @@ $async = $Form.Dispatcher.InvokeAsync({
     $Form.ShowDialog() | out-null
 })
 $async.Wait() | Out-Null
-
-
 
 Pop-Location

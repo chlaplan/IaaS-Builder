@@ -1,258 +1,395 @@
-<Window
+<Window 
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:Xml="clr-namespace:System.Xml;assembly=System.Xml"
         mc:Ignorable="d"
-        Title="Azure Builder v2.0" Height="680.203" Width="1296.946">
-    <Grid Margin="0,0,5,0.5">
+        Title="Azure Builder v2.1" Height="970.5" Width="1442">
+    <Grid Margin="0,0,5,-0.333">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="0*"/>
+            <ColumnDefinition Width="117*"/>
+            <ColumnDefinition Width="1207*"/>
             <ColumnDefinition Width="101*"/>
-            <ColumnDefinition Width="1028*"/>
-            <ColumnDefinition Width="103*"/>
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
-        <ComboBox x:Name="Subscription1" HorizontalAlignment="Left" Margin="20.333,21,0,0" VerticalAlignment="Top" Width="221" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2"/>
-        <Label Content="Subscription" HorizontalAlignment="Left" Height="24" Margin="12,19,0,0" VerticalAlignment="Top" Width="80" Grid.Column="1" FontWeight="Bold"/>
-        <Label Content="Domain Name" HorizontalAlignment="Left" Height="24" Margin="251.333,58,0,0" VerticalAlignment="Top" Width="105" Grid.Column="2" FontWeight="Bold"/>
-        <Label Content="Resource Group" HorizontalAlignment="Left" Height="24" Margin="11,82,0,0" VerticalAlignment="Top" Width="99" Grid.Column="1" FontWeight="Bold" Grid.ColumnSpan="2"/>
-        <Label Content="Prefix" HorizontalAlignment="Left" Height="24" Margin="11,111,0,0" VerticalAlignment="Top" Width="99" Grid.Column="1" FontWeight="Bold" Grid.ColumnSpan="2"/>
-        <TextBox x:Name="Dname1" HorizontalAlignment="Left" Height="23" Margin="372.333,62,0,0" TextWrapping="Wrap" Text="my.customer.com" VerticalAlignment="Top" Width="150" UndoLimit="30" Grid.Column="2"/>
-        <TextBox x:Name="resourcegroup1" HorizontalAlignment="Left" Height="23" Margin="22.333,86,0,0" TextWrapping="Wrap" Text="rgtestlab" VerticalAlignment="Top" Width="132" UndoLimit="20" Grid.Column="2"/>
-        <TextBox x:Name="prefix1" HorizontalAlignment="Left" Height="23" Margin="22.333,115,0,0" TextWrapping="Wrap" Text="ehu" VerticalAlignment="Top" Width="132" UndoLimit="3" Grid.Column="2"/>
-        <Label Content="Locations" HorizontalAlignment="Left" Height="24" Margin="250.333,21,0,0" VerticalAlignment="Top" Width="80" Grid.Column="2" FontWeight="Bold"/>
-        <ComboBox x:Name="Locations1" HorizontalAlignment="Left" Margin="371.333,23,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2">
-            <MenuItem/>
-        </ComboBox>
-        <Button x:Name="Exit1" Content="Exit" HorizontalAlignment="Left" Margin="16.333,600,0,0" VerticalAlignment="Top" Width="76" IsCancel="True" Grid.Column="3" Height="20"/>
-        <Button x:Name="Build1" Content="Build" Grid.Column="3" HorizontalAlignment="Left" Margin="15.333,559,0,0" VerticalAlignment="Top" Width="76" Height="20"/>
-        <Label Content="Storage Account" HorizontalAlignment="Left" Height="24" Margin="11,54,0,0" VerticalAlignment="Top" Width="106" Grid.Column="1" FontWeight="Bold" Grid.ColumnSpan="2"/>
-        <TextBox x:Name="saname1" HorizontalAlignment="Left" Height="23" Margin="22.333,58,0,0" TextWrapping="Wrap" Text="saname" VerticalAlignment="Top" Width="132" UndoLimit="20" Grid.Column="2" BorderBrush="#FFABACAB"/>
-        <PasswordBox x:Name="adminpassword1" HorizontalAlignment="Left" Margin="372.333,127,0,0" VerticalAlignment="Top" Width="150" Height="18" Grid.Column="2"/>
-        <Label Content="Admin Password" HorizontalAlignment="Left" Height="24" Margin="251.333,121,0,0" VerticalAlignment="Top" Width="105" Grid.Column="2" FontWeight="Bold"/>
-        <TextBox x:Name="adminaccount1" HorizontalAlignment="Left" Height="23" Margin="372.333,96,0,0" TextWrapping="Wrap" Text="xadmin" VerticalAlignment="Top" Width="150" UndoLimit="30" Grid.Column="2"/>
-        <Label Content="Admin Account" HorizontalAlignment="Left" Height="24" Margin="251.333,92,0,0" VerticalAlignment="Top" Width="105" Grid.Column="2" FontWeight="Bold"/>
-        <Label Content="AddressPreFix" HorizontalAlignment="Left" Height="24" Margin="10,153,0,0" VerticalAlignment="Top" Width="99" Grid.Column="1" FontWeight="Bold" Grid.ColumnSpan="2"/>
-        <TextBox x:Name="addressprefix1" HorizontalAlignment="Left" Height="23" Margin="22.333,153,0,0" TextWrapping="Wrap" Text="192.168.0.0/16" VerticalAlignment="Top" Width="132" UndoLimit="20" Grid.Column="2"/>
-        <Label Content="AddressSubnet" HorizontalAlignment="Left" Height="24" Margin="10,188,0,0" VerticalAlignment="Top" Width="99" Grid.Column="1" FontWeight="Bold" Grid.ColumnSpan="2"/>
-        <TextBox x:Name="addresssubnet1" HorizontalAlignment="Left" Height="23" Margin="22.333,192,0,0" TextWrapping="Wrap" Text="192.168.4.0/24" VerticalAlignment="Top" Width="132" UndoLimit="20" Grid.Column="2"/>
-        <Label Content="SubnetName" HorizontalAlignment="Left" Height="24" Margin="251.333,148,0,0" VerticalAlignment="Top" Width="106" Grid.Column="2" FontWeight="Bold"/>
-        <TextBox x:Name="subnetName1" HorizontalAlignment="Left" Height="23" Margin="372.333,152,0,0" TextWrapping="Wrap" Text="Servers" VerticalAlignment="Top" Width="150" UndoLimit="20" Grid.Column="2"/>
-        <CheckBox x:Name="server1" Grid.ColumnSpan="2" Content="DC/CA" HorizontalAlignment="Left" Margin="12,259,0,0" VerticalAlignment="Top" IsChecked="True" IsEnabled="False" Height="16" Width="62" FontWeight="Bold"/>
-        <Label Content="Server Name" HorizontalAlignment="Left" Margin="52.667,227,0,0" VerticalAlignment="Top" Height="27" Width="81" FontWeight="Bold" RenderTransformOrigin="-0.313,-2.291" Grid.Column="2"/>
-        <Label Content="Server Private IP" HorizontalAlignment="Left" Margin="174.667,227,0,0" VerticalAlignment="Top" Height="27" Width="114" FontWeight="Bold" RenderTransformOrigin="-0.313,-2.291" Grid.Column="2"/>
-        <Label Content="Server Role" HorizontalAlignment="Left" Margin="294.667,227,0,0" VerticalAlignment="Top" Height="27" Width="114" FontWeight="Bold" RenderTransformOrigin="-0.313,-2.291" Grid.Column="2"/>
-        <Label Grid.ColumnSpan="2" Content="Build" HorizontalAlignment="Left" Margin="12,227,0,0" VerticalAlignment="Top" Height="27" Width="46" FontWeight="Bold" RenderTransformOrigin="-0.313,-2.291"/>
-        <TextBox x:Name="Server1Name" HorizontalAlignment="Left" Height="23" Margin="52.667,256,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="105" Text="DC01" Grid.Column="2"/>
-        <TextBox x:Name="server1IP" HorizontalAlignment="Left" Height="23" Margin="174.667,254,0,0" TextWrapping="Wrap" Text="192.168.4.20" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
-        <ComboBox x:Name="Server1Role" HorizontalAlignment="Left" Margin="288.667,254,0,0" VerticalAlignment="Top" Width="120" IsReadOnly="True" SelectedIndex="0" IsEnabled="False" Height="22" Grid.Column="2">
-            <Button Content="DC" IsDefault="True"/>
-            <Button Content="ADFS"/>
-            <Button Content="Domain Join"/>
-        </ComboBox>
-        <CheckBox x:Name="ADFS" Grid.ColumnSpan="2" Content="ADFS" HorizontalAlignment="Left" Margin="12,287,0,0" VerticalAlignment="Top" Height="16" Width="62" FontWeight="Bold"/>
-        <TextBox x:Name="ADFSName" HorizontalAlignment="Left" Height="23" Margin="52.667,284,0,0" TextWrapping="Wrap" Text="ADFS" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
-        <TextBox x:Name="ADFSIP" HorizontalAlignment="Left" Height="23" Margin="174.667,282,0,0" TextWrapping="Wrap" Text="192.168.4.21" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
-        <ComboBox x:Name="ADFSRole" HorizontalAlignment="Left" Margin="288.667,282,0,0" VerticalAlignment="Top" Width="120" IsReadOnly="True" SelectedIndex="0" Height="22" IsEnabled="False" Grid.Column="2">
-            <Button Content="ADFS"/>
-        </ComboBox>
-        <CheckBox x:Name="SCCM" Grid.ColumnSpan="2" Content="SCCM" HorizontalAlignment="Left" Margin="12,336,0,0" VerticalAlignment="Top" Height="16" Width="62" FontWeight="Bold"/>
-        <TextBox x:Name="sccm_ps_name" HorizontalAlignment="Left" Height="23" Margin="52.667,333,0,0" TextWrapping="Wrap" Text="CMPS" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
-        <TextBox x:Name="sccm_ps_ip" HorizontalAlignment="Left" Height="23" Margin="174.667,331,0,0" TextWrapping="Wrap" Text="192.168.4.23" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
-        <ComboBox x:Name="sccmRole" HorizontalAlignment="Left" Margin="288.667,331,0,0" VerticalAlignment="Top" Width="120" IsReadOnly="True" SelectedIndex="0" Height="22" IsEnabled="False" Grid.Column="2">
-            <Button Content="SCCM"/>
-        </ComboBox>
-        <CheckBox x:Name="sharepoint" Grid.ColumnSpan="2" Content="SharePoint" HorizontalAlignment="Left" Margin="12,389,0,0" VerticalAlignment="Top" Height="16" Width="81" FontWeight="Bold"/>
-        <TextBox x:Name="sharepointName" HorizontalAlignment="Left" Height="23" Margin="51.667,386,0,0" TextWrapping="Wrap" Text="SP" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
-        <TextBox x:Name="sharepointIP" HorizontalAlignment="Left" Height="23" Margin="173.667,384,0,0" TextWrapping="Wrap" Text="192.168.4.25" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
-        <ComboBox x:Name="sharepointRole" HorizontalAlignment="Left" Margin="287.667,384,0,0" VerticalAlignment="Top" Width="120" IsReadOnly="True" SelectedIndex="0" Height="22" IsEnabled="False" Grid.Column="2">
-            <Button Content="SP"/>
-        </ComboBox>
-        <CheckBox x:Name="server5" Grid.ColumnSpan="2" Content="Server" HorizontalAlignment="Left" Margin="12,444,0,0" VerticalAlignment="Top" Height="16" Width="62" FontWeight="Bold"/>
-        <TextBox x:Name="Server5Name" HorizontalAlignment="Left" Height="23" Margin="51.667,441,0,0" TextWrapping="Wrap" Text="ServerName" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
-        <TextBox x:Name="server5IP" HorizontalAlignment="Left" Height="23" Margin="173.667,439,0,0" TextWrapping="Wrap" Text="192.168.4.27" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
-        <ComboBox x:Name="Server5Role" HorizontalAlignment="Left" Margin="287.667,439,0,0" VerticalAlignment="Top" Width="120" IsReadOnly="True" SelectedIndex="0" Height="22" IsEnabled="False" Grid.Column="2">
-            <Button Content="JoinDomain"/>
-        </ComboBox>
-        <CheckBox x:Name="workstation" Grid.ColumnSpan="3" Content="Workstation" HorizontalAlignment="Left" Margin="12,471,0,0" VerticalAlignment="Top" Height="16" Width="97" FontWeight="Bold"/>
-        <TextBox x:Name="workstationName" HorizontalAlignment="Left" Height="23" Margin="51.667,468,0,0" TextWrapping="Wrap" Text="Win10" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
-        <TextBox x:Name="workstationIP" HorizontalAlignment="Left" Height="23" Margin="173.667,466,0,0" TextWrapping="Wrap" Text="192.168.4.28" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
-        <ComboBox x:Name="workstationRole" HorizontalAlignment="Left" Margin="287.667,466,0,0" VerticalAlignment="Top" Width="120" IsReadOnly="True" SelectedIndex="0" Height="22" IsEnabled="False" Grid.Column="2">
-            <Button Content="JoinDomain"/>
-        </ComboBox>
-        <ComboBox x:Name="server1image" HorizontalAlignment="Left" Margin="418.667,254,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2">
-            <MenuItem/>
-        </ComboBox>
-        <ComboBox x:Name="ADFSimage" HorizontalAlignment="Left" Margin="418.667,280,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2">
-            <MenuItem/>
-        </ComboBox>
-        <ComboBox x:Name="sccmimageoffer" HorizontalAlignment="Left" Margin="418.667,331,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2">
-            <MenuItem/>
-        </ComboBox>
-        <ComboBox x:Name="sharepointimage" HorizontalAlignment="Left" Margin="417.667,386,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2">
-            <MenuItem/>
-        </ComboBox>
-        <ComboBox x:Name="server5image" HorizontalAlignment="Left" Margin="417.667,439,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2">
-            <MenuItem/>
-        </ComboBox>
-        <ComboBox x:Name="workstationimage" HorizontalAlignment="Left" Margin="417.667,466,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2">
-            <MenuItem/>
-        </ComboBox>
-        <Label Content="Image" HorizontalAlignment="Left" Margin="470.667,227,0,0" VerticalAlignment="Top" Height="27" Width="60" FontWeight="Bold" RenderTransformOrigin="-0.313,-2.291" Grid.Column="2"/>
-        <TextBox x:Name="sccm_dp_name" HorizontalAlignment="Left" Height="23" Margin="51.667,359,0,0" TextWrapping="Wrap" Text="MPDP" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
-        <TextBox x:Name="sccm_dp_ip" HorizontalAlignment="Left" Height="23" Margin="173.667,357,0,0" TextWrapping="Wrap" Text="192.168.4.24" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
-        <ComboBox x:Name="sccmimagesku" HorizontalAlignment="Left" Margin="573.667,331,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2">
-            <MenuItem/>
-        </ComboBox>
-        <Label Content="SQL Edition" HorizontalAlignment="Left" Margin="615.667,227,0,0" VerticalAlignment="Top" Height="27" Width="74" FontWeight="Bold" RenderTransformOrigin="-0.313,-2.291" Grid.Column="2"/>
-        <ComboBox x:Name="sccmdpimage" HorizontalAlignment="Left" Margin="418.667,358,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2">
-            <MenuItem/>
-        </ComboBox>
-        <ComboBox x:Name="sccmdp" HorizontalAlignment="Left" Margin="288.667,357,0,0" VerticalAlignment="Top" Width="120" IsReadOnly="True" SelectedIndex="0" Height="22" IsEnabled="False" Grid.Column="2">
-            <Button Content="DPMP"/>
-        </ComboBox>
-        <CheckBox x:Name="STIGs" Content="" HorizontalAlignment="Left" Margin="842,17,0,0" VerticalAlignment="Top" Height="16" Width="34" Grid.Column="2" FontWeight="Bold"/>
-        <Label Content="STIG GPOs" HorizontalAlignment="Left" Height="24" Margin="710,12,0,0" VerticalAlignment="Top" Width="115" Grid.Column="2" FontWeight="Bold"/>
-        <Label Content="1" Grid.Column="1" HorizontalAlignment="Left" Margin="88,12,0,0" VerticalAlignment="Top" Width="23" FontSize="20" FontWeight="Bold" Background="#FFFCFCFC" Foreground="Red" Height="36" Grid.ColumnSpan="2"/>
-        <Label Content="2" Grid.Column="2" HorizontalAlignment="Left" Margin="315.333,13,0,0" VerticalAlignment="Top" Width="23" FontSize="20" FontWeight="Bold" Background="#FFFCFCFC" Foreground="Red" Height="36"/>
-        <Label Content="3" Grid.Column="2" HorizontalAlignment="Left" Margin="350.333,116,0,0" VerticalAlignment="Top" Width="20" FontSize="20" FontWeight="Bold" Background="#FFFCFCFC" Foreground="Red" Height="32" RenderTransformOrigin="-0.587,0.583"/>
-        <Label x:Name="github" Content="Link to github" Grid.Column="1" HorizontalAlignment="Left" Margin="10,614,0,0" VerticalAlignment="Top" FontStyle="Italic" FontFamily="Segoe UI Black" Height="26" Width="257" Grid.ColumnSpan="2"/>
-        <Label Content="VMSize" HorizontalAlignment="Left" Margin="777.667,227,0,0" VerticalAlignment="Top" Height="27" Width="55" FontWeight="Bold" RenderTransformOrigin="-0.313,-2.291" Grid.Column="2"/>
-        <Label Content="Disk Type" HorizontalAlignment="Left" Margin="924.667,227,0,0" VerticalAlignment="Top" Height="27" Width="69" FontWeight="Bold" RenderTransformOrigin="-0.313,-2.291" Grid.Column="2"/>
-        <ComboBox x:Name="server1vmsize" HorizontalAlignment="Left" Margin="726.667,254,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2" SelectedIndex="28">
-            <MenuItem/>
-        </ComboBox>
-        <ComboBox x:Name="adfssize" HorizontalAlignment="Left" Margin="726.667,280,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2" SelectedIndex="28">
-            <MenuItem/>
-        </ComboBox>
-        <ComboBox x:Name="sscm_ps_size" HorizontalAlignment="Left" Margin="726.667,330,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2" SelectedIndex="28">
-            <MenuItem/>
-        </ComboBox>
-        <ComboBox x:Name="sccm_mpdp_size" HorizontalAlignment="Left" Margin="726.667,356,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2" SelectedIndex="28">
-            <MenuItem/>
-        </ComboBox>
-        <ComboBox x:Name="sharepoint_size" HorizontalAlignment="Left" Margin="726.667,383,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2" SelectedIndex="28">
-            <MenuItem/>
-        </ComboBox>
-        <ComboBox x:Name="server5size" HorizontalAlignment="Left" Margin="726.667,436,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2" SelectedIndex="28">
-            <MenuItem/>
-        </ComboBox>
-        <ComboBox x:Name="workstationsize" HorizontalAlignment="Left" Margin="726.667,463,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2" SelectedIndex="28">
-            <MenuItem/>
-        </ComboBox>
-        <ComboBox x:Name="server1disk" HorizontalAlignment="Left" Margin="885.667,254,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2" SelectedIndex="0">
-            <MenuItem/>
-        </ComboBox>
-        <ComboBox x:Name="adfsdisk" HorizontalAlignment="Left" Margin="885.667,280,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2" SelectedIndex="0">
-            <MenuItem/>
-        </ComboBox>
-        <ComboBox x:Name="sccm_ps_disk" HorizontalAlignment="Left" Margin="885.667,330,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2" SelectedIndex="0">
-            <MenuItem/>
-        </ComboBox>
-        <ComboBox x:Name="sccm_mpdp_disk" HorizontalAlignment="Left" Margin="885.667,356,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2" SelectedIndex="0">
-            <MenuItem/>
-        </ComboBox>
-        <ComboBox x:Name="sharepoint_disk" HorizontalAlignment="Left" Margin="885.667,383,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2" SelectedIndex="0">
-            <MenuItem/>
-        </ComboBox>
-        <ComboBox x:Name="server5disk" HorizontalAlignment="Left" Margin="885.667,436,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2" SelectedIndex="0">
-            <MenuItem/>
-        </ComboBox>
-        <ComboBox x:Name="workstationdisk" HorizontalAlignment="Left" Margin="885.667,463,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2" SelectedIndex="0">
-            <MenuItem/>
-        </ComboBox>
-        <TextBox x:Name="SQLName" HorizontalAlignment="Left" Height="23" Margin="51.667,413,0,0" TextWrapping="Wrap" Text="SQL" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
-        <TextBox x:Name="SQLIP" HorizontalAlignment="Left" Height="23" Margin="173.667,411,0,0" TextWrapping="Wrap" Text="192.168.4.26" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
-        <ComboBox x:Name="SQLRole" HorizontalAlignment="Left" Margin="287.667,411,0,0" VerticalAlignment="Top" Width="120" IsReadOnly="True" SelectedIndex="0" Height="22" IsEnabled="False" Grid.Column="2">
-            <Button Content="SQL"/>
-        </ComboBox>
-        <ComboBox x:Name="SQLImage" HorizontalAlignment="Left" Margin="417.667,412,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2">
-            <MenuItem/>
-        </ComboBox>
-        <ComboBox x:Name="SQLSize" HorizontalAlignment="Left" Margin="726.667,410,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2" SelectedIndex="28">
-            <MenuItem/>
-        </ComboBox>
-        <ComboBox x:Name="SQLDisk" HorizontalAlignment="Left" Margin="885.667,410,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2" SelectedIndex="0">
-            <MenuItem/>
-        </ComboBox>
-        <ComboBox x:Name="SQLSKU" HorizontalAlignment="Left" Margin="573.667,413,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2">
-            <MenuItem/>
-        </ComboBox>
-        <TextBlock x:Name="SA" HorizontalAlignment="Left" Margin="154.333,60,0,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="14" FontWeight="Bold" Foreground="#FF068113" Grid.Column="2" Height="19" Width="97"/>
-        <CheckBox x:Name="Exchange" Grid.ColumnSpan="2" Content="Exchange" HorizontalAlignment="Left" Margin="12,312,0,0" VerticalAlignment="Top" Height="16" Width="81" FontWeight="Bold"/>
-        <TextBox x:Name="EXName" HorizontalAlignment="Left" Height="23" Margin="52.667,309,0,0" TextWrapping="Wrap" Text="EX" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
-        <TextBox x:Name="EXIP" HorizontalAlignment="Left" Height="23" Margin="174.667,307,0,0" TextWrapping="Wrap" Text="192.168.4.22" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
-        <ComboBox x:Name="EXRole" HorizontalAlignment="Left" Margin="288.667,307,0,0" VerticalAlignment="Top" Width="120" SelectedIndex="0" Height="22" Grid.Column="2">
-            <Button Content="Exchange2016"/>
-        </ComboBox>
-        <ComboBox x:Name="EXImage" HorizontalAlignment="Left" Margin="418.667,305,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2">
-            <MenuItem/>
-        </ComboBox>
-        <ComboBox x:Name="EXSize" HorizontalAlignment="Left" Margin="726.667,305,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2" SelectedIndex="28">
-            <MenuItem/>
-        </ComboBox>
-        <ComboBox x:Name="EXDisk" HorizontalAlignment="Left" Margin="885.667,305,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2" SelectedIndex="0">
-            <MenuItem/>
-        </ComboBox>
-        <TextBox x:Name="bastionsubnet" HorizontalAlignment="Left" Height="23" Margin="371.333,186,0,0" TextWrapping="Wrap" Text="192.168.10.0/24" VerticalAlignment="Top" Width="151" UndoLimit="20" Grid.Column="2"/>
-        <Label Content="Metadata Location" HorizontalAlignment="Left" Height="24" Margin="165.333,499,0,0" VerticalAlignment="Top" Width="115" Grid.Column="2" FontWeight="Bold"/>
-        <ComboBox x:Name="WVD_Metadata" HorizontalAlignment="Left" Margin="285.333,500,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2" SelectedIndex="0"/>
-        <Label Content="Number of VMs" HorizontalAlignment="Left" Height="24" Margin="11,586,0,0" VerticalAlignment="Top" Width="96" Grid.Column="1" FontWeight="Bold" Grid.ColumnSpan="2"/>
-        <ComboBox x:Name="WVD_NumberVMs" HorizontalAlignment="Left" Margin="22.333,588,0,0" VerticalAlignment="Top" Width="101" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2" SelectedIndex="0">
-            <ListBoxItem Content="1"/>
-            <ListBoxItem Content="2"/>
-            <ListBoxItem Content="3"/>
-            <ListBoxItem Content="4"/>
-            <ListBoxItem Content="5"/>
-        </ComboBox>
-        <Label Content="WVD Image" HorizontalAlignment="Left" Height="29" Margin="168.333,528,0,0" VerticalAlignment="Top" Width="115" Grid.Column="2" FontWeight="Bold"/>
-        <ComboBox x:Name="WVD_Image" HorizontalAlignment="Left" Margin="285.333,530,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2" SelectedIndex="0"/>
-        <Label Content="WVD Size" HorizontalAlignment="Left" Height="24" Margin="167.333,557,0,0" VerticalAlignment="Top" Width="115" Grid.Column="2" FontWeight="Bold"/>
-        <ComboBox x:Name="WVD_Size" HorizontalAlignment="Left" Margin="285.333,559,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2" SelectedIndex="28"/>
-        <CheckBox x:Name="WVD" Grid.ColumnSpan="3" Content="Windows Virtual Desktop (Hosted-Pool)" HorizontalAlignment="Left" Margin="13,505,0,0" VerticalAlignment="Top" Height="16" Width="254" FontWeight="Bold"/>
-        <Label Content="Host Pool Name" HorizontalAlignment="Left" Height="24" Margin="11,528,0,0" VerticalAlignment="Top" Width="106" Grid.Column="1" FontWeight="Bold" Grid.ColumnSpan="2"/>
-        <TextBox x:Name="WVD_HostName" HorizontalAlignment="Left" Height="23" Margin="22.333,531,0,0" TextWrapping="Wrap" Text="wvdhost" VerticalAlignment="Top" Width="132" UndoLimit="3" Grid.Column="2"/>
-        <Label Content="Max Session Limit" HorizontalAlignment="Left" Height="24" Margin="11,557,0,0" VerticalAlignment="Top" Width="113" Grid.Column="1" FontWeight="Bold" Grid.ColumnSpan="2"/>
-        <TextBox x:Name="WVD_HostName_Copy" HorizontalAlignment="Left" Height="23" Margin="22.333,560,0,0" TextWrapping="Wrap" Text="20" VerticalAlignment="Top" Width="132" UndoLimit="3" Grid.Column="2"/>
-        <Label Content="WVD Disk" HorizontalAlignment="Left" Height="24" Margin="167.333,585,0,0" VerticalAlignment="Top" Width="115" Grid.Column="2" FontWeight="Bold"/>
-        <ComboBox x:Name="WVD_Disk" HorizontalAlignment="Left" Margin="285.333,587,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2" SelectedIndex="0"/>
-        <Rectangle Grid.Column="2" Fill="#FFF4F4F5" HorizontalAlignment="Left" Height="151" Margin="716,61,0,0" Stroke="Black" VerticalAlignment="Top" Width="241"/>
-        <CheckBox x:Name="SACA" Content="SACA (Preview)" HorizontalAlignment="Left" Margin="725,66,0,0" VerticalAlignment="Top" Height="16" Width="113" FontWeight="Bold" Grid.Column="2"/>
-        <ComboBox x:Name="SACA_Tier" HorizontalAlignment="Left" Margin="797,92,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2" SelectedIndex="0">
-            <ListBoxItem Content="SACA 1 Tier"/>
-            <ListBoxItem Content="SACA 3 Tier"/>
-        </ComboBox>
-        <Label Content="SACA Tier" HorizontalAlignment="Left" Height="24" Margin="721,92,0,0" VerticalAlignment="Top" Width="65" Grid.Column="2" FontWeight="Bold"/>
-        <Label Content="DNS Label" HorizontalAlignment="Left" Height="24" Margin="721,115,0,0" VerticalAlignment="Top" Width="74" Grid.Column="2" FontWeight="Bold"/>
-        <TextBox x:Name="SACA_DNS" HorizontalAlignment="Left" Height="23" Margin="797,118,0,0" TextWrapping="Wrap" Text="f5dns01" VerticalAlignment="Top" Width="150" UndoLimit="20" Grid.Column="2" BorderBrush="#FFABACAB"/>
-        <TextBlock x:Name="SACA_label" HorizontalAlignment="Left" Margin="962,120,0,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="14" FontWeight="Bold" Foreground="#FF068113" Grid.Column="2" Height="19" Width="97"/>
-        <ComboBox x:Name="sacavmsize" HorizontalAlignment="Left" Margin="797,146,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2" SelectedIndex="28">
-            <MenuItem/>
-        </ComboBox>
-        <Label Content="VMSize" HorizontalAlignment="Left" Height="24" Margin="721,144,0,0" VerticalAlignment="Top" Width="74" Grid.Column="2" FontWeight="Bold"/>
-        <CheckBox x:Name="Bastion" Content="Bastion" HorizontalAlignment="Left" Margin="257.333,189,0,0" VerticalAlignment="Top" Height="16" Width="99" FontWeight="Bold" Grid.Column="2" IsChecked="True"/>
-        <CheckBox x:Name="MSFTBaseline" Content="" HorizontalAlignment="Left" Margin="842,37,0,0" VerticalAlignment="Top" IsChecked="True" Height="16" Width="34" Grid.Column="2" FontWeight="Bold"/>
-        <Label Content="MSFT Baseline GPOs" HorizontalAlignment="Left" Height="24" Margin="710,32,0,0" VerticalAlignment="Top" Width="127" Grid.Column="2" FontWeight="Bold"/>
-        <Label Grid.ColumnSpan="3" Content="Count" HorizontalAlignment="Left" Margin="100,227,0,0" VerticalAlignment="Top" Height="27" Width="47" FontWeight="Bold" RenderTransformOrigin="-0.313,-2.291"/>
-        <ComboBox x:Name="DC_Count" HorizontalAlignment="Left" Margin="105,256,0,0" VerticalAlignment="Top" Width="39" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="1" SelectedIndex="0" Grid.ColumnSpan="2">
-            <ListBoxItem Content="1"/>
-            <ListBoxItem Content="2"/>
-        </ComboBox>
-        <ComboBox x:Name="ADFS_Count" HorizontalAlignment="Left" Margin="105,282,0,0" VerticalAlignment="Top" Width="39" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="1" SelectedIndex="0" Grid.ColumnSpan="2" IsEnabled="False">
-            <ListBoxItem Content="1"/>
-        </ComboBox>
-        <ComboBox x:Name="EX_Count" HorizontalAlignment="Left" Margin="105,310,0,0" VerticalAlignment="Top" Width="39" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="1" SelectedIndex="0" Grid.ColumnSpan="2" IsEnabled="False">
-            <ListBoxItem Content="1"/>
-        </ComboBox>
-        <ComboBox x:Name="Server_Count" HorizontalAlignment="Left" Margin="105,440,0,0" VerticalAlignment="Top" Width="39" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="1" SelectedIndex="0" Grid.ColumnSpan="2" IsEnabled="False">
-            <ListBoxItem Content="1"/>
-        </ComboBox>
-        <ComboBox x:Name="WS_Count" HorizontalAlignment="Left" Margin="105,468,0,0" VerticalAlignment="Top" Width="39" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="1" SelectedIndex="0" Grid.ColumnSpan="2" IsEnabled="False">
-            <ListBoxItem Content="1"/>
-        </ComboBox>
-        <TextBlock x:Name="PW" HorizontalAlignment="Left" Margin="533,129,0,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="14" FontWeight="Bold" Foreground="#FF068113" Grid.Column="2" Height="19" Width="260"/>
+        <Button x:Name="Exit1" Content="Exit" HorizontalAlignment="Left" Margin="12.333,652,0,0" VerticalAlignment="Top" Width="76" IsCancel="True" Grid.Column="3" Height="20"/>
+        <Button x:Name="Build1" Content="Build" Grid.Column="3" HorizontalAlignment="Left" Margin="11.333,611,0,0" VerticalAlignment="Top" Width="76" Height="20"/>
+        <TabControl Grid.Column="1" HorizontalAlignment="Left" Height="729" Margin="0,9,0,0" VerticalAlignment="Top" Width="1324" Grid.ColumnSpan="2">
+            <TabItem Header="Main">
+                <Grid Background="White" Margin="0,6,-0.333,4.667">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="5*"/>
+                        <ColumnDefinition Width="15*"/>
+                        <ColumnDefinition Width="377*"/>
+                    </Grid.ColumnDefinitions>
+                    <ComboBox x:Name="Subscription1" HorizontalAlignment="Left" Margin="76,4,0,0" VerticalAlignment="Top" Width="221" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2"/>
+                    <Label Content="Subscription" HorizontalAlignment="Left" Height="24" Margin="2.333,2,0,0" VerticalAlignment="Top" Width="80" FontWeight="Bold" Grid.ColumnSpan="2" Grid.Column="1"/>
+                    <Label Content="Domain Name" HorizontalAlignment="Left" Height="24" Margin="307,33,0,0" VerticalAlignment="Top" Width="105" FontWeight="Bold" Grid.Column="2"/>
+                    <Label Content="Resource Group" HorizontalAlignment="Left" Height="24" Margin="1.333,57,0,0" VerticalAlignment="Top" Width="99" FontWeight="Bold" Grid.ColumnSpan="2" Grid.Column="1"/>
+                    <Label Content="Prefix" HorizontalAlignment="Left" Height="24" Margin="1.333,86,0,0" VerticalAlignment="Top" Width="99" FontWeight="Bold" Grid.ColumnSpan="2" Grid.Column="1"/>
+                    <TextBox x:Name="Dname1" HorizontalAlignment="Left" Height="23" Margin="428,37,0,0" TextWrapping="Wrap" Text="my.customer.com" VerticalAlignment="Top" Width="150" UndoLimit="30" Grid.Column="2"/>
+                    <TextBox x:Name="resourcegroup1" HorizontalAlignment="Left" Height="23" Margin="78,61,0,0" TextWrapping="Wrap" Text="rgtestlab" VerticalAlignment="Top" Width="132" UndoLimit="20" Grid.Column="2"/>
+                    <TextBox x:Name="prefix1" HorizontalAlignment="Left" Height="23" Margin="78,90,0,0" TextWrapping="Wrap" Text="ehu" VerticalAlignment="Top" Width="132" UndoLimit="3" Grid.Column="2"/>
+                    <Label Content="Locations" HorizontalAlignment="Left" Height="24" Margin="306,4,0,0" VerticalAlignment="Top" Width="80" FontWeight="Bold" Grid.Column="2"/>
+                    <ComboBox x:Name="Locations1" HorizontalAlignment="Left" Margin="427,6,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2">
+                        <MenuItem/>
+                    </ComboBox>
+                    <Label Content="Storage Account" HorizontalAlignment="Left" Height="24" Margin="1.333,29,0,0" VerticalAlignment="Top" Width="106" FontWeight="Bold" Grid.ColumnSpan="2" Grid.Column="1"/>
+                    <TextBox x:Name="saname1" HorizontalAlignment="Left" Height="23" Margin="78,33,0,0" TextWrapping="Wrap" Text="saname" VerticalAlignment="Top" Width="132" UndoLimit="20" BorderBrush="#FFABACAB" Grid.Column="2"/>
+                    <PasswordBox x:Name="adminpassword1" HorizontalAlignment="Left" Margin="428,102,0,0" VerticalAlignment="Top" Width="150" Height="18" Grid.Column="2"/>
+                    <Label Content="Admin Password" HorizontalAlignment="Left" Height="24" Margin="307,96,0,0" VerticalAlignment="Top" Width="105" FontWeight="Bold" Grid.Column="2"/>
+                    <TextBox x:Name="adminaccount1" HorizontalAlignment="Left" Height="23" Margin="428,71,0,0" TextWrapping="Wrap" Text="xadmin" VerticalAlignment="Top" Width="150" UndoLimit="30" Grid.Column="2"/>
+                    <Label Content="Admin Account" HorizontalAlignment="Left" Height="24" Margin="307,67,0,0" VerticalAlignment="Top" Width="105" FontWeight="Bold" Grid.Column="2"/>
+                    <Label Content="AddressPreFix" HorizontalAlignment="Left" Height="24" Margin="0.333,128,0,0" VerticalAlignment="Top" Width="99" FontWeight="Bold" Grid.ColumnSpan="2" Grid.Column="1"/>
+                    <TextBox x:Name="addressprefix1" HorizontalAlignment="Left" Height="23" Margin="78,128,0,0" TextWrapping="Wrap" Text="192.168.0.0/16" VerticalAlignment="Top" Width="132" UndoLimit="20" Grid.Column="2"/>
+                    <Label Content="AddressSubnet" HorizontalAlignment="Left" Height="24" Margin="0.333,163,0,0" VerticalAlignment="Top" Width="99" FontWeight="Bold" Grid.ColumnSpan="2" Grid.Column="1"/>
+                    <TextBox x:Name="addresssubnet1" HorizontalAlignment="Left" Height="23" Margin="78,167,0,0" TextWrapping="Wrap" Text="192.168.4.0/24" VerticalAlignment="Top" Width="132" UndoLimit="20" Grid.Column="2"/>
+                    <Label Content="SubnetName" HorizontalAlignment="Left" Height="24" Margin="307,123,0,0" VerticalAlignment="Top" Width="106" FontWeight="Bold" Grid.Column="2"/>
+                    <TextBox x:Name="subnetName1" HorizontalAlignment="Left" Height="23" Margin="428,127,0,0" TextWrapping="Wrap" Text="Servers" VerticalAlignment="Top" Width="150" UndoLimit="20" Grid.Column="2"/>
+                    <CheckBox x:Name="server1" Content="DC/CA" HorizontalAlignment="Left" Margin="0.333,266,0,0" VerticalAlignment="Top" Height="16" Width="62" FontWeight="Bold" Grid.ColumnSpan="2" Grid.Column="1"/>
+                    <Label Content="Server Name" HorizontalAlignment="Left" Margin="106,234,0,0" VerticalAlignment="Top" Height="27" Width="81" FontWeight="Bold" RenderTransformOrigin="-0.313,-2.291" Grid.Column="2"/>
+                    <Label Content="Server Private IP" HorizontalAlignment="Left" Margin="228,234,0,0" VerticalAlignment="Top" Height="27" Width="114" FontWeight="Bold" RenderTransformOrigin="-0.313,-2.291" Grid.Column="2"/>
+                    <Label Content="Server Role" HorizontalAlignment="Left" Margin="348,234,0,0" VerticalAlignment="Top" Height="27" Width="114" FontWeight="Bold" RenderTransformOrigin="-0.313,-2.291" Grid.Column="2"/>
+                    <Label Content="Build" HorizontalAlignment="Left" Margin="0.333,234,0,0" VerticalAlignment="Top" Height="27" Width="46" FontWeight="Bold" RenderTransformOrigin="-0.313,-2.291" Grid.ColumnSpan="2" Grid.Column="1"/>
+                    <TextBox x:Name="Server1Name" HorizontalAlignment="Left" Height="23" Margin="106,263,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="105" Text="DC01" Grid.Column="2"/>
+                    <TextBox x:Name="server1IP" HorizontalAlignment="Left" Height="23" Margin="228,261,0,0" TextWrapping="Wrap" Text="192.168.4.20" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
+                    <ComboBox x:Name="Server1Role" HorizontalAlignment="Left" Margin="342,261,0,0" VerticalAlignment="Top" Width="120" IsReadOnly="True" SelectedIndex="0" IsEnabled="False" Height="22" Grid.Column="2">
+                        <Button Content="DC" IsDefault="True"/>
+                        <Button Content="ADFS"/>
+                        <Button Content="Domain Join"/>
+                    </ComboBox>
+                    <CheckBox x:Name="ADFS" Content="ADFS" HorizontalAlignment="Left" Margin="0.333,294,0,0" VerticalAlignment="Top" Height="16" Width="62" FontWeight="Bold" Grid.ColumnSpan="2" Grid.Column="1"/>
+                    <TextBox x:Name="ADFSName" HorizontalAlignment="Left" Height="23" Margin="106,291,0,0" TextWrapping="Wrap" Text="ADFS" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
+                    <TextBox x:Name="ADFSIP" HorizontalAlignment="Left" Height="23" Margin="228,289,0,0" TextWrapping="Wrap" Text="192.168.4.21" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
+                    <ComboBox x:Name="ADFSRole" HorizontalAlignment="Left" Margin="342,289,0,0" VerticalAlignment="Top" Width="120" IsReadOnly="True" SelectedIndex="0" Height="22" IsEnabled="False" Grid.Column="2">
+                        <Button Content="ADFS"/>
+                    </ComboBox>
+                    <CheckBox x:Name="SCCM" Content="SCCM" HorizontalAlignment="Left" Margin="0.333,343,0,0" VerticalAlignment="Top" Height="16" Width="62" FontWeight="Bold" Grid.ColumnSpan="2" Grid.Column="1"/>
+                    <TextBox x:Name="sccm_ps_name" HorizontalAlignment="Left" Height="23" Margin="106,340,0,0" TextWrapping="Wrap" Text="CMPS" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
+                    <TextBox x:Name="sccm_ps_ip" HorizontalAlignment="Left" Height="23" Margin="228,338,0,0" TextWrapping="Wrap" Text="192.168.4.23" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
+                    <ComboBox x:Name="sccmRole" HorizontalAlignment="Left" Margin="342,338,0,0" VerticalAlignment="Top" Width="120" IsReadOnly="True" SelectedIndex="0" Height="22" IsEnabled="False" Grid.Column="2">
+                        <Button Content="SCCM"/>
+                    </ComboBox>
+                    <CheckBox x:Name="sharepoint" Content="SharePoint" HorizontalAlignment="Left" Margin="0.333,396,0,0" VerticalAlignment="Top" Height="16" Width="81" FontWeight="Bold" Grid.ColumnSpan="2" Grid.Column="1"/>
+                    <TextBox x:Name="sharepointName" HorizontalAlignment="Left" Height="23" Margin="105,393,0,0" TextWrapping="Wrap" Text="SP" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
+                    <TextBox x:Name="sharepointIP" HorizontalAlignment="Left" Height="23" Margin="227,391,0,0" TextWrapping="Wrap" Text="192.168.4.25" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
+                    <ComboBox x:Name="sharepointRole" HorizontalAlignment="Left" Margin="341,391,0,0" VerticalAlignment="Top" Width="120" IsReadOnly="True" SelectedIndex="0" Height="22" IsEnabled="False" Grid.Column="2">
+                        <Button Content="SP"/>
+                    </ComboBox>
+                    <CheckBox x:Name="server5" Content="Server" HorizontalAlignment="Left" Margin="0.333,451,0,0" VerticalAlignment="Top" Height="16" Width="62" FontWeight="Bold" Grid.ColumnSpan="2" Grid.Column="1"/>
+                    <TextBox x:Name="Server5Name" HorizontalAlignment="Left" Height="23" Margin="105,448,0,0" TextWrapping="Wrap" Text="ServerName" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
+                    <TextBox x:Name="server5IP" HorizontalAlignment="Left" Height="23" Margin="227,446,0,0" TextWrapping="Wrap" Text="192.168.4.27" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
+                    <ComboBox x:Name="Server5Role" HorizontalAlignment="Left" Margin="341,446,0,0" VerticalAlignment="Top" Width="120" IsReadOnly="True" SelectedIndex="0" Height="22" IsEnabled="False" Grid.Column="2">
+                        <Button Content="JoinDomain"/>
+                    </ComboBox>
+                    <CheckBox x:Name="workstation" Content="Workstation" HorizontalAlignment="Left" Margin="0.333,478,0,0" VerticalAlignment="Top" Height="16" Width="97" FontWeight="Bold" Grid.ColumnSpan="2" Grid.Column="1"/>
+                    <TextBox x:Name="workstationName" HorizontalAlignment="Left" Height="23" Margin="105,475,0,0" TextWrapping="Wrap" Text="Win10" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
+                    <TextBox x:Name="workstationIP" HorizontalAlignment="Left" Height="23" Margin="227,473,0,0" TextWrapping="Wrap" Text="192.168.4.28" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
+                    <ComboBox x:Name="workstationRole" HorizontalAlignment="Left" Margin="341,473,0,0" VerticalAlignment="Top" Width="120" IsReadOnly="True" SelectedIndex="0" Height="22" IsEnabled="False" Grid.Column="2">
+                        <Button Content="JoinDomain"/>
+                    </ComboBox>
+                    <ComboBox x:Name="server1image" HorizontalAlignment="Left" Margin="472,261,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2">
+                        <MenuItem/>
+                    </ComboBox>
+                    <ComboBox x:Name="ADFSimage" HorizontalAlignment="Left" Margin="472,287,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2">
+                        <MenuItem/>
+                    </ComboBox>
+                    <ComboBox x:Name="sccmimageoffer" HorizontalAlignment="Left" Margin="472,338,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2">
+                        <MenuItem/>
+                    </ComboBox>
+                    <ComboBox x:Name="sharepointimage" HorizontalAlignment="Left" Margin="471,393,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2">
+                        <MenuItem/>
+                    </ComboBox>
+                    <ComboBox x:Name="server5image" HorizontalAlignment="Left" Margin="471,446,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2">
+                        <MenuItem/>
+                    </ComboBox>
+                    <ComboBox x:Name="workstationimage" HorizontalAlignment="Left" Margin="471,473,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2">
+                        <MenuItem/>
+                    </ComboBox>
+                    <Label Content="Image" HorizontalAlignment="Left" Margin="524,234,0,0" VerticalAlignment="Top" Height="27" Width="60" FontWeight="Bold" RenderTransformOrigin="-0.313,-2.291" Grid.Column="2"/>
+                    <TextBox x:Name="sccm_dp_name" HorizontalAlignment="Left" Height="23" Margin="105,366,0,0" TextWrapping="Wrap" Text="MPDP" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
+                    <TextBox x:Name="sccm_dp_ip" HorizontalAlignment="Left" Height="23" Margin="227,364,0,0" TextWrapping="Wrap" Text="192.168.4.24" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
+                    <ComboBox x:Name="sccmimagesku" HorizontalAlignment="Left" Margin="627,338,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2">
+                        <MenuItem/>
+                    </ComboBox>
+                    <Label Content="SQL Edition" HorizontalAlignment="Left" Margin="669,234,0,0" VerticalAlignment="Top" Height="27" Width="74" FontWeight="Bold" RenderTransformOrigin="-0.313,-2.291" Grid.Column="2"/>
+                    <ComboBox x:Name="sccmdpimage" HorizontalAlignment="Left" Margin="472,365,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2">
+                        <MenuItem/>
+                    </ComboBox>
+                    <ComboBox x:Name="sccmdp" HorizontalAlignment="Left" Margin="342,364,0,0" VerticalAlignment="Top" Width="120" IsReadOnly="True" SelectedIndex="0" Height="22" IsEnabled="False" Grid.Column="2">
+                        <Button Content="DPMP"/>
+                    </ComboBox>
+                    <CheckBox x:Name="STIGs" Content="" HorizontalAlignment="Left" Margin="675,8,0,0" VerticalAlignment="Top" Height="16" Width="34" FontWeight="Bold" Grid.Column="2"/>
+                    <Label Content="STIG GPOs" HorizontalAlignment="Left" Height="24" Margin="594,3,0,0" VerticalAlignment="Top" Width="76" FontWeight="Bold" Grid.Column="2"/>
+                    <Label Content="1" HorizontalAlignment="Left" Margin="35,-1,0,0" VerticalAlignment="Top" Width="23" FontSize="20" FontWeight="Bold" Background="#FFFCFCFC" Foreground="Red" Height="36" Grid.Column="2"/>
+                    <Label Content="2" HorizontalAlignment="Left" Margin="371,0,0,0" VerticalAlignment="Top" Width="23" FontSize="20" FontWeight="Bold" Background="#FFFCFCFC" Foreground="Red" Height="36" Grid.Column="2"/>
+                    <Label Content="3" HorizontalAlignment="Left" Margin="406,91,0,0" VerticalAlignment="Top" Width="20" FontSize="20" FontWeight="Bold" Background="#FFFCFCFC" Foreground="Red" Height="32" RenderTransformOrigin="-0.587,0.583" Grid.Column="2"/>
+                    <Label x:Name="github" Content="Link to github" HorizontalAlignment="Left" Margin="13,659,0,0" VerticalAlignment="Top" FontStyle="Italic" FontFamily="Segoe UI Black" Height="26" Width="257" Grid.ColumnSpan="3"/>
+                    <Label Content="VMSize" HorizontalAlignment="Left" Margin="831,234,0,0" VerticalAlignment="Top" Height="27" Width="55" FontWeight="Bold" RenderTransformOrigin="-0.313,-2.291" Grid.Column="2"/>
+                    <Label Content="Disk Type" HorizontalAlignment="Left" Margin="978,234,0,0" VerticalAlignment="Top" Height="27" Width="69" FontWeight="Bold" RenderTransformOrigin="-0.313,-2.291" Grid.Column="2"/>
+                    <ComboBox x:Name="server1vmsize" HorizontalAlignment="Left" Margin="780,261,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="28" Grid.Column="2">
+                        <MenuItem/>
+                    </ComboBox>
+                    <ComboBox x:Name="adfssize" HorizontalAlignment="Left" Margin="780,287,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="28" Grid.Column="2">
+                        <MenuItem/>
+                    </ComboBox>
+                    <ComboBox x:Name="sscm_ps_size" HorizontalAlignment="Left" Margin="780,337,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="28" Grid.Column="2">
+                        <MenuItem/>
+                    </ComboBox>
+                    <ComboBox x:Name="sccm_mpdp_size" HorizontalAlignment="Left" Margin="780,363,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="28" Grid.Column="2">
+                        <MenuItem/>
+                    </ComboBox>
+                    <ComboBox x:Name="sharepoint_size" HorizontalAlignment="Left" Margin="780,390,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="28" Grid.Column="2">
+                        <MenuItem/>
+                    </ComboBox>
+                    <ComboBox x:Name="server5size" HorizontalAlignment="Left" Margin="780,443,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="28" Grid.Column="2">
+                        <MenuItem/>
+                    </ComboBox>
+                    <ComboBox x:Name="workstationsize" HorizontalAlignment="Left" Margin="780,470,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="28" Grid.Column="2">
+                        <MenuItem/>
+                    </ComboBox>
+                    <ComboBox x:Name="server1disk" HorizontalAlignment="Left" Margin="939,261,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="0" Grid.Column="2">
+                        <MenuItem/>
+                    </ComboBox>
+                    <ComboBox x:Name="adfsdisk" HorizontalAlignment="Left" Margin="939,287,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="0" Grid.Column="2">
+                        <MenuItem/>
+                    </ComboBox>
+                    <ComboBox x:Name="sccm_ps_disk" HorizontalAlignment="Left" Margin="939,337,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="0" Grid.Column="2">
+                        <MenuItem/>
+                    </ComboBox>
+                    <ComboBox x:Name="sccm_mpdp_disk" HorizontalAlignment="Left" Margin="939,363,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="0" Grid.Column="2">
+                        <MenuItem/>
+                    </ComboBox>
+                    <ComboBox x:Name="sharepoint_disk" HorizontalAlignment="Left" Margin="939,390,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="0" Grid.Column="2">
+                        <MenuItem/>
+                    </ComboBox>
+                    <ComboBox x:Name="server5disk" HorizontalAlignment="Left" Margin="939,443,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="0" Grid.Column="2">
+                        <MenuItem/>
+                    </ComboBox>
+                    <ComboBox x:Name="workstationdisk" HorizontalAlignment="Left" Margin="939,470,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="0" Grid.Column="2">
+                        <MenuItem/>
+                    </ComboBox>
+                    <TextBox x:Name="SQLName" HorizontalAlignment="Left" Height="23" Margin="105,420,0,0" TextWrapping="Wrap" Text="SQL" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
+                    <TextBox x:Name="SQLIP" HorizontalAlignment="Left" Height="23" Margin="227,418,0,0" TextWrapping="Wrap" Text="192.168.4.26" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
+                    <ComboBox x:Name="SQLRole" HorizontalAlignment="Left" Margin="341,418,0,0" VerticalAlignment="Top" Width="120" IsReadOnly="True" SelectedIndex="0" Height="22" IsEnabled="False" Grid.Column="2">
+                        <Button Content="SQL"/>
+                    </ComboBox>
+                    <ComboBox x:Name="SQLImage" HorizontalAlignment="Left" Margin="471,419,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2">
+                        <MenuItem/>
+                    </ComboBox>
+                    <ComboBox x:Name="SQLSize" HorizontalAlignment="Left" Margin="780,417,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="28" Grid.Column="2">
+                        <MenuItem/>
+                    </ComboBox>
+                    <ComboBox x:Name="SQLDisk" HorizontalAlignment="Left" Margin="939,417,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="0" Grid.Column="2">
+                        <MenuItem/>
+                    </ComboBox>
+                    <ComboBox x:Name="SQLSKU" HorizontalAlignment="Left" Margin="627,420,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2">
+                        <MenuItem/>
+                    </ComboBox>
+                    <TextBlock x:Name="SA" HorizontalAlignment="Left" Margin="210,35,0,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="14" FontWeight="Bold" Foreground="#FF068113" Height="19" Width="97" Grid.Column="2"/>
+                    <CheckBox x:Name="Exchange" Content="Exchange" HorizontalAlignment="Left" Margin="0.333,319,0,0" VerticalAlignment="Top" Height="16" Width="81" FontWeight="Bold" Grid.ColumnSpan="2" Grid.Column="1"/>
+                    <TextBox x:Name="EXName" HorizontalAlignment="Left" Height="23" Margin="106,316,0,0" TextWrapping="Wrap" Text="EX" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
+                    <TextBox x:Name="EXIP" HorizontalAlignment="Left" Height="23" Margin="228,314,0,0" TextWrapping="Wrap" Text="192.168.4.22" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
+                    <ComboBox x:Name="EXRole" HorizontalAlignment="Left" Margin="342,314,0,0" VerticalAlignment="Top" Width="120" SelectedIndex="0" Height="22" Grid.Column="2">
+                        <Button Content="Exchange2016"/>
+                    </ComboBox>
+                    <ComboBox x:Name="EXImage" HorizontalAlignment="Left" Margin="472,312,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2">
+                        <MenuItem/>
+                    </ComboBox>
+                    <ComboBox x:Name="EXSize" HorizontalAlignment="Left" Margin="780,312,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="28" Grid.Column="2">
+                        <MenuItem/>
+                    </ComboBox>
+                    <ComboBox x:Name="EXDisk" HorizontalAlignment="Left" Margin="939,312,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="0" Grid.Column="2">
+                        <MenuItem/>
+                    </ComboBox>
+                    <TextBox x:Name="bastionsubnet" HorizontalAlignment="Left" Height="23" Margin="427,161,0,0" TextWrapping="Wrap" Text="192.168.10.0/24" VerticalAlignment="Top" Width="151" UndoLimit="20" Grid.Column="2"/>
+                    <Label Content="Metadata Location" HorizontalAlignment="Left" Height="24" Margin="219,544,0,0" VerticalAlignment="Top" Width="115" FontWeight="Bold" Grid.Column="2"/>
+                    <ComboBox x:Name="WVD_Metadata" HorizontalAlignment="Left" Margin="339,545,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="0" Grid.Column="2"/>
+                    <Label Content="Number of VMs" HorizontalAlignment="Left" Height="24" Margin="14,631,0,0" VerticalAlignment="Top" Width="96" FontWeight="Bold" Grid.ColumnSpan="3"/>
+                    <ComboBox x:Name="WVD_NumberVMs" HorizontalAlignment="Left" Margin="76,633,0,0" VerticalAlignment="Top" Width="101" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="0" Grid.Column="2">
+                        <ListBoxItem Content="1"/>
+                        <ListBoxItem Content="2"/>
+                        <ListBoxItem Content="3"/>
+                        <ListBoxItem Content="4"/>
+                        <ListBoxItem Content="5"/>
+                    </ComboBox>
+                    <Label Content="WVD Image" HorizontalAlignment="Left" Height="29" Margin="222,573,0,0" VerticalAlignment="Top" Width="115" FontWeight="Bold" Grid.Column="2"/>
+                    <ComboBox x:Name="WVD_Image" HorizontalAlignment="Left" Margin="339,575,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="0" Grid.Column="2"/>
+                    <Label Content="WVD Size" HorizontalAlignment="Left" Height="24" Margin="221,602,0,0" VerticalAlignment="Top" Width="115" FontWeight="Bold" Grid.Column="2"/>
+                    <ComboBox x:Name="WVD_Size" HorizontalAlignment="Left" Margin="339,604,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="28" Grid.Column="2"/>
+                    <CheckBox x:Name="WVD" Content="Windows Virtual Desktop (Hosted-Pool)" HorizontalAlignment="Left" Margin="1.333,550,0,0" VerticalAlignment="Top" Height="16" Width="254" FontWeight="Bold" Grid.ColumnSpan="2" Grid.Column="1"/>
+                    <Label Content="Host Pool Name" HorizontalAlignment="Left" Height="24" Margin="14,573,0,0" VerticalAlignment="Top" Width="106" FontWeight="Bold" Grid.ColumnSpan="3"/>
+                    <TextBox x:Name="WVD_HostName" HorizontalAlignment="Left" Height="23" Margin="76,576,0,0" TextWrapping="Wrap" Text="wvdhost" VerticalAlignment="Top" Width="132" UndoLimit="3" Grid.Column="2"/>
+                    <Label Content="Max Session Limit" HorizontalAlignment="Left" Height="24" Margin="14,602,0,0" VerticalAlignment="Top" Width="113" FontWeight="Bold" Grid.ColumnSpan="3"/>
+                    <TextBox x:Name="WVD_HostName_Copy" HorizontalAlignment="Left" Height="23" Margin="76,605,0,0" TextWrapping="Wrap" Text="20" VerticalAlignment="Top" Width="132" UndoLimit="3" Grid.Column="2"/>
+                    <Label Content="WVD Disk" HorizontalAlignment="Left" Height="24" Margin="221,630,0,0" VerticalAlignment="Top" Width="115" FontWeight="Bold" Grid.Column="2"/>
+                    <ComboBox x:Name="WVD_Disk" HorizontalAlignment="Left" Margin="339,632,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="0" Grid.Column="2"/>
+                    <CheckBox x:Name="Bastion" Content="Bastion" HorizontalAlignment="Left" Margin="313,164,0,0" VerticalAlignment="Top" Height="16" Width="99" FontWeight="Bold" IsChecked="True" Grid.Column="2"/>
+                    <CheckBox x:Name="MSFTBaseline" Content="" HorizontalAlignment="Left" Margin="723,38,0,0" VerticalAlignment="Top" IsChecked="True" Height="16" Width="34" FontWeight="Bold" Grid.Column="2"/>
+                    <Label Content="MSFT Baseline GPOs" HorizontalAlignment="Left" Height="24" Margin="591,33,0,0" VerticalAlignment="Top" Width="127" FontWeight="Bold" Grid.Column="2"/>
+                    <Label Content="Count" HorizontalAlignment="Left" Margin="43,234,0,0" VerticalAlignment="Top" Height="27" Width="47" FontWeight="Bold" RenderTransformOrigin="-0.313,-2.291" Grid.Column="2"/>
+                    <ComboBox x:Name="DC_Count" HorizontalAlignment="Left" Margin="48,263,0,0" VerticalAlignment="Top" Width="39" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="0" Grid.Column="2">
+                        <ListBoxItem Content="1"/>
+                        <ListBoxItem Content="2"/>
+                    </ComboBox>
+                    <ComboBox x:Name="ADFS_Count" HorizontalAlignment="Left" Margin="48,289,0,0" VerticalAlignment="Top" Width="39" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="0" IsEnabled="False" Grid.Column="2">
+                        <ListBoxItem Content="1"/>
+                    </ComboBox>
+                    <ComboBox x:Name="EX_Count" HorizontalAlignment="Left" Margin="48,317,0,0" VerticalAlignment="Top" Width="39" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="0" IsEnabled="False" Grid.Column="2">
+                        <ListBoxItem Content="1"/>
+                    </ComboBox>
+                    <ComboBox x:Name="Server_Count" HorizontalAlignment="Left" Margin="48,447,0,0" VerticalAlignment="Top" Width="39" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="0" IsEnabled="False" Grid.Column="2">
+                        <ListBoxItem Content="1"/>
+                    </ComboBox>
+                    <ComboBox x:Name="WS_Count" HorizontalAlignment="Left" Margin="48,475,0,0" VerticalAlignment="Top" Width="39" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="0" IsEnabled="False" Grid.Column="2">
+                        <ListBoxItem Content="1"/>
+                    </ComboBox>
+                    <TextBlock x:Name="PW" HorizontalAlignment="Left" Margin="594,104,0,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="14" FontWeight="Bold" Foreground="#FF068113" Height="19" Width="260" Grid.Column="2"/>
+                </Grid>
+            </TabItem>
+            <TabItem Header="SACA">
+                <Grid Background="White" Margin="10,1,1.333,6.667">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="20*"/>
+                        <ColumnDefinition Width="377*"/>
+                    </Grid.ColumnDefinitions>
+                    <CheckBox x:Name="SACA" Content="" HorizontalAlignment="Left" Margin="12,23,0,0" VerticalAlignment="Top" Height="20" Width="20" FontWeight="Bold"/>
+                    <ComboBox x:Name="SACA_Tier" HorizontalAlignment="Left" Margin="36.667,48,0,0" VerticalAlignment="Top" Width="103" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="25" SelectedIndex="0" Grid.Column="1">
+                        <ListBoxItem x:Name="listBoxItem" Content="SACA 1 Tier"/>
+                        <ListBoxItem x:Name="listBoxItem1" Content="SACA 3 Tier"/>
+                    </ComboBox>
+                    <Label Content="SACA Tier" HorizontalAlignment="Left" Height="28" Margin="8,48,0,0" VerticalAlignment="Top" Width="69" FontWeight="Bold" Grid.ColumnSpan="2"/>
+                    <Label Content="DNS Label" HorizontalAlignment="Left" Height="28" Margin="6,78,0,0" VerticalAlignment="Top" Width="77" FontWeight="Bold" Grid.ColumnSpan="2"/>
+                    <TextBox x:Name="SACA_DNS" HorizontalAlignment="Left" Height="27" Margin="36.667,79,0,0" TextWrapping="Wrap" Text="f5dns01" VerticalAlignment="Top" Width="103" UndoLimit="20" BorderBrush="#FFABACAB" Grid.Column="1"/>
+                    <ComboBox x:Name="sacaBIGIP1vmsize" HorizontalAlignment="Left" Margin="1089,234,0,0" VerticalAlignment="Top" Width="145" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="25" SelectedIndex="71" Grid.Column="1">
+                        <MenuItem/>
+                    </ComboBox>
+                    <Label Content="VMSize" HorizontalAlignment="Left" Height="28" Margin="1135,206,0,0" VerticalAlignment="Top" Width="74" FontWeight="Bold" Grid.Column="1"/>
+                    <Label Content="SubnetName" HorizontalAlignment="Left" Height="28" Margin="7,136,0,0" VerticalAlignment="Top" Width="113" FontWeight="Bold" Grid.ColumnSpan="2"/>
+                    <Label Content="Address" HorizontalAlignment="Left" Height="28" Margin="7,162,0,0" VerticalAlignment="Top" Width="78" FontWeight="Bold" Grid.ColumnSpan="2"/>
+                    <TextBox x:Name="SACA_MGT_Name" HorizontalAlignment="Left" Height="27" Margin="37,137,0,0" TextWrapping="Wrap" Text="Management" VerticalAlignment="Top" Width="102" UndoLimit="20" Grid.Column="1"/>
+                    <TextBox x:Name="SACA_EXT_Name" HorizontalAlignment="Left" Height="27" Margin="177,134,0,0" TextWrapping="Wrap" Text="External" VerticalAlignment="Top" Width="89" UndoLimit="20" Grid.Column="1"/>
+                    <TextBox x:Name="SACA_EXT2_Name" HorizontalAlignment="Left" Height="27" Margin="314,134,0,0" TextWrapping="Wrap" Text="External2" VerticalAlignment="Top" Width="86" UndoLimit="20" Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <TextBox x:Name="SACA_INTN_Name" HorizontalAlignment="Left" Height="27" Margin="481,134,0,0" TextWrapping="Wrap" Text="InternalNorth" VerticalAlignment="Top" Width="92" UndoLimit="20" Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <TextBox x:Name="SACA_INTS_Name" HorizontalAlignment="Left" Height="27" Margin="653,134,0,0" TextWrapping="Wrap" Text="InternalSouth" VerticalAlignment="Top" Width="84" UndoLimit="20" Grid.Column="1"/>
+                    <TextBox x:Name="SACA_MGT_Subnet" HorizontalAlignment="Left" Height="27" Margin="37,168,0,0" TextWrapping="Wrap" Text="192.168.1.0/24" VerticalAlignment="Top" Width="102" UndoLimit="20" Grid.Column="1"/>
+                    <TextBox x:Name="SACA_Ext_Subnet" HorizontalAlignment="Left" Height="27" Margin="177,167,0,0" TextWrapping="Wrap" Text="192.168.2.0/24" VerticalAlignment="Top" Width="89" UndoLimit="20" Grid.Column="1"/>
+                    <TextBox x:Name="SACA_Ext2_Subnet" HorizontalAlignment="Left" Height="27" Margin="316,166,0,0" TextWrapping="Wrap" Text="192.168.7.0/24" VerticalAlignment="Top" Width="84" UndoLimit="20" Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <TextBox x:Name="SACA_INTN_Subnet" HorizontalAlignment="Left" Height="26" Margin="480,168,0,0" TextWrapping="Wrap" Text="192.168.3.0/24" VerticalAlignment="Top" Width="93" UndoLimit="20" Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <TextBox x:Name="SACA_INTS_Subnet" HorizontalAlignment="Left" Height="27" Margin="653,168,0,0" TextWrapping="Wrap" Text="192.168.8.0/24" VerticalAlignment="Top" Width="84" UndoLimit="20" Grid.Column="1"/>
+                    <TextBox x:Name="SACA_IPSExt_Name" HorizontalAlignment="Left" Height="27" Margin="802,134,0,0" TextWrapping="Wrap" Text="ips-external" VerticalAlignment="Top" Width="93" UndoLimit="20" Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <TextBox x:Name="SACA_IPSInt_Name" HorizontalAlignment="Left" Height="27" Margin="956,134,0,0" TextWrapping="Wrap" Text="ips-internal" VerticalAlignment="Top" Width="97" UndoLimit="20" Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <TextBox x:Name="SACA_IPSExt_Subnet" HorizontalAlignment="Left" Height="27" Margin="802,167,0,0" TextWrapping="Wrap" Text="192.168.5.0/24" VerticalAlignment="Top" Width="93" UndoLimit="20" Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <TextBox x:Name="SACA_IPSInt_Subnet" HorizontalAlignment="Left" Height="27" Margin="956,168,0,0" TextWrapping="Wrap" Text="192.168.6.0/24" VerticalAlignment="Top" Width="97" UndoLimit="20" Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <TextBox x:Name="SACA_VDMS_Name" HorizontalAlignment="Left" Height="27" Margin="1118,134,0,0" TextWrapping="Wrap" Text="VDMS" VerticalAlignment="Top" Width="91" UndoLimit="20" Grid.Column="1"/>
+                    <TextBox x:Name="SACA_VDMS_Subnet" HorizontalAlignment="Left" Height="27" Margin="1118,168,0,0" TextWrapping="Wrap" Text="192.168.4.0/24" VerticalAlignment="Top" Width="91" UndoLimit="20" Grid.Column="1"/>
+                    <Label Content="Management" HorizontalAlignment="Left" Height="28" Margin="50,206,0,0" VerticalAlignment="Top" Width="97" FontWeight="Bold" Grid.Column="1"/>
+                    <Label Content="Primary" HorizontalAlignment="Left" Height="28" Margin="149,206,0,0" VerticalAlignment="Top" Width="67" FontWeight="Bold" Grid.Column="1"/>
+                    <Label Content="Secondary" HorizontalAlignment="Left" Height="28" Margin="223,206,0,0" VerticalAlignment="Top" Width="75" FontWeight="Bold" Grid.Column="1"/>
+                    <Label Content="Internal North" HorizontalAlignment="Left" Height="28" Margin="480,190,0,0" VerticalAlignment="Top" Width="97" FontWeight="Bold" Grid.Column="1"/>
+                    <Label Content="InternalSouth" HorizontalAlignment="Left" Height="28" Margin="650,191,0,0" VerticalAlignment="Top" Width="97" FontWeight="Bold" Grid.Column="1"/>
+                    <TextBox x:Name="SACA_BIGIP1MGT_IP" HorizontalAlignment="Left" Height="27" Margin="50,237,0,0" TextWrapping="Wrap" Text="192.168.1.5" VerticalAlignment="Top" Width="89" UndoLimit="20" Grid.Column="1"/>
+                    <TextBox x:Name="SACA_BIGIP1Ext1Pri_IP" HorizontalAlignment="Left" Height="27" Margin="143,237,0,0" TextWrapping="Wrap" Text="192.168.2.4" VerticalAlignment="Top" Width="73" UndoLimit="20" Grid.Column="1"/>
+                    <TextBox x:Name="SACA_BIGIP1INTNPri_IP" HorizontalAlignment="Left" Height="27" Margin="456,237,0,0" TextWrapping="Wrap" Text="192.168.3.4" VerticalAlignment="Top" Width="67" UndoLimit="20" Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <TextBox x:Name="SACA_BIGIP2MGT_IP" HorizontalAlignment="Left" Height="27" Margin="50,267,0,0" TextWrapping="Wrap" Text="192.168.1.6" VerticalAlignment="Top" Width="89" UndoLimit="20" Grid.Column="1"/>
+                    <TextBox x:Name="SACA_BIGIP2Ext1Pri_IP" HorizontalAlignment="Left" Height="27" Margin="143,267,0,0" TextWrapping="Wrap" Text="192.168.2.5" VerticalAlignment="Top" Width="73" UndoLimit="20" Grid.Column="1"/>
+                    <TextBox x:Name="SACA_BIGIP2INTNPri_IP" HorizontalAlignment="Left" Height="27" Margin="456,267,0,0" TextWrapping="Wrap" Text="192.168.3.5" VerticalAlignment="Top" Width="67" UndoLimit="20" Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <TextBox x:Name="SACA_BIGIP3MGT_IP" HorizontalAlignment="Left" Height="27" Margin="50,297,0,0" TextWrapping="Wrap" Text="192.168.1.7" VerticalAlignment="Top" Width="89" UndoLimit="20" Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <TextBox x:Name="SACA_BIGIP3Ext2Pri_IP" HorizontalAlignment="Left" Height="27" Margin="297,297,0,0" TextWrapping="Wrap" Text="192.168.7.4" VerticalAlignment="Top" Width="72" UndoLimit="20" Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <TextBox x:Name="SACA_BIGIP4MGT_IP" HorizontalAlignment="Left" Height="27" Margin="50,329,0,0" TextWrapping="Wrap" Text="192.168.1.8" VerticalAlignment="Top" Width="89" UndoLimit="20" Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <TextBox x:Name="SACA_BIGIP4Ext2Pri_IP" HorizontalAlignment="Left" Height="27" Margin="297,328,0,0" TextWrapping="Wrap" Text="192.168.7.5" VerticalAlignment="Top" Width="72" UndoLimit="20" Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <TextBox x:Name="SACA_BIGIP4INTSPri_IP" HorizontalAlignment="Left" Height="27" Margin="606,329,0,0" TextWrapping="Wrap" Text="192.168.8.5" VerticalAlignment="Top" Width="71" UndoLimit="20" Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <TextBox x:Name="SACA_IP1SMGT_IP" HorizontalAlignment="Left" Height="27" Margin="50,359,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="89" UndoLimit="20" Grid.Column="1" Text="192.168.1.9" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <TextBox x:Name="SACA_IPS1ExternalPri_IP" HorizontalAlignment="Left" Height="27" Margin="761,361,0,0" TextWrapping="Wrap" Text="192.168.5.4" VerticalAlignment="Top" Width="83" UndoLimit="20" Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <TextBox x:Name="SACA_IPS1InternalPri_IP" HorizontalAlignment="Left" Height="27" Margin="932,361,0,0" TextWrapping="Wrap" Text="192.168.6.4" VerticalAlignment="Top" Width="73" UndoLimit="20" Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <TextBox x:Name="SACA_IP2SMGT_IP" HorizontalAlignment="Left" Height="27" Margin="50,389,0,0" TextWrapping="Wrap" Text="192.168.1.10" VerticalAlignment="Top" Width="89" UndoLimit="20" Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <TextBox x:Name="SACA_WinJBMGT_IP" HorizontalAlignment="Left" Height="27" Margin="50,419,0,0" TextWrapping="Wrap" Text="192.168.1.11" VerticalAlignment="Top" Width="89" UndoLimit="20" Grid.Column="1"/>
+                    <TextBox x:Name="SACA_LinuxJBMGT_IP" HorizontalAlignment="Left" Height="27" Margin="50,449,0,0" TextWrapping="Wrap" Text="192.168.1.12" VerticalAlignment="Top" Width="89" UndoLimit="20" Grid.Column="1"/>
+                    <TextBox x:Name="SACA_BIGIP3INTSPri_IP" HorizontalAlignment="Left" Height="27" Margin="606,297,0,0" TextWrapping="Wrap" Text="192.168.8.4" VerticalAlignment="Top" Width="71" UndoLimit="20" Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <Label x:Name="SACALable" Content="Build Secure Azure Computing Architecture (Prevew)" HorizontalAlignment="Left" Height="28" Margin="35,17,0,0" VerticalAlignment="Top" Width="292" Grid.ColumnSpan="2"/>
+                    <TextBlock x:Name="SACA_label" HorizontalAlignment="Left" Margin="148.667,78,0,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="14" FontWeight="Bold" Foreground="#FF068113" Grid.Column="1" Height="19" Width="144"/>
+                    <Label Content="Load Balancer" HorizontalAlignment="Left" Height="28" Margin="12,491,0,0" VerticalAlignment="Top" Width="133" FontWeight="Bold" Grid.ColumnSpan="2"/>
+                    <TextBox x:Name="SACA_SBLB" HorizontalAlignment="Left" Height="27" Margin="8,524,0,0" TextWrapping="Wrap" Text="NLB-Internal" VerticalAlignment="Top" Width="137" UndoLimit="20" Grid.ColumnSpan="2"/>
+                    <TextBox x:Name="SACA_NBLB" HorizontalAlignment="Left" Height="27" Margin="8,554,0,0" TextWrapping="Wrap" Text="NLB-External" VerticalAlignment="Top" Width="137" UndoLimit="20" Grid.ColumnSpan="2"/>
+                    <TextBox x:Name="SACA_IPSLB" HorizontalAlignment="Left" Height="27" Margin="8,584,0,0" TextWrapping="Wrap" Text="NLB-IPS" VerticalAlignment="Top" Width="137" UndoLimit="20" Grid.ColumnSpan="2" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <Label Content="F5 License" HorizontalAlignment="Left" Height="28" Margin="181.667,48,0,0" VerticalAlignment="Top" Width="89" FontWeight="Bold" Grid.Column="1"/>
+                    <TextBox x:Name="SACA_F5_License1" HorizontalAlignment="Left" Height="27" Margin="255.667,49,0,0" TextWrapping="Wrap" Text="LICENSE1" VerticalAlignment="Top" Width="92" UndoLimit="20" Grid.Column="1"/>
+                    <TextBox x:Name="SACA_F5_License2" HorizontalAlignment="Left" Height="27" Margin="364.667,50,0,0" TextWrapping="Wrap" Text="LICENSE2" VerticalAlignment="Top" Width="92" UndoLimit="20" Grid.Column="1"/>
+                    <TextBox x:Name="SACA_F5_License3" HorizontalAlignment="Left" Height="27" Margin="474.667,49,0,0" TextWrapping="Wrap" Text="LICENSE3" VerticalAlignment="Top" Width="92" UndoLimit="20" Grid.Column="1"/>
+                    <TextBox x:Name="SACA_F5_License4" HorizontalAlignment="Left" Height="27" Margin="590.667,49,0,0" TextWrapping="Wrap" Text="LICENSE4" VerticalAlignment="Top" Width="92" UndoLimit="20" Grid.Column="1"/>
+                    <Label Content="Virtual Machine" HorizontalAlignment="Left" Height="28" Margin="7,206,0,0" VerticalAlignment="Top" Width="109" FontWeight="Bold" Grid.ColumnSpan="2"/>
+                    <TextBox x:Name="SACA_VM_BigIP1" HorizontalAlignment="Left" Height="27" Margin="10,237,0,0" TextWrapping="Wrap" Text="BIGIPVM1" VerticalAlignment="Top" Width="102" UndoLimit="20" Grid.ColumnSpan="2"/>
+                    <TextBox x:Name="SACA_VM_BigIP2" HorizontalAlignment="Left" Height="27" Margin="10,267,0,0" TextWrapping="Wrap" Text="BIGIPVM2" VerticalAlignment="Top" Width="102" UndoLimit="20" Grid.ColumnSpan="2"/>
+                    <TextBox x:Name="SACA_VM_BigIP3" HorizontalAlignment="Left" Height="27" Margin="10,297,0,0" TextWrapping="Wrap" Text="BIGIPVM3" VerticalAlignment="Top" Width="102" UndoLimit="20" Grid.ColumnSpan="2" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <TextBox x:Name="SACA_VM_BigIP4" HorizontalAlignment="Left" Height="27" Margin="10,327,0,0" TextWrapping="Wrap" Text="BIGIPVM4" VerticalAlignment="Top" Width="102" UndoLimit="20" Grid.ColumnSpan="2" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <TextBox x:Name="SACA_VM_IPS1" HorizontalAlignment="Left" Height="27" Margin="10,357,0,0" TextWrapping="Wrap" Text="FW-IPS1" VerticalAlignment="Top" Width="102" UndoLimit="20" Grid.ColumnSpan="2" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <TextBox x:Name="SACA_VM_IPS2" HorizontalAlignment="Left" Height="27" Margin="10,387,0,0" TextWrapping="Wrap" Text="FW-IPS2" VerticalAlignment="Top" Width="102" UndoLimit="20" Grid.ColumnSpan="2" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <TextBox x:Name="SACA_VM_WinJB" HorizontalAlignment="Left" Height="27" Margin="10,417,0,0" TextWrapping="Wrap" Text="WinJB01" VerticalAlignment="Top" Width="102" UndoLimit="20" Grid.ColumnSpan="2"/>
+                    <TextBox x:Name="SACA_VM_LinuxJB" HorizontalAlignment="Left" Height="27" Margin="10,447,0,0" TextWrapping="Wrap" Text="LinuxJB01" VerticalAlignment="Top" Width="102" UndoLimit="20" Grid.ColumnSpan="2"/>
+                    <Label Content="IPS External" HorizontalAlignment="Left" Height="28" Margin="804,192,0,0" VerticalAlignment="Top" Width="78" FontWeight="Bold" Grid.Column="1"/>
+                    <Label Content="IPS Internal" HorizontalAlignment="Left" Height="28" Margin="962,193,0,0" VerticalAlignment="Top" Width="79" FontWeight="Bold" Grid.Column="1"/>
+                    <TextBox x:Name="SACA_SBLB_IP" HorizontalAlignment="Left" Height="27" Margin="108,524,0,0" TextWrapping="Wrap" Text="192.168.8.100" VerticalAlignment="Top" Width="97" UndoLimit="20" Grid.Column="1"/>
+                    <Label Content="Private IP" HorizontalAlignment="Left" Height="28" Margin="108,491,0,0" VerticalAlignment="Top" Width="97" FontWeight="Bold" Grid.Column="1"/>
+                    <TextBox x:Name="SACA_IPSLB_IP" HorizontalAlignment="Left" Height="27" Margin="108,584,0,0" TextWrapping="Wrap" Text="192.168.5.100" VerticalAlignment="Top" Width="97" UndoLimit="20" Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <ComboBox x:Name="sacaBIGIP2vmsize" HorizontalAlignment="Left" Margin="1089,264,0,0" VerticalAlignment="Top" Width="145" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="25" SelectedIndex="71" Grid.Column="1">
+                        <MenuItem/>
+                    </ComboBox>
+                    <ComboBox x:Name="sacaBIGIP3vmsize" HorizontalAlignment="Left" Margin="1089,294,0,0" VerticalAlignment="Top" Width="145" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="25" SelectedIndex="71" Grid.Column="1">
+                        <MenuItem/>
+                    </ComboBox>
+                    <ComboBox x:Name="sacaBIGIP4vmsize" HorizontalAlignment="Left" Margin="1089,324,0,0" VerticalAlignment="Top" Width="145" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="25" SelectedIndex="71" Grid.Column="1">
+                        <MenuItem/>
+                    </ComboBox>
+                    <ComboBox x:Name="sacaFWIPS1vmsize" HorizontalAlignment="Left" Margin="1089,354,0,0" VerticalAlignment="Top" Width="145" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="25" SelectedIndex="71" Grid.Column="1">
+                        <MenuItem/>
+                    </ComboBox>
+                    <ComboBox x:Name="sacaFWIPS2vmsize" HorizontalAlignment="Left" Margin="1089,384,0,0" VerticalAlignment="Top" Width="145" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="25" SelectedIndex="71" Grid.Column="1">
+                        <MenuItem/>
+                    </ComboBox>
+                    <ComboBox x:Name="sacaWinJBvmsize" HorizontalAlignment="Left" Margin="1089,416,0,0" VerticalAlignment="Top" Width="145" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="25" SelectedIndex="71" Grid.Column="1">
+                        <MenuItem/>
+                    </ComboBox>
+                    <ComboBox x:Name="sacaLinuxJBvmsize" HorizontalAlignment="Left" Margin="1089,448,0,0" VerticalAlignment="Top" Width="145" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="25" SelectedIndex="71" Grid.Column="1">
+                        <MenuItem/>
+                    </ComboBox>
+                    <TextBox x:Name="SACA_IPS2ExternalPri_IP" HorizontalAlignment="Left" Height="27" Margin="762,391,0,0" TextWrapping="Wrap" Text="192.168.5.5" VerticalAlignment="Top" Width="83" UndoLimit="20" Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <TextBox x:Name="SACA_IPS2InternalPri_IP" HorizontalAlignment="Left" Height="27" Margin="932,391,0,0" TextWrapping="Wrap" Text="192.168.6.5" VerticalAlignment="Top" Width="73" UndoLimit="20" Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <Label Content="External" HorizontalAlignment="Left" Height="28" Margin="189,190,0,0" VerticalAlignment="Top" Width="67" FontWeight="Bold" Grid.Column="1"/>
+                    <TextBox x:Name="SACA_BIGIP1Ext1Sec_IP" HorizontalAlignment="Left" Height="27" Margin="221,237,0,0" TextWrapping="Wrap" Text="192.168.2.14" VerticalAlignment="Top" Width="73" UndoLimit="20" Grid.Column="1"/>
+                    <TextBox x:Name="SACA_BIGIP2Ext1Sec_IP" HorizontalAlignment="Left" Height="27" Margin="221,267,0,0" TextWrapping="Wrap" Text="192.168.2.15" VerticalAlignment="Top" Width="73" UndoLimit="20" Grid.Column="1"/>
+                    <Label Content="Primary" HorizontalAlignment="Left" Height="28" Margin="461,206,0,0" VerticalAlignment="Top" Width="57" FontWeight="Bold" Grid.Column="1"/>
+                    <Label Content="Secondary" HorizontalAlignment="Left" Height="28" Margin="527,206,0,0" VerticalAlignment="Top" Width="71" FontWeight="Bold" Grid.Column="1"/>
+                    <TextBox x:Name="SACA_BIGIP1INTNSec_IP" HorizontalAlignment="Left" Height="27" Margin="525,237,0,0" TextWrapping="Wrap" Text="192.168.3.14" VerticalAlignment="Top" Width="79" UndoLimit="20" Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <TextBox x:Name="SACA_BIGIP2INTNSec_IP" HorizontalAlignment="Left" Height="27" Margin="526,267,0,0" TextWrapping="Wrap" Text="192.168.3.15" VerticalAlignment="Top" Width="78" UndoLimit="20" Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <Label Content="External2" HorizontalAlignment="Left" Height="28" Margin="329,190,0,0" VerticalAlignment="Top" Width="67" FontWeight="Bold" Grid.Column="1"/>
+                    <Label Content="Primary" HorizontalAlignment="Left" Height="28" Margin="299,206,0,0" VerticalAlignment="Top" Width="58" FontWeight="Bold" Grid.Column="1"/>
+                    <Label Content="Secondary" HorizontalAlignment="Left" Height="28" Margin="368,206,0,0" VerticalAlignment="Top" Width="69" FontWeight="Bold" Grid.Column="1"/>
+                    <TextBox x:Name="SACA_BIGIP3Ext2Sec_IP" HorizontalAlignment="Left" Height="27" Margin="370,297,0,0" TextWrapping="Wrap" Text="192.168.7.14" VerticalAlignment="Top" Width="81" UndoLimit="20" Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <Label Content="Primary" HorizontalAlignment="Left" Height="28" Margin="610,206,0,0" VerticalAlignment="Top" Width="57" FontWeight="Bold" Grid.Column="1"/>
+                    <Label Content="Secondary" HorizontalAlignment="Left" Height="28" Margin="688,206,0,0" VerticalAlignment="Top" Width="71" FontWeight="Bold" Grid.Column="1"/>
+                    <Label Content="Primary" HorizontalAlignment="Left" Height="28" Margin="773,206,0,0" VerticalAlignment="Top" Width="57" FontWeight="Bold" Grid.Column="1"/>
+                    <Label Content="Secondary" HorizontalAlignment="Left" Height="28" Margin="850,206,0,0" VerticalAlignment="Top" Width="71" FontWeight="Bold" Grid.Column="1"/>
+                    <Label Content="Primary" HorizontalAlignment="Left" Height="28" Margin="934,206,0,0" VerticalAlignment="Top" Width="57" FontWeight="Bold" Grid.Column="1"/>
+                    <Label Content="Secondary" HorizontalAlignment="Left" Height="28" Margin="1000,206,0,0" VerticalAlignment="Top" Width="71" FontWeight="Bold" Grid.Column="1"/>
+                    <TextBox x:Name="SACA_IPS1InternalSec_IP" HorizontalAlignment="Left" Height="27" Margin="1008,361,0,0" TextWrapping="Wrap" Text="192.168.6.14" VerticalAlignment="Top" Width="73" UndoLimit="20" Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <TextBox x:Name="SACA_IPS2InternalSec_IP" HorizontalAlignment="Left" Height="27" Margin="1008,391,0,0" TextWrapping="Wrap" Text="192.168.6.15" VerticalAlignment="Top" Width="73" UndoLimit="20" Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <TextBox x:Name="SACA_IPS1ExternalSec_IP" HorizontalAlignment="Left" Height="27" Margin="846,361,0,0" TextWrapping="Wrap" Text="192.168.5.14" VerticalAlignment="Top" Width="83" UndoLimit="20" Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <TextBox x:Name="SACA_IPS2ExternalSec_IP" HorizontalAlignment="Left" Height="27" Margin="846,391,0,0" TextWrapping="Wrap" Text="192.168.5.15" VerticalAlignment="Top" Width="83" UndoLimit="20" Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <TextBox x:Name="SACA_BIGIP4Ext2Sec_IP" HorizontalAlignment="Left" Height="27" Margin="370,328,0,0" TextWrapping="Wrap" Text="192.168.7.15" VerticalAlignment="Top" Width="81" UndoLimit="20" Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <TextBox x:Name="SACA_BIGIP4INTSSec_IP" HorizontalAlignment="Left" Height="27" Margin="679,329,0,0" TextWrapping="Wrap" Text="192.168.8.15" VerticalAlignment="Top" Width="80" UndoLimit="20" Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <TextBox x:Name="SACA_BIGIP3INTSSec_IP" HorizontalAlignment="Left" Height="27" Margin="679,297,0,0" TextWrapping="Wrap" Text="192.168.8.14" VerticalAlignment="Top" Width="80" UndoLimit="20" Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=SACA_Tier}"/>
+                    <Label Content="VNET Name" HorizontalAlignment="Left" Height="28" Margin="6,108,0,0" VerticalAlignment="Top" Width="77" FontWeight="Bold" Grid.ColumnSpan="2"/>
+                    <TextBox x:Name="SACA_VNET_Name" HorizontalAlignment="Left" Height="27" Margin="37,109,0,0" TextWrapping="Wrap" Text="SCCA_VNET" VerticalAlignment="Top" Width="103" UndoLimit="20" BorderBrush="#FFABACAB" Grid.Column="1"/>
+                    <TextBox x:Name="SACA_BIGIP2INTPri_IP" HorizontalAlignment="Left" Height="27" Margin="606,267,0,0" TextWrapping="Wrap" Text="192.168.8.5" VerticalAlignment="Top" Width="71" UndoLimit="20" Grid.Column="1"/>
+                    <TextBox x:Name="SACA_BIGIP1INTPri_IP" HorizontalAlignment="Left" Height="27" Margin="606,235,0,0" TextWrapping="Wrap" Text="192.168.8.4" VerticalAlignment="Top" Width="71" UndoLimit="20" Grid.Column="1"/>
+                    <TextBox x:Name="SACA_BIGIP2INTSec_IP" HorizontalAlignment="Left" Height="27" Margin="679,267,0,0" TextWrapping="Wrap" Text="192.168.8.15" VerticalAlignment="Top" Width="80" UndoLimit="20" Grid.Column="1"/>
+                    <TextBox x:Name="SACA_BIGIP1INTSec_IP" HorizontalAlignment="Left" Height="27" Margin="679,235,0,0" TextWrapping="Wrap" Text="192.168.8.14" VerticalAlignment="Top" Width="80" UndoLimit="20" Grid.Column="1"/>
+                </Grid>
+            </TabItem>
+        </TabControl>
+        <TextBox x:Name="usage2" HorizontalAlignment="Left" Height="201" Margin="0,738,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="1327" Background="#FF0B1972" Foreground="#FFFFE912" Grid.ColumnSpan="3" VerticalScrollBarVisibility="Visible" SelectionBrush="#FFFFEB1F"/>
 
     </Grid>
 </Window>
