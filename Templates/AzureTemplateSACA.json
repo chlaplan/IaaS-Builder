@@ -248,23 +248,23 @@
     }
   },
   "resources": [
-    {
-      "type": "Microsoft.Network/publicIpAddresses",
-      "apiVersion": "2020-05-01",
-      "name": "[concat(toLower(parameters('prefix')),toLower(variables('vmname')), '-ip')]",
-      "location": "[parameters('location')]",
-      "properties": {
-        "publicIpAllocationMethod": "[variables('networkSettings').publicIpAllocationMethod]"
-      }
-    },
+    //{
+    //  "type": "Microsoft.Network/publicIpAddresses",
+    //  "apiVersion": "2020-05-01",
+    //  "name": "[concat(toLower(parameters('prefix')),toLower(variables('vmname')), '-ip')]",
+    //  "location": "[parameters('location')]",
+    //  "properties": {
+    //    "publicIpAllocationMethod": "[variables('networkSettings').publicIpAllocationMethod]"
+    //  }
+    //},
     {
       "type": "Microsoft.Network/networkInterfaces",
       "name": "[concat(toLower(parameters('prefix')),toLower(variables('vmname')), '-ni')]",
       "apiVersion": "2020-05-01",
       "location": "[parameters('location')]",
-      "dependsOn": [
-        "[concat('Microsoft.Network/publicIpAddresses/',toLower(parameters('prefix')),toLower(variables('vmname')), '-ip')]"
-      ],
+      //"dependsOn": [
+      //  "[concat('Microsoft.Network/publicIpAddresses/',toLower(parameters('prefix')),toLower(variables('vmname')), '-ip')]"
+      //],
       "properties": {
         "ipConfigurations": [
           {
@@ -275,9 +275,9 @@
               },
               "privateIPAllocationMethod": "[variables('networkSettings').privateIPAllocationMethod]",
               "privateIPAddress": "[concat(variables('networkSettings').virtualMachinesIPAddress)]",
-              "publicIpAddress": {
-                "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIpAddresses', concat(toLower(parameters('prefix')),toLower(variables('vmname')), '-ip'))]"
-              }
+              //"publicIpAddress": {
+              //  "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIpAddresses', concat(toLower(parameters('prefix')),toLower(variables('vmname')), '-ip'))]"
+              //}
             }
           }
         ]

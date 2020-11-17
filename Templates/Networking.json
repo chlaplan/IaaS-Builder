@@ -259,14 +259,14 @@
             "[variables('networkSettings').subnetAddressPrefix]"
           ]
         },
-        "dhcpOptions": {
-          "dnsServers": [
-            "[parameters('DCip')]",
-            "8.8.8.8",
-            "1.1.1.1",
-            "8.8.4.4"
-          ]
-        },
+        //"dhcpOptions": {
+        //  "dnsServers": [
+        //    "[parameters('DCip')]",
+        //    "8.8.8.8",
+        //    "1.1.1.1",
+        //    "8.8.4.4"
+        //  ]
+        //},
         "subnets": [
           {
             "name": "[parameters('subnetname')]",

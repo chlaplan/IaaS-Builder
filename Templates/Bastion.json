@@ -10,18 +10,6 @@
         "description": "The prefix name of machines. "
       }
     },
-    "vmsize": {
-      "type": "string",
-      "metadata": {
-        "description": "VM Size. "
-      }
-    },
-    "vmdisk": {
-      "type": "string",
-      "metadata": {
-        "description": "VM disk. "
-      }
-    },
     "NSG": {
       "type": "string",
       "metadata": {
@@ -58,18 +46,6 @@
         "description": "Subnet for Bastion Connections. "
       }
     },
-    "role": {
-      "type": "string",
-      "metadata": {
-        "description": "DSC to run on the machine"
-      }
-    },
-    "servername": {
-      "type": "string",
-      "metadata": {
-        "description": "Name of extra server. "
-      }
-    },
     "DCName": {
       "type": "string",
       "metadata": {
@@ -86,12 +62,6 @@
       "type": "string",
       "metadata": {
         "description": "Name of SCCM DP/MP server. "
-      }
-    },
-    "ip": {
-      "type": "string",
-      "metadata": {
-        "description": "Private IP Address. "
       }
     },
     "DCip": {
@@ -121,24 +91,6 @@
     "sharePointVersion": {
       "type": "string",
       "defaultValue": "2016",
-      "metadata": {
-        "description": "Private IP Address. "
-      }
-    },
-    "publisher": {
-      "type": "string",
-      "metadata": {
-        "description": "Private IP Address. "
-      }
-    },
-    "offer": {
-      "type": "string",
-      "metadata": {
-        "description": "Private IP Address. "
-      }
-    },
-    "sku": {
-      "type": "string",
       "metadata": {
         "description": "Private IP Address. "
       }
@@ -201,7 +153,6 @@
     "networkSettings": {
       "virtualNetworkAddressPrefix": "[parameters('addressprefix')]",
       "subnetAddressPrefix": "[parameters('addresssubnet')]",
-      "virtualMachinesIPAddress": "[parameters('ip')]",
       "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), parameters('subnetname'))]",
       "privateIPAllocationMethod": "Static",
       "publicIpAllocationMethod": "Dynamic"
@@ -224,19 +175,6 @@
       "spAppPoolUserName": "spapppool",
       "spAppPoolPassword": "[parameters('adminPassword')]",
       "spPassphrase": "[parameters('adminPassword')]"
-    },
-    "vmrole": "[parameters('role')]",
-    "vmname": "[parameters('servername')]",
-    "vmDiskType": "[parameters('vmDisk')]",
-    "vmSize": "[parameters('vmsize')]",
-
-    "imageReference": {
-      "[parameters('role')]": {
-        "publisher": "[parameters('publisher')]",
-        "offer": "[parameters('offer')]",
-        "sku": "[parameters('sku')]",
-        "version": "latest"
-      }
     }
   },
   "resources": [
