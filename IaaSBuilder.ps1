@@ -26,13 +26,13 @@ if($UpdateVer -le "2.2.4"){
     Write-Host "Found Azure Module"
     $StorageModule = Get-InstalledModule -Name Az.Storage
     $AccountModule = Get-InstalledModule -Name Az.Accounts
-        if($StorageModule.Version -ne "3.0.0"){
+        if($StorageModule.Version -lt "3.0.0"){
         Write-Host "Updating Azure Storage Module"
         Update-Module -Name Az.Storage -Force -Scope CurrentUser -WarningAction Ignore
         Import-Module -Name Az.Storage -RequiredVersion 3.0.0
         #Import-Module Az -Scope Global
         }
-        if($AccountModule.Version -ne "2.1.2"){
+        if($AccountModule.Version -lt "2.1.2"){
         Write-Host "Updating Azure Accounts Module"
         Update-Module -Name Az.Accounts -Force -Scope CurrentUser -WarningAction Ignore
         Import-Module -Name Az.Accounts -RequiredVersion 2.1.2
