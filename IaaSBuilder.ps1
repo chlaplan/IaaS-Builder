@@ -26,13 +26,13 @@ if($UpdateVer -le "2.2.4"){
     Write-Host "Found Azure Module"
     $StorageModule = Get-InstalledModule -Name Az.Storage
     $AccountModule = Get-InstalledModule -Name Az.Accounts
-        if($StorageModule.Version -le "3.0.0"){
+        if($StorageModule.Version -clt "3.0.0"){
         Write-Host "Updating Azure Storage Module"
         Update-Module -Name Az.Storage -Force -Scope CurrentUser -WarningAction Ignore
         Import-Module -Name Az.Storage -RequiredVersion 3.0.0
         #Import-Module Az -Scope Global
         }
-        if($AccountModule.Version -le "2.1.2"){
+        if($AccountModule.Version -clt "2.1.2"){
         Write-Host "Updating Azure Accounts Module"
         Update-Module -Name Az.Accounts -Force -Scope CurrentUser -WarningAction Ignore
         Import-Module -Name Az.Accounts -RequiredVersion 2.1.2
@@ -172,7 +172,7 @@ $xaml.SelectNodes("//*[@Name]") | ForEach-Object {
 Function Get-FormVariables{
 if ($global:ReadmeDisplay -ne $true){$global:ReadmeDisplay=$true}
 #write-host "Found the following interactable elements from our form" -ForegroundColor Cyan
-get-variable WPF*
+get-variable WPF* -ValueOnly
 }
  
 $formvar = Get-FormVariables
@@ -240,6 +240,170 @@ $WPFadminpassword1.Add_LostFocus({
     }
 })
 
+$WPFSave.Add_Click({
+$formvar | Export-Csv -LiteralPath .\variables.csv
+})
+
+$WPFLoad.Add_Click({
+if(Test-Path .\variables.csv){
+Write-Host "Found Saved Variables"
+$loadvars = Import-Csv -LiteralPath .\variables.csv
+$upv = $loadvars | Where Name -EQ 'resourcegroup1'
+$WPFresourcegroup1.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'addressprefix1'
+$WPFaddressprefix1.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'addresssubnet1'
+$WPFaddresssubnet1.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'ADFSIP'
+$WPFADFSIP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'ADFSName'
+$WPFADFSName.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'adminaccount1'
+$WPFadminaccount1.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'bastionsubnet'
+$WPFbastionsubnet.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'EXIP'
+$WPFEXIP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'prefix1'
+$WPFprefix1.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_BIGIP1Ext1Pri_IP'
+$WPFSACA_BIGIP1Ext1Pri_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_BIGIP1Ext1Sec_IP'
+$WPFSACA_BIGIP1Ext1Sec_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_BIGIP1INTNPri_IP'
+$WPFSACA_BIGIP1INTNPri_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_BIGIP1INTNSec_IP'
+$WPFSACA_BIGIP1INTNSec_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_BIGIP1INTPri_IP'
+$WPFSACA_BIGIP1INTPri_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_BIGIP1INTSec_IP'
+$WPFSACA_BIGIP1INTSec_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_BIGIP1MGT_IP'
+$WPFSACA_BIGIP1MGT_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_BIGIP2Ext1Pri_IP'
+$WPFSACA_BIGIP2Ext1Pri_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_BIGIP2Ext1Sec_IP'
+$WPFSACA_BIGIP2Ext1Sec_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_BIGIP2INTNPri_IP'
+$WPFSACA_BIGIP2INTNPri_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_BIGIP2INTNSec_IP'
+$WPFSACA_BIGIP2INTNSec_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_BIGIP2INTPri_IP'
+$WPFSACA_BIGIP2INTPri_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_BIGIP2INTSec_IP'
+$WPFSACA_BIGIP2INTSec_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_BIGIP2MGT_IP'
+$WPFSACA_BIGIP2MGT_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_BIGIP3Ext2Pri_IP'
+$WPFSACA_BIGIP3Ext2Pri_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_BIGIP3Ext2Sec_IP'
+$WPFSACA_BIGIP3Ext2Sec_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_BIGIP3INTSPri_IP'
+$WPFSACA_BIGIP3INTSPri_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_BIGIP3INTSSec_IP'
+$WPFSACA_BIGIP3INTSSec_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_BIGIP4Ext2Pri_IP'
+$WPFSACA_BIGIP4Ext2Pri_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_BIGIP4Ext2Sec_IP'
+$WPFSACA_BIGIP4Ext2Sec_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_BIGIP4INTSPri_IP'
+$WPFSACA_BIGIP4INTSPri_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_BIGIP4INTSSec_IP'
+$WPFSACA_BIGIP4INTSSec_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_BIGIP4MGT_IP'
+$WPFSACA_BIGIP4MGT_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_DNS'
+$WPFSACA_DNS.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_Ext_Subnet'
+$WPFSACA_Ext_Subnet.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_Ext2_Subnet'
+$WPFSACA_Ext2_Subnet.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_INTN_Subnet'
+$WPFSACA_INTN_Subnet.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_INTS_Subnet'
+$WPFSACA_INTS_Subnet.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_IP1SMGT_IP'
+$WPFSACA_IP1SMGT_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_IP2SMGT_IP'
+$WPFSACA_IP2SMGT_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_IPS1ExternalPri_IP'
+$WPFSACA_IPS1ExternalPri_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_IPS1ExternalSec_IP'
+$WPFSACA_IPS1ExternalSec_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_IPS1InternalPri_IP'
+$WPFSACA_IPS1InternalPri_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_IPS1InternalSec_IP'
+$WPFSACA_IPS1InternalSec_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_IPS2ExternalPri_IP'
+$WPFSACA_IPS2ExternalPri_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_IPS2ExternalSec_IP'
+$WPFSACA_IPS2ExternalSec_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_IPS2InternalPri_IP'
+$WPFSACA_IPS2InternalPri_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_IPS2InternalSec_IP'
+$WPFSACA_IPS2InternalSec_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_IPSExt_Name'
+$WPFSACA_IPSExt_Name.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_IPSExt_Subnet'
+$WPFSACA_IPSExt_Subnet.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_IPSInt_Name'
+$WPFSACA_IPSInt_Name.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_IPSInt_Subnet'
+$WPFSACA_IPSInt_Subnet.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_IPSLB'
+$WPFSACA_IPSLB.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_IPSLB_IP'
+$WPFSACA_IPSLB_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_LinuxJBMGT_IP'
+$WPFSACA_LinuxJBMGT_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_MGT_Name'
+$WPFSACA_MGT_Name.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_MGT_Subnet'
+$WPFSACA_MGT_Subnet.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SACA_SBLB_IP'
+$WPFSACA_SBLB_IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'sccm_ps_ip'
+$WPFsccm_ps_ip.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'sccm_dp_ip'
+$WPFsccm_dp_ip.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'server1IP'
+$WPFserver1IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'server5IP'
+$WPFserver5IP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'sharepointIP'
+$WPFsharepointIP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SQLIP'
+$WPFSQLIP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'workstationIP'
+$WPFworkstationIP.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'saname1'
+$WPFsaname1.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'Dname1'
+$WPFDname1.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'EXName'
+$WPFEXName.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'sccm_dp_name'
+$WPFsccm_dp_name.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'sccm_ps_name'
+$WPFsccm_ps_name.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'Server1Name'
+$WPFServer1Name.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'Server5Name'
+$WPFServer5Name.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'sharepointName'
+$WPFsharepointName.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'SQLName'
+$WPFSQLName.Text = $upv.Text
+$upv = $loadvars | Where Name -EQ 'subnetName1'
+$WPFsubnetName1.Text = $upv.Text
+}
+else
+{
+Write-Host "No Saved Variables found"
+}
+
+
+})
 
 $WPFLocations1.Add_SelectionChanged({
     $Location = $WPFLocations1.SelectedItem
@@ -1069,7 +1233,7 @@ $WPFBuild1.Add_Click({
 
     $bastionnet = Get-AzVirtualNetwork -Name $VirtualNetworkName -ResourceGroupName $rg
     $bastionnet.AddressSpace.AddressPrefixes.Add($bastionsubnet)
-    Set-AzVirtualNetwork -VirtualNetwork $bastionnet    
+    Set-AzVirtualNetwork -VirtualNetwork $bastionnet
     #New-AzVirtualNetworkSubnetConfig -Name "AzureBastionSubnet" -AddressPrefix $bastionsubnet
     #$bastionIP = New-AzPublicIpAddress -Name "AzureBastionSubnet-PIP" -ResourceGroupName $rg -Location $AzureLocation -Sku Standard -AllocationMethod Static -IpAddressVersion IPv4
     #New-AzBastion -ResourceGroupName $rg -Name "Bastion" -PublicIpAddressId $bastionIP.id -VirtualNetworkId $vnet.Id
@@ -1121,11 +1285,11 @@ $WPFBuild1.Add_Click({
     }
 
     $privateEndpointConnection = New-AzPrivateLinkServiceConnection -Name "PrivateConnection" -PrivateLinkServiceId $storageaccount.Id -GroupId 'blob' -Verbose
-    New-AzPrivateEndpoint -Name "PrivateStorage" -ResourceGroupName $rg -Location $AzureLocation -Subnet $Subnet -PrivateLinkServiceConnection $privateEndpointConnection -Verbose
+    New-AzPrivateEndpoint -Name "PrivateStorage" -ResourceGroupName $rg -Location $AzureLocation -Subnet $Subnet -PrivateLinkServiceConnection $privateEndpointConnection -Force -Verbose
     $zone = New-AzPrivateDnsZone -ResourceGroupName $rg -Name $blobURL -Verbose
     $link = New-AzPrivateDnsVirtualNetworkLink -ResourceGroupName $rg -ZoneName $blobURL -Name "Storage-Link" -VirtualNetworkId $vnet.Id -Verbose
     $config = New-AzPrivateDnsZoneConfig -Name $blobURL -PrivateDnsZoneId $Zone.ResourceId -Verbose
-    New-AzPrivateDnsZoneGroup -ResourceGroupName $rg -Name "ZoneGroup" -PrivateEndpointName "PrivateStorage" -PrivateDnsZoneConfig $Config -Verbose
+    New-AzPrivateDnsZoneGroup -ResourceGroupName $rg -Name "ZoneGroup" -PrivateEndpointName "PrivateStorage" -PrivateDnsZoneConfig $Config -Force -Verbose
     
 
     # Domain Private DNS
@@ -1136,6 +1300,7 @@ $WPFBuild1.Add_Click({
     # DC/CA Build
     if ($WPFserver1.IsChecked -eq $true){
     Write-Host "Building DC/CA" -ForegroundColor Green
+    If($WPFDCSPOT.IsChecked -eq $True){$VMTemplate = ".\Templates\AzureTemplateSpot.json"}
 
     New-AzResourceGroupDeployment @commonVariables `
                                        -Name $WPFServer1Name.Text `
@@ -1166,6 +1331,8 @@ $WPFBuild1.Add_Click({
     # Add Another DC Build
     if ($WPFDC_Count.SelectionBoxItem -eq "2"){
     Write-Host "Adding Second DC" -ForegroundColor Green
+    If($WPFDCSPOT.IsChecked -eq $True){$VMTemplate = ".\Templates\AzureTemplateSpot.json"}
+
     New-AzResourceGroupDeployment @commonVariables `
                                        -Name "DC02" `
                                        -TemplateFile $VMTemplate `
@@ -1180,7 +1347,7 @@ $WPFBuild1.Add_Click({
                                        -AsJob `
                                        -Verbose
     Start-Sleep -Seconds 5
-    #$DCJob = Get-Job | Where Name -Like *DC* | Select -Last 1
+    #$DC2Job = Get-Job | Where Name -Like *DC* | Select -Last 1
     $DC2Job = Get-Job | Select -Last 1
         If($DC2Job.State -eq "Failed"){
         Write-Host "DC2 Failed" -ForegroundColor Red
@@ -1196,7 +1363,7 @@ $WPFBuild1.Add_Click({
     # ADFS Build
     if ($WPFADFS.IsChecked -eq $true){
     Write-Host "Building ADFS" -ForegroundColor Green
-
+    If($WPFADFSSPOT.IsChecked -eq $True){$VMTemplate = ".\Templates\AzureTemplateSpot.json"}
     New-AzResourceGroupDeployment @commonVariables `
                                        -Name $WPFADFSName.Text `
                                        -TemplateFile $VMTemplate `
@@ -1226,7 +1393,7 @@ $WPFBuild1.Add_Click({
     # Exchange Build
     if ($WPFExchange.IsChecked -eq $true){
     Write-Host "Building Exchange" -ForegroundColor Green
-
+    If($WPFEXSPOT.IsChecked -eq $True){$VMTemplate = ".\Templates\AzureTemplateSpot.json"}
     New-AzResourceGroupDeployment @commonVariables `
                                        -Name $WPFExName.Text `
                                        -TemplateFile $VMTemplate `
@@ -1256,7 +1423,7 @@ $WPFBuild1.Add_Click({
     # SCCM Build
     if ($WPFSCCM.IsChecked -eq $true){
     Write-Host "Building SCCM Primary Server, SCCM Primary will take up to 45mins to install once the DSC starts" -ForegroundColor Green
-
+    If($WPFPSSPOT.IsChecked -eq $True){$VMTemplate = ".\Templates\AzureTemplateSpot.json"}
     New-AzResourceGroupDeployment @commonVariables `
                                        -Name $WPFsccm_ps_name.Text `
                                        -TemplateFile $VMTemplate `
@@ -1280,6 +1447,7 @@ $WPFBuild1.Add_Click({
 
 
     Write-Host "Building SCCM DP/MP Server" -ForegroundColor Green
+    If($WPFMPDPSPOT.IsChecked -eq $True){$VMTemplate = ".\Templates\AzureTemplateSpot.json"}
     New-AzResourceGroupDeployment @commonVariables `
                                        -Name $WPFsccm_dp_name.Text `
                                        -TemplateFile $VMTemplate `
@@ -1309,7 +1477,7 @@ $WPFBuild1.Add_Click({
     # Workstation Build
     if ($WPFworkstation.IsChecked -eq $true){
     Write-Host "Building Windows Workstation" -ForegroundColor Green
-
+    If($WPFWKSPOT.IsChecked -eq $True){$VMTemplate = ".\Templates\AzureTemplateSpot.json"}
     New-AzResourceGroupDeployment @commonVariables `
                                        -Name $WPFworkstationName.Text `
                                        -TemplateFile $VMTemplate `
@@ -1340,7 +1508,7 @@ $WPFBuild1.Add_Click({
     # SharePoint Build
     if ($WPFsharepoint.IsChecked -eq $true){
     Write-Host "Building SQL and SharePoint" -ForegroundColor Green
-
+    If($WPFSQLSPOT.IsChecked -eq $True){$VMTemplate = ".\Templates\AzureTemplateSpot.json"}
     New-AzResourceGroupDeployment @commonVariables `
                                        -Name $WPFSQLName.Text `
                                        -TemplateFile $VMTemplate `
@@ -1362,7 +1530,7 @@ $WPFBuild1.Add_Click({
         }
         Write-Host "SQL Job Is" $SQLJob.State -ForegroundColor Green
 
-
+    If($WPFSPSPOT.IsChecked -eq $True){$VMTemplate = ".\Templates\AzureTemplateSpot.json"}
     New-AzResourceGroupDeployment @commonVariables `
                                        -Name $WPFsharepointName.Text `
                                        -TemplateFile $VMTemplate `
@@ -1394,6 +1562,7 @@ $WPFBuild1.Add_Click({
     # Extra Server Build
     if ($WPFserver5.IsChecked -eq $true){
     Write-Host "Building" $WPFServer5Name.Text -ForegroundColor Green
+    If($WPFServerSPOT.IsChecked -eq $True){$VMTemplate = ".\Templates\AzureTemplateSpot.json"}
     New-AzResourceGroupDeployment @commonVariables `
                                        -Name $WPFServer5Name.Text `
                                        -TemplateFile $VMTemplate `
