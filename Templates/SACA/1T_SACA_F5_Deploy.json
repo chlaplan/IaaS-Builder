@@ -236,6 +236,12 @@
     "mgmtPublicIPAddressName": "[concat(parameters('dnsLabel'), '-mgmt-pip')]",
     "intNicName": "[concat(parameters('dnsLabel'), '-int')]",
     "numberOfExternalIps": 1,
+    "BIGIPVM1MGMTINT": "[concat(parameters('BigIP_VM1_Name'), '_Management')]",
+    "BIGIPVM1INTINT": "[concat(parameters('BigIP_VM1_Name'), '_Internal')]",
+    "BIGIPVM1EXTINT": "[concat(parameters('BigIP_VM1_Name'), '_External')]",
+    "BIGIPVM2MGMTINT": "[concat(parameters('BigIP_VM2_Name'), '_Management')]",
+    "BIGIPVM2INTINT": "[concat(parameters('BigIP_VM2_Name'), '_Internal')]",
+    "BIGIPVM2EXTINT": "[concat(parameters('BigIP_VM2_Name'), '_External')]",
 
     // STIG F5
     "SBBackEndAddressPool": {
@@ -468,7 +474,7 @@
     {
       "type": "Microsoft.Network/networkInterfaces",
       "apiVersion": "2020-05-01",
-      "name": "BIGIPVM1_External1",
+      "name": "[variables('BIGIPVM1EXTINT')]",
       "location": "[parameters('Location')]",
       "dependsOn": [
         "[resourceId('Microsoft.Network/loadBalancers', parameters('NB_LB_Name'))]"
@@ -484,7 +490,7 @@
       "properties": {
         "ipConfigurations": [
           {
-            "name": "BIGIPVM1-ext-ipconfig-Primary",
+            "name": "[concat(parameters('BIGIP_VM1_Name'), '-ext-ipconfig-primary')]",
             "properties": {
               "privateIPAddress": "[parameters('BIGIP_VM1_ExternalPri_IP')]",
               "privateIPAllocationMethod": "Static",
@@ -501,7 +507,7 @@
             }
           },
           {
-            "name": "BIGIPVM1-ext-ipconfig-secondary",
+            "name": "[concat(parameters('BIGIP_VM1_Name'), '-ext-ipconfig-secondary')]",
             "properties": {
               "privateIPAddress": "[parameters('BIGIP_VM1_ExternalSec_IP')]",
               "privateIPAllocationMethod": "Static",
@@ -523,7 +529,7 @@
     {
       "type": "Microsoft.Network/networkInterfaces",
       "apiVersion": "2020-05-01",
-      "name": "BIGIPVM1_Internal",
+      "name": "[variables('BIGIPVM1INTINT')]",
       "location": "[parameters('Location')]",
       "dependsOn": [
         "[resourceId('Microsoft.Network/loadBalancers', parameters('SB_LB_Name'))]"
@@ -539,7 +545,7 @@
       "properties": {
         "ipConfigurations": [
           {
-            "name": "BIGIPVM1-intN-ipconfig-Primary",
+            "name": "[concat(parameters('BIGIP_VM1_Name'), '-int-ipconfig-primary')]",
             "properties": {
               "privateIPAddress": "[parameters('BIGIP_VM1_InternalPri_IP')]",
               "privateIPAllocationMethod": "Static",
@@ -556,7 +562,7 @@
             }
           },
           {
-            "name": "BIGIPVM1-intN-ipconfig-secondary",
+            "name": "[concat(parameters('BIGIP_VM1_Name'), '-int-ipconfig-secondary')]",
             "properties": {
               "privateIPAddress": "[parameters('BIGIP_VM1_InternalSec_IP')]",
               "privateIPAllocationMethod": "Static",
@@ -578,7 +584,7 @@
     {
       "type": "Microsoft.Network/networkInterfaces",
       "apiVersion": "2020-05-01",
-      "name": "BIGIPVM2_External1",
+      "name": "[variables('BIGIPVM2EXTINT')]",
       "location": "[parameters('Location')]",
       "dependsOn": [
         "[resourceId('Microsoft.Network/loadBalancers', parameters('NB_LB_Name'))]"
@@ -594,7 +600,7 @@
       "properties": {
         "ipConfigurations": [
           {
-            "name": "BIGIPVM2-ext-ipconfig-Primary",
+            "name": "[concat(parameters('BIGIP_VM2_Name'), '-ext-ipconfig-primary')]",
             "properties": {
               "privateIPAddress": "[parameters('BIGIP_VM2_ExternalPri_IP')]",
               "privateIPAllocationMethod": "Static",
@@ -611,7 +617,7 @@
             }
           },
           {
-            "name": "BIGIPVM2-ext-ipconfig-secondary",
+            "name": "[concat(parameters('BIGIP_VM2_Name'), '-ext-ipconfig-secondary')]",
             "properties": {
               "privateIPAddress": "[parameters('BIGIP_VM2_ExternalSec_IP')]",
               "privateIPAllocationMethod": "Static",
@@ -633,7 +639,7 @@
     {
       "type": "Microsoft.Network/networkInterfaces",
       "apiVersion": "2020-05-01",
-      "name": "BIGIPVM2_Internal",
+      "name": "[variables('BIGIPVM2INTINT')]",
       "location": "[parameters('Location')]",
       "dependsOn": [
         "[resourceId('Microsoft.Network/loadBalancers', parameters('SB_LB_Name'))]"
@@ -649,7 +655,7 @@
       "properties": {
         "ipConfigurations": [
           {
-            "name": "BIGIPVM2-int-ipconfig-Primary",
+            "name": "[concat(parameters('BIGIP_VM2_Name'), '-int-ipconfig-primary')]",
             "properties": {
               "privateIPAddress": "[parameters('BIGIP_VM2_InternalPri_IP')]",
               "privateIPAllocationMethod": "Static",
@@ -666,7 +672,7 @@
             }
           },
           {
-            "name": "BIGIPVM2-int-ipconfig-secondary",
+            "name": "[concat(parameters('BIGIP_VM2_Name'), '-int-ipconfig-secondary')]",
             "properties": {
               "privateIPAddress": "[parameters('BIGIP_VM2_InternalSec_IP')]",
               "privateIPAllocationMethod": "Static",
@@ -688,7 +694,7 @@
     {
       "type": "Microsoft.Network/networkInterfaces",
       "apiVersion": "2020-05-01",
-      "name": "BIGIPVM1_Management",
+      "name": "[variables('BIGIPVM1MGMTINT')]",
       "location": "[parameters('Location')]",
       "dependsOn": [
         "[resourceId('Microsoft.Network/loadBalancers', parameters('NB_LB_Name'))]"
@@ -704,7 +710,7 @@
       "properties": {
         "ipConfigurations": [
           {
-            "name": "BIGIPVM1-mgmt-ipconfig",
+            "name": "[concat(parameters('BIGIP_VM1_Name'), '-mgmt-ipconfig')]",
             "properties": {
               "privateIPAddress": "[parameters('BIGIP_VM1_Management_IP')]",
               "privateIPAllocationMethod": "Static",
@@ -731,7 +737,7 @@
     {
       "type": "Microsoft.Network/networkInterfaces",
       "apiVersion": "2020-05-01",
-      "name": "BIGIPVM2_Management",
+      "name": "[variables('BIGIPVM2MGMTINT')]",
       "location": "[parameters('Location')]",
       "dependsOn": [
         "[resourceId('Microsoft.Network/loadBalancers', parameters('NB_LB_Name'))]"
@@ -747,7 +753,7 @@
       "properties": {
         "ipConfigurations": [
           {
-            "name": "BIGIPVM2-mgmt-ipconfig",
+            "name": "[concat(parameters('BIGIP_VM2_Name'), '-mgmt-ipconfig')]",
             "properties": {
               "privateIPAddress": "[parameters('BIGIP_VM2_Management_IP')]",
               "privateIPAllocationMethod": "Static",
@@ -1081,9 +1087,9 @@
       "location": "[parameters('Location')]",
       "dependsOn": [
         "[resourceId('Microsoft.Compute/availabilitySets', parameters('availabilitySet0_Name'))]",
-        "[resourceId('Microsoft.Network/networkInterfaces', 'BIGIPVM1_Management')]",
-        "[resourceId('Microsoft.Network/networkInterfaces', 'BIGIPVM1_External1')]",
-        "[resourceId('Microsoft.Network/networkInterfaces', 'BIGIPVM1_Internal')]"
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('BIGIPVM1MGMTINT'))]",
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('BIGIPVM1EXTINT'))]",
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('BIGIPVM1INTINT'))]"
         //"[resourceId('Microsoft.Storage/StorageAccounts', parameters('StorageAccountName'))]"
       ],
       "tags": {
@@ -1137,19 +1143,19 @@
         "networkProfile": {
           "networkInterfaces": [
             {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces', 'BIGIPVM1_Management')]",
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('BIGIPVM1MGMTINT'))]",
               "properties": {
                 "primary": true
               }
             },
             {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces', 'BIGIPVM1_External1')]",
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('BIGIPVM1EXTINT'))]",
               "properties": {
                 "primary": false
               }
             },
             {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces', 'BIGIPVM1_Internal')]",
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('BIGIPVM1INTINT'))]",
               "properties": {
                 "primary": false
               }
@@ -1171,9 +1177,9 @@
       "location": "[parameters('Location')]",
       "dependsOn": [
         "[resourceId('Microsoft.Compute/availabilitySets', parameters('availabilitySet0_Name'))]",
-        "[resourceId('Microsoft.Network/networkInterfaces', 'BIGIPVM2_Management')]",
-        "[resourceId('Microsoft.Network/networkInterfaces', 'BIGIPVM2_External1')]",
-        "[resourceId('Microsoft.Network/networkInterfaces', 'BIGIPVM2_Internal')]"
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('BIGIPVM2MGMTINT'))]",
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('BIGIPVM2EXTINT'))]",
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('BIGIPVM2INTINT'))]"
         //"[resourceId('Microsoft.Storage/StorageAccounts', parameters('StorageAccountName'))]"
       ],
       "tags": {
@@ -1227,19 +1233,19 @@
         "networkProfile": {
           "networkInterfaces": [
             {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces', 'BIGIPVM2_Management')]",
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('BIGIPVM2MGMTINT'))]",
               "properties": {
                 "primary": true
               }
             },
             {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces', 'BIGIPVM2_External1')]",
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('BIGIPVM2EXTINT'))]",
               "properties": {
                 "primary": false
               }
             },
             {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces', 'BIGIPVM2_Internal')]",
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('BIGIPVM2INTINT'))]",
               "properties": {
                 "primary": false
               }
