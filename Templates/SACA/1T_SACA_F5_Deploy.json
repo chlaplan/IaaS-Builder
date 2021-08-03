@@ -170,6 +170,13 @@
       },
       "type": "string"
     },
+    "DHostID": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Dedicated Host ID. "
+      }
+    },
     "ntpServer": {
       "defaultValue": "0.pool.ntp.org",
       "metadata": {
@@ -359,27 +366,6 @@
       "type": "Microsoft.Compute/availabilitySets",
       "apiVersion": "2019-07-01",
       "name": "[parameters('availabilitySet0_Name')]",
-      "location": "[parameters('Location')]",
-      "dependsOn": [],
-      "tags": {
-        "application": "APP",
-        "cost": "COST",
-        "environment": "ENV",
-        "group": "GROUP",
-        "owner": "OWNER"
-      },
-      "sku": {
-        "name": "Aligned"
-      },
-      "properties": {
-        "platformUpdateDomainCount": 2,
-        "platformFaultDomainCount": 2
-      }
-    },
-    {
-      "type": "Microsoft.Compute/availabilitySets",
-      "apiVersion": "2019-07-01",
-      "name": "[parameters('availabilitySet1_Name')]",
       "location": "[parameters('Location')]",
       "dependsOn": [],
       "tags": {
@@ -1105,9 +1091,7 @@
         "publisher": "f5-networks"
       },
       "properties": {
-        "availabilitySet": {
-          "id": "[resourceId('Microsoft.Compute/availabilitySets', parameters('availabilitySet0_Name'))]"
-        },
+        "availabilitySet": "[if(empty(parameters('DHostID')), resourceId('Microsoft.Compute/availabilitySets', parameters('availabilitySet0_Name')), json('null'))]",
         "hardwareProfile": {
           "vmSize": "[parameters('BigIP_VM1_Size')]"
         },
@@ -1162,6 +1146,9 @@
             }
           ]
         },
+        "host": {
+          "id": "[if(not(empty(parameters('DHostID'))), parameters('DHostID'), json('null'))]"
+        },
         "diagnosticsProfile": {
           "bootDiagnostics": {
             "enabled": true,
@@ -1195,9 +1182,7 @@
         "publisher": "f5-networks"
       },
       "properties": {
-        "availabilitySet": {
-          "id": "[resourceId('Microsoft.Compute/availabilitySets', parameters('availabilitySet0_Name'))]"
-        },
+        "availabilitySet": "[if(empty(parameters('DHostID')), resourceId('Microsoft.Compute/availabilitySets', parameters('availabilitySet0_Name')), json('null'))]",
         "hardwareProfile": {
           "vmSize": "[parameters('BigIP_VM2_Size')]"
         },
@@ -1251,6 +1236,9 @@
               }
             }
           ]
+        },
+        "host": {
+          "id": "[if(not(empty(parameters('DHostID'))), parameters('DHostID'), json('null'))]"
         },
         "diagnosticsProfile": {
           "bootDiagnostics": {
