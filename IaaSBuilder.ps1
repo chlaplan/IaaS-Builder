@@ -405,6 +405,57 @@ Write-Host "No Saved Variables found"
 
 })
 
+$WPFdh_sku.Add_SelectionChanged({
+# Dedicated Host Info
+    $DHost = Get-AzComputeResourceSku -Location $WPFLocations1.SelectedItem | Where {$_.ResourceType -EQ 'hostGroups/hosts' -and $_.Name -eq $WPFdh_sku.SelectedItem}
+    $VMSizes = Get-AzComputeResourceSku -Location $WPFLocations1.SelectedItem | Where {$_.ResourceType -EQ 'virtualmachines' -and $_.Family -eq $DHost.Family}
+    $SACAvmsize = $VMSizes | Where-Object NumberofCores -GE "4"
+
+    $WPFserver1vmsize.items.Clear()
+    $WPFadfssize.items.Clear()
+    $WPFexsize.items.Clear()
+    $WPFsscm_ps_size.items.Clear()
+    $WPFsccm_mpdp_size.items.Clear()
+    $WPFsharepoint_size.items.Clear()
+    $WPFSQLsize.items.Clear()
+    $WPFserver5size.items.Clear()
+    $WPFworkstationsize.items.Clear()
+    $WPFWVD_Size.items.Clear()
+    $WPFsacaBIGIP1vmsize.items.Clear()
+    $WPFsacaBIGIP2vmsize.items.Clear()
+    $WPFsacaBIGIP3vmsize.items.Clear()
+    $WPFsacaBIGIP4vmsize.items.Clear()
+    $WPFsacaFWIPS1vmsize.items.Clear()
+    $WPFsacaFWIPS2vmsize.items.Clear()
+        foreach ($Size in $vmsizes)
+            {
+                $WPFserver1vmsize.AddChild($size.Name)
+                $WPFadfssize.AddChild($size.Name)
+                $WPFexsize.AddChild($size.Name)
+                $WPFsscm_ps_size.AddChild($size.Name)
+                $WPFsccm_mpdp_size.AddChild($size.Name)
+                $WPFsharepoint_size.AddChild($size.Name)
+                $WPFSQLsize.AddChild($size.Name)
+                $WPFserver5size.AddChild($size.Name)
+                $WPFworkstationsize.AddChild($size.Name)
+                $WPFWVD_Size.AddChild($size.Name)
+            }
+         foreach ($Size in $VMSizes)
+            {
+                $WPFsacaBIGIP1vmsize.AddChild($size.Name)
+                $WPFsacaBIGIP2vmsize.AddChild($size.Name)
+                $WPFsacaBIGIP3vmsize.AddChild($size.Name)
+                $WPFsacaBIGIP4vmsize.AddChild($size.Name)
+                $WPFsacaFWIPS1vmsize.AddChild($size.Name)
+                $WPFsacaFWIPS2vmsize.AddChild($size.Name)
+                $WPFsacaLinuxJBvmsize.AddChild($size.Name)
+                $WPFsacaWinJBvmsize.AddChild($size.Name)
+            }
+
+})
+
+
+
 $WPFLocations1.Add_SelectionChanged({
     $Location = $WPFLocations1.SelectedItem
     Write-Host "Building Variables " -ForegroundColor Green
@@ -415,6 +466,7 @@ $WPFLocations1.Add_SelectionChanged({
     $clientskus = Get-AzVMImageSku -Location $WPFLocations1.SelectedItem -Offer "Windows-10" -PublisherName "MicrosoftWindowsDesktop" | Select Skus
     $client365skus = Get-AzVMImageSku -Location $WPFLocations1.SelectedItem -Offer "Office-365" -PublisherName "MicrosoftWindowsDesktop" | Select Skus
     $sharePointSkus = Get-AzVMImageSku -Location $WPFLocations1.SelectedItem -PublisherName MicrosoftSharePoint -Offer MicrosoftSharePointServer
+    $VMDedicatedHost = Get-AzComputeResourceSku -Location $WPFLocations1.SelectedItem | Where ResourceType -EQ 'hostGroups/hosts'
     #$F5Offers = Get-AzVMImageOffer -Location $WPFLocations1.SelectedItem -PublisherName "f5-networks"
     #$F5SKUS = Get-AzVMImageSku -Location 'USDoD East' -PublisherName "f5-networks" -Offer "f5-big-ip-byol"
 
@@ -525,6 +577,10 @@ $WPFLocations1.Add_SelectionChanged({
     $WPFsccmdpimage.SelectedItem = "$DefaultOSImage"
     $WPFserver5image.SelectedItem = "$DefaultOSImage"
 
+    $WPFdh_sku.Items.Clear()
+    foreach ($VMHost in $VMDedicatedHost){
+            $WPFdh_sku.AddChild($VMHost.Name)
+    }
 
         foreach ($SQLoffer in $SQLoffers){
     $WPFsccmimageoffer.AddChild($SQLoffer.offer)
@@ -1045,6 +1101,19 @@ $WPFBuild1.Add_Click({
     {
     Write-Host "Skipping 1 Tier SACA Networking Build" -ForegroundColor Yellow
     }
+    
+    #####################################################################################################    
+    # Dedicated Host Build
+    if ($WPFDHEnable.IsChecked -eq $true){
+    New-AzHostGroup -ResourceGroupName $rg -Name $WPFdh_groupname.Text -Location $AzureLocation -PlatformFaultDomain 1
+    $DHost = New-AzHost -ResourceGroupName $rg -HostGroupName $WPFdh_groupname.Text -Name $WPFdh_name.Text -Location $AzureLocation -Sku $WPFdh_sku.SelectedItem -LicenseType WindowsServerHybrid -PlatformFaultDomain 0
+    }
+    else
+    {
+    $DHost = new-object psobject |            
+    select @{Name="id"; Expression={""}}            
+    }
+
     #####################################################################################################    
     # SACA F5 Tier 3 Build
         if ($WPFSACA.IsChecked -eq $true -and $WPFSACA_Tier.SelectionBoxItem -eq "SACA 3 Tier"){
@@ -1054,7 +1123,7 @@ $WPFBuild1.Add_Click({
     Get-AzMarketplaceTerms -Publisher "f5-networks" -Product "f5-big-ip-byol" -Name "f5-big-all-2slot-byol" | Set-AzMarketplaceTerms -Accept -Verbose
     # License PAYG
     Get-AzMarketplaceTerms -Publisher "f5-networks" -Product "f5-big-ip-best" -Name "f5-bigip-virtual-edition-1g-best-hourly" | Set-AzMarketplaceTerms -Accept -Verbose
-
+    
     New-AzResourceGroupDeployment      -TemplateFile .\Templates\SACA\3T_SACA_F5_Deploy.json `
                                        -ResourceGroupName $rg `
                                        -Name "F5_Build" `
@@ -1105,6 +1174,7 @@ $WPFBuild1.Add_Click({
                                        -Subnet_IPSInt_Name $WPFSACA_IPSInt_Name.Text `
                                        -Subnet_IPSExt_Name $WPFSACA_IPSExt_Name.Text `
                                        -Subnet_VDMS_Name $WPFSACA_VDMS_Name.Text `
+                                       -DHostID $DHost.ID `
                                        -AsJob `
                                        -Verbose
     Start-Sleep -Seconds 5
@@ -1159,6 +1229,7 @@ $WPFBuild1.Add_Click({
                                        -Subnet_External_Name $WPFSACA_EXT_Name.Text `
                                        -Subnet_InternalS_Name $WPFSACA_INTS_Name.Text `
                                        -Subnet_VDMS_Name $WPFSACA_VDMS_Name.Text `
+                                       -DHostID $DHost.ID `
                                        -AsJob `
                                        -Verbose
     Start-Sleep -Seconds 5
@@ -1285,16 +1356,21 @@ $WPFBuild1.Add_Click({
     }
 
     $privateEndpointConnection = New-AzPrivateLinkServiceConnection -Name "PrivateConnection" -PrivateLinkServiceId $storageaccount.Id -GroupId 'blob' -Verbose
-    New-AzPrivateEndpoint -Name "PrivateStorage" -ResourceGroupName $rg -Location $AzureLocation -Subnet $Subnet -PrivateLinkServiceConnection $privateEndpointConnection -Force -Verbose
+    $privateEndpoint = New-AzPrivateEndpoint -Name "PrivateStorage" -ResourceGroupName $rg -Location $AzureLocation -Subnet $Subnet -PrivateLinkServiceConnection $privateEndpointConnection -Force -Verbose
     $zone = New-AzPrivateDnsZone -ResourceGroupName $rg -Name $blobURL -Verbose
     $link = New-AzPrivateDnsVirtualNetworkLink -ResourceGroupName $rg -ZoneName $blobURL -Name "Storage-Link" -VirtualNetworkId $vnet.Id -Verbose
     $config = New-AzPrivateDnsZoneConfig -Name $blobURL -PrivateDnsZoneId $Zone.ResourceId -Verbose
     New-AzPrivateDnsZoneGroup -ResourceGroupName $rg -Name "ZoneGroup" -PrivateEndpointName "PrivateStorage" -PrivateDnsZoneConfig $Config -Force -Verbose
     
+    $Records = @()
+    $Records += New-AzPrivateDnsRecordConfig -IPv4Address $privateEndpoint.CustomDnsConfigs.IPAddresses
+    New-AzPrivateDnsRecordSet -ResourceGroupName $rg -ZoneName $blobURL -Name $storageaccount.StorageAccountName -RecordType A -Ttl 3600 -PrivateDnsRecord $Records
+
 
     # Domain Private DNS
     New-AzPrivateDnsZone -ResourceGroupName $rg -Name $DomainName -Verbose
     New-AzPrivateDnsVirtualNetworkLink -ResourceGroupName $rg -ZoneName $DomainName -Name "Domain-Link" -VirtualNetworkId $vnet.Id -Verbose -EnableRegistration
+
 
     #####################################################################################################    
     # DC/CA Build
@@ -1312,6 +1388,7 @@ $WPFBuild1.Add_Click({
                                        -sku $WPFserver1image.SelectedItem `
                                        -servername $WPFServer1Name.Text `
                                        -ip $WPFserver1IP.Text `
+                                       -DHostID $DHost.ID `
                                        -role $WPFServer1Role.Text `
                                        -AsJob `
                                        -Verbose
@@ -1344,6 +1421,7 @@ $WPFBuild1.Add_Click({
                                        -servername "DC02" `
                                        -ip $IP2 `
                                        -role "AddDC" `
+                                       -DHostID $DHost.ID `
                                        -AsJob `
                                        -Verbose
     Start-Sleep -Seconds 5
@@ -1375,6 +1453,7 @@ $WPFBuild1.Add_Click({
                                        -servername $WPFADFSName.Text `
                                        -ip $WPFADFSIP.Text `
                                        -role $WPFADFSRole.Text `
+                                       -DHostID $DHost.ID `
                                        -AsJob `
                                        -Verbose
     Start-Sleep -Seconds 5
@@ -1405,6 +1484,7 @@ $WPFBuild1.Add_Click({
                                        -servername $WPFexName.Text `
                                        -ip $WPFexIP.Text `
                                        -role $WPFexRole.Text `
+                                       -DHostID $DHost.ID `
                                        -AsJob `
                                        -Verbose
         Start-Sleep -Seconds 5
@@ -1434,6 +1514,7 @@ $WPFBuild1.Add_Click({
                                        -sku $WPFsccmimagesku.SelectedItem `
                                        -servername $WPFsccm_ps_name.Text `
                                        -ip $WPFsccm_ps_ip.Text `
+                                       -DHostID $DHost.ID `
                                        -role "PS" `
                                        -AsJob `
                                        -Verbose
@@ -1458,6 +1539,7 @@ $WPFBuild1.Add_Click({
                                        -sku $WPFsccmdpimage.SelectedItem `
                                        -servername $WPFsccm_dp_name.Text `
                                        -ip $WPFsccm_dp_ip.Text `
+                                       -DHostID $DHost.ID `
                                        -role "DPMP" `
                                        -AsJob `
                                        -Verbose
@@ -1489,6 +1571,7 @@ $WPFBuild1.Add_Click({
                                        -servername $WPFworkstationName.Text `
                                        -ip $WPFworkstationIP.Text `
                                        -role $WPFworkstationRole.Text `
+                                       -DHostID $DHost.ID `
                                        -AsJob `
                                        -Verbose
         Start-Sleep -Seconds 5
@@ -1520,6 +1603,7 @@ $WPFBuild1.Add_Click({
                                        -servername $WPFSQLName.Text `
                                        -ip $WPFSQLIP.Text `
                                        -role $WPFSQLRole.Text `
+                                       -DHostID $DHost.ID `
                                        -AsJob `
                                        -Verbose
         Start-Sleep -Seconds 5
@@ -1541,6 +1625,7 @@ $WPFBuild1.Add_Click({
                                        -sku $WPFsharepointimage.SelectedItem `
                                        -servername $WPFsharepointName.Text `
                                        -ip $WPFsharepointIP.Text `
+                                       -DHostID $DHost.ID `
                                        -role $WPFsharepointRole.Text `
                                        -AsJob `
                                        -Verbose
@@ -1574,6 +1659,7 @@ $WPFBuild1.Add_Click({
                                        -servername $WPFServer5Name.Text `
                                        -ip $WPFserver5IP.Text `
                                        -role $WPFServer5Role.Text `
+                                       -DHostID $DHost.ID `
                                        -AsJob `
                                        -Verbose
         Start-Sleep -Seconds 5

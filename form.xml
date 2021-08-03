@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:Xml="clr-namespace:System.Xml;assembly=System.Xml"
         mc:Ignorable="d"
-        Title="Azure Builder v2.2" Height="970.5" Width="1442">
+        Title="Azure Builder v2.3" Height="970.5" Width="1442">
     <Grid Margin="0,0,5,-0.333">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="0*"/>
@@ -18,7 +18,7 @@
         <Button x:Name="Build1" Content="Build" Grid.Column="3" HorizontalAlignment="Left" Margin="11,623,0,0" VerticalAlignment="Top" Width="76" Height="20"/>
         <TabControl Grid.Column="1" HorizontalAlignment="Left" Height="729" Margin="0,9,0,0" VerticalAlignment="Top" Width="1324" Grid.ColumnSpan="2">
             <TabItem Header="Main">
-                <Grid Background="White" Margin="0,6,-0.333,4.667">
+                <Grid Background="White" Margin="0,6,0,5">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="5*"/>
                         <ColumnDefinition Width="15*"/>
@@ -31,7 +31,7 @@
                     <Label Content="Prefix" HorizontalAlignment="Left" Height="24" Margin="1.333,86,0,0" VerticalAlignment="Top" Width="99" FontWeight="Bold" Grid.ColumnSpan="2" Grid.Column="1"/>
                     <TextBox x:Name="Dname1" HorizontalAlignment="Left" Height="23" Margin="428,37,0,0" TextWrapping="Wrap" Text="my.customer.com" VerticalAlignment="Top" Width="150" UndoLimit="30" Grid.Column="2"/>
                     <TextBox x:Name="resourcegroup1" HorizontalAlignment="Left" Height="23" Margin="78,61,0,0" TextWrapping="Wrap" Text="rgtestlab" VerticalAlignment="Top" Width="132" UndoLimit="20" Grid.Column="2"/>
-                    <TextBox x:Name="prefix1" HorizontalAlignment="Left" Height="23" Margin="78,90,0,0" TextWrapping="Wrap" Text="ehu" VerticalAlignment="Top" Width="132" UndoLimit="3" Grid.Column="2"/>
+                    <TextBox x:Name="prefix1" HorizontalAlignment="Left" Height="23" Margin="78,90,0,0" TextWrapping="Wrap" Text="az" VerticalAlignment="Top" Width="132" UndoLimit="3" Grid.Column="2"/>
                     <Label Content="Locations" HorizontalAlignment="Left" Height="24" Margin="306,4,0,0" VerticalAlignment="Top" Width="80" FontWeight="Bold" Grid.Column="2"/>
                     <ComboBox x:Name="Locations1" HorizontalAlignment="Left" Margin="427,6,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2">
                         <MenuItem/>
@@ -121,8 +121,8 @@
                     <ComboBox x:Name="sccmdp" HorizontalAlignment="Left" Margin="390.333,364,0,0" VerticalAlignment="Top" Width="120" IsReadOnly="True" SelectedIndex="0" Height="22" IsEnabled="False" Grid.Column="2">
                         <Button Content="DPMP"/>
                     </ComboBox>
-                    <CheckBox x:Name="STIGs" Content="" HorizontalAlignment="Left" Margin="675,8,0,0" VerticalAlignment="Top" Height="16" Width="34" FontWeight="Bold" Grid.Column="2"/>
-                    <Label Content="STIG GPOs" HorizontalAlignment="Left" Height="24" Margin="594,3,0,0" VerticalAlignment="Top" Width="76" FontWeight="Bold" Grid.Column="2"/>
+                    <CheckBox x:Name="STIGs" Content="" HorizontalAlignment="Left" Margin="674,7,0,0" VerticalAlignment="Top" Height="16" Width="34" FontWeight="Bold" Grid.Column="2"/>
+                    <Label Content="STIG GPOs" HorizontalAlignment="Left" Height="24" Margin="593,2,0,0" VerticalAlignment="Top" Width="76" FontWeight="Bold" Grid.Column="2"/>
                     <Label Content="1" HorizontalAlignment="Left" Margin="35,-1,0,0" VerticalAlignment="Top" Width="23" FontSize="20" FontWeight="Bold" Background="#FFFCFCFC" Foreground="Red" Height="36" Grid.Column="2"/>
                     <Label Content="2" HorizontalAlignment="Left" Margin="371,0,0,0" VerticalAlignment="Top" Width="23" FontSize="20" FontWeight="Bold" Background="#FFFCFCFC" Foreground="Red" Height="36" Grid.Column="2"/>
                     <Label Content="3" HorizontalAlignment="Left" Margin="406,91,0,0" VerticalAlignment="Top" Width="20" FontSize="20" FontWeight="Bold" Background="#FFFCFCFC" Foreground="Red" Height="32" RenderTransformOrigin="-0.587,0.583" Grid.Column="2"/>
@@ -150,25 +150,25 @@
                     <ComboBox x:Name="workstationsize" HorizontalAlignment="Left" Margin="828.333,470,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="28" Grid.Column="2">
                         <MenuItem/>
                     </ComboBox>
-                    <ComboBox x:Name="server1disk" HorizontalAlignment="Left" Margin="987.333,261,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="0" Grid.Column="2">
+                    <ComboBox x:Name="server1disk" HorizontalAlignment="Left" Margin="987.333,261,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="1" Grid.Column="2">
                         <MenuItem/>
                     </ComboBox>
-                    <ComboBox x:Name="adfsdisk" HorizontalAlignment="Left" Margin="987.333,287,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="0" Grid.Column="2">
+                    <ComboBox x:Name="adfsdisk" HorizontalAlignment="Left" Margin="987.333,287,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="1" Grid.Column="2">
                         <MenuItem/>
                     </ComboBox>
-                    <ComboBox x:Name="sccm_ps_disk" HorizontalAlignment="Left" Margin="987.333,337,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="0" Grid.Column="2">
+                    <ComboBox x:Name="sccm_ps_disk" HorizontalAlignment="Left" Margin="987.333,337,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="1" Grid.Column="2">
                         <MenuItem/>
                     </ComboBox>
-                    <ComboBox x:Name="sccm_mpdp_disk" HorizontalAlignment="Left" Margin="987.333,363,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="0" Grid.Column="2">
+                    <ComboBox x:Name="sccm_mpdp_disk" HorizontalAlignment="Left" Margin="987.333,363,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="1" Grid.Column="2">
                         <MenuItem/>
                     </ComboBox>
-                    <ComboBox x:Name="sharepoint_disk" HorizontalAlignment="Left" Margin="987.333,390,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="0" Grid.Column="2">
+                    <ComboBox x:Name="sharepoint_disk" HorizontalAlignment="Left" Margin="987.333,390,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="1" Grid.Column="2">
                         <MenuItem/>
                     </ComboBox>
-                    <ComboBox x:Name="server5disk" HorizontalAlignment="Left" Margin="987.333,443,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="0" Grid.Column="2">
+                    <ComboBox x:Name="server5disk" HorizontalAlignment="Left" Margin="987.333,443,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="1" Grid.Column="2">
                         <MenuItem/>
                     </ComboBox>
-                    <ComboBox x:Name="workstationdisk" HorizontalAlignment="Left" Margin="987.333,470,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="0" Grid.Column="2">
+                    <ComboBox x:Name="workstationdisk" HorizontalAlignment="Left" Margin="987.333,470,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="1" Grid.Column="2">
                         <MenuItem/>
                     </ComboBox>
                     <TextBox x:Name="SQLName" HorizontalAlignment="Left" Height="23" Margin="153.333,420,0,0" TextWrapping="Wrap" Text="SQL" VerticalAlignment="Top" Width="105" Grid.Column="2"/>
@@ -182,7 +182,7 @@
                     <ComboBox x:Name="SQLSize" HorizontalAlignment="Left" Margin="828.333,417,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="28" Grid.Column="2">
                         <MenuItem/>
                     </ComboBox>
-                    <ComboBox x:Name="SQLDisk" HorizontalAlignment="Left" Margin="987.333,417,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="0" Grid.Column="2">
+                    <ComboBox x:Name="SQLDisk" HorizontalAlignment="Left" Margin="987.333,417,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="1" Grid.Column="2">
                         <MenuItem/>
                     </ComboBox>
                     <ComboBox x:Name="SQLSKU" HorizontalAlignment="Left" Margin="675.333,420,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2">
@@ -201,7 +201,7 @@
                     <ComboBox x:Name="EXSize" HorizontalAlignment="Left" Margin="828.333,312,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="28" Grid.Column="2">
                         <MenuItem/>
                     </ComboBox>
-                    <ComboBox x:Name="EXDisk" HorizontalAlignment="Left" Margin="987.333,312,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="0" Grid.Column="2">
+                    <ComboBox x:Name="EXDisk" HorizontalAlignment="Left" Margin="987.333,312,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="1" Grid.Column="2">
                         <MenuItem/>
                     </ComboBox>
                     <TextBox x:Name="bastionsubnet" HorizontalAlignment="Left" Height="23" Margin="427,161,0,0" TextWrapping="Wrap" Text="192.168.10.0/24" VerticalAlignment="Top" Width="151" UndoLimit="20" Grid.Column="2"/>
@@ -227,8 +227,8 @@
                     <Label Content="WVD Disk" HorizontalAlignment="Left" Height="24" Margin="221,630,0,0" VerticalAlignment="Top" Width="115" FontWeight="Bold" Grid.Column="2"/>
                     <ComboBox x:Name="WVD_Disk" HorizontalAlignment="Left" Margin="339,632,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="0" Grid.Column="2"/>
                     <CheckBox x:Name="Bastion" Content="Bastion" HorizontalAlignment="Left" Margin="313,164,0,0" VerticalAlignment="Top" Height="16" Width="99" FontWeight="Bold" IsChecked="True" Grid.Column="2"/>
-                    <CheckBox x:Name="MSFTBaseline" Content="" HorizontalAlignment="Left" Margin="723,38,0,0" VerticalAlignment="Top" IsChecked="True" Height="16" Width="34" FontWeight="Bold" Grid.Column="2"/>
-                    <Label Content="MSFT Baseline GPOs" HorizontalAlignment="Left" Height="24" Margin="591,33,0,0" VerticalAlignment="Top" Width="127" FontWeight="Bold" Grid.Column="2"/>
+                    <CheckBox x:Name="MSFTBaseline" Content="" HorizontalAlignment="Left" Margin="722,28,0,0" VerticalAlignment="Top" IsChecked="True" Height="16" Width="34" FontWeight="Bold" Grid.Column="2"/>
+                    <Label Content="MSFT Baseline GPOs" HorizontalAlignment="Left" Height="24" Margin="590,23,0,0" VerticalAlignment="Top" Width="127" FontWeight="Bold" Grid.Column="2"/>
                     <Label Content="Count" HorizontalAlignment="Left" Margin="91.333,234,0,0" VerticalAlignment="Top" Height="27" Width="47" FontWeight="Bold" RenderTransformOrigin="-0.313,-2.291" Grid.Column="2"/>
                     <ComboBox x:Name="DC_Count" HorizontalAlignment="Left" Margin="96.333,263,0,0" VerticalAlignment="Top" Width="39" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="0" Grid.Column="2">
                         <ListBoxItem Content="1"/>
@@ -246,7 +246,6 @@
                     <ComboBox x:Name="WS_Count" HorizontalAlignment="Left" Margin="96.333,475,0,0" VerticalAlignment="Top" Width="39" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="0" IsEnabled="False" Grid.Column="2">
                         <ListBoxItem Content="1"/>
                     </ComboBox>
-                    <TextBlock x:Name="PW" HorizontalAlignment="Left" Margin="594,104,0,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="14" FontWeight="Bold" Foreground="#FF068113" Height="19" Width="260" Grid.Column="2"/>
                     <Label Content="Spot" HorizontalAlignment="Left" Margin="35.333,234,0,0" VerticalAlignment="Top" Height="27" Width="47" FontWeight="Bold" RenderTransformOrigin="-0.313,-2.291" Grid.Column="2"/>
                     <CheckBox x:Name="DCSpot" Content="" HorizontalAlignment="Left" Margin="45.333,265,0,0" VerticalAlignment="Top" Height="17" Width="21" FontWeight="Bold" Grid.Column="2" IsChecked="True"/>
                     <CheckBox x:Name="ADFSSpot" Content="" HorizontalAlignment="Left" Margin="45.333,293,0,0" VerticalAlignment="Top" Height="17" Width="21" FontWeight="Bold" Grid.Column="2" IsChecked="True"/>
@@ -258,6 +257,29 @@
                     <CheckBox x:Name="ServerSPOT" Content="" HorizontalAlignment="Left" Margin="45.333,450,0,0" VerticalAlignment="Top" Height="17" Width="21" FontWeight="Bold" Grid.Column="2" IsChecked="True"/>
                     <CheckBox x:Name="WKSPOT" Content="" HorizontalAlignment="Left" Margin="45.333,477,0,0" VerticalAlignment="Top" Height="17" Width="21" FontWeight="Bold" Grid.Column="2" IsChecked="True"/>
                     <TextBlock x:Name="RG" HorizontalAlignment="Left" Margin="210.333,63,0,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="14" FontWeight="Bold" Foreground="#FF068113" Height="19" Width="97" Grid.Column="2"/>
+                    <Border BorderBrush="Black" BorderThickness="1" Grid.Column="2" HorizontalAlignment="Left" Height="168" Margin="851,22,0,0" VerticalAlignment="Top" Width="342">
+                        <Label Content="Dedicated Host Name" HorizontalAlignment="Left" Height="24" VerticalAlignment="Top" Width="134" FontWeight="Bold" Margin="5,9,0,0"/>
+                    </Border>
+                    <CheckBox x:Name="DHEnable" Content="Dedicated Host" HorizontalAlignment="Left" VerticalAlignment="Top" Height="16" Width="116" FontWeight="Bold" Margin="851,2,0,0" Grid.Column="2"/>
+                    <TextBox x:Name="dh_name" HorizontalAlignment="Left" Height="23" Margin="1000,34,0,0" TextWrapping="Wrap" Text="HostName" VerticalAlignment="Top" Width="150" UndoLimit="20" Grid.Column="2" IsEnabled="{Binding IsChecked, ElementName=DHEnable}"/>
+                    <Label Content="Host Group Name" HorizontalAlignment="Left" Height="24" Margin="857,58,0,0" VerticalAlignment="Top" Width="118" FontWeight="Bold" Grid.Column="2"/>
+                    <TextBox x:Name="dh_groupname" HorizontalAlignment="Left" Height="23" Margin="1000,60,0,0" TextWrapping="Wrap" Text="HostGroupName" VerticalAlignment="Top" Width="150" UndoLimit="20" Grid.Column="2" IsEnabled="{Binding IsChecked, ElementName=DHEnable}"/>
+                    <Label Content="Number of Zones" HorizontalAlignment="Left" Height="24" Margin="857,84,0,0" VerticalAlignment="Top" Width="110" FontWeight="Bold" Grid.Column="2"/>
+                    <Label Content="Number Host per Zone" HorizontalAlignment="Left" Height="24" Margin="857,107,0,0" VerticalAlignment="Top" Width="143" FontWeight="Bold" Grid.Column="2"/>
+                    <ComboBox x:Name="dh_zone" HorizontalAlignment="Left" Margin="1000,86,0,0" VerticalAlignment="Top" Width="39" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="0" Grid.Column="2" IsEnabled="{Binding IsChecked, ElementName=DHEnable}">
+                        <ListBoxItem Content="1"/>
+                        <ListBoxItem Content="2"/>
+                        <ListBoxItem Content="3"/>
+                    </ComboBox>
+                    <ComboBox x:Name="dh_hostperzone" HorizontalAlignment="Left" Margin="1000,112,0,0" VerticalAlignment="Top" Width="39" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" SelectedIndex="0" Grid.Column="2" IsEnabled="{Binding IsChecked, ElementName=DHEnable}">
+                        <ListBoxItem Content="1"/>
+                        <ListBoxItem Content="2"/>
+                    </ComboBox>
+                    <Label Content="Host SKU" HorizontalAlignment="Left" Height="24" Margin="861,143,0,0" VerticalAlignment="Top" Width="106" FontWeight="Bold" Grid.Column="2"/>
+                    <ComboBox x:Name="dh_sku" HorizontalAlignment="Left" Margin="1000,145,0,0" VerticalAlignment="Top" Width="150" IsReadOnly="True" RenderTransformOrigin="-0.025,-1.516" Height="22" Grid.Column="2" IsEnabled="{Binding IsChecked, ElementName=DHEnable}">
+                        <MenuItem/>
+                    </ComboBox>
+                    <TextBlock x:Name="PW" HorizontalAlignment="Left" Margin="585,104,0,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="14" FontWeight="Bold" Foreground="#FF068113" Height="19" Width="260" Grid.Column="2"/>
                 </Grid>
             </TabItem>
             <TabItem Header="SACA">
