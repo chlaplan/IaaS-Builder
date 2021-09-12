@@ -2,6 +2,8 @@ Param(
     [string]
     [Parameter(Mandatory = $false)]
     $autoInstallDependencies = $false
+    [Parameter(Mandatory = $false)]
+    $stig = $true
 )
 
 $osVersion = (Get-WmiObject Win32_OperatingSystem).Caption
@@ -30,6 +32,10 @@ if ($autoInstallDependencies -eq $true) {
     foreach ($requiredModule in $requiredModules) {
         Install-Module -Name $requiredModule.ModuleName -RequiredVersion $requiredModule.ModuleVersion -Force
     }
+}
+
+if ($stig -eq $true) {
+    . "$PSScriptRoot\Windows.ps1"
 }
 
 # Increase the MaxEnvelope Size
