@@ -1,8 +1,5 @@
 Param(
-    [string]
-    [Parameter(Mandatory = $false)]
-    $autoInstallDependencies = $false
-    
+    [Parameter(Mandatory = $false)] [String]$autoInstallDependencies = $false,
     [Parameter(Mandatory = $false)] [String]$STIG = $true
 )
 
