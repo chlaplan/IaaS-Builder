@@ -34,7 +34,7 @@ if ($autoInstallDependencies -eq $true) {
 if ($stig -eq $true) {
     . "$PSScriptRoot\Windows.ps1"
 
-Start-DscConfiguration -Path . "$PSScriptRoot\"
+Start-DscConfiguration -Path "$PSScriptRoot\"
 }
 
 # Increase the MaxEnvelope Size
