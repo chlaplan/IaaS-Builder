@@ -1,6 +1,6 @@
 Param(
     [Parameter(Mandatory = $false)] [String]$autoInstallDependencies = $false,
-    [Parameter(Mandatory = $false)] [String]$STIG = $true
+    [Parameter(Mandatory = $false)] [String]$STIG
 )
 
 $osVersion = (Get-WmiObject Win32_OperatingSystem).Caption
