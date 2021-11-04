@@ -10,7 +10,7 @@
 		},
 		"location": {
 			"type": "string",
-			"defaultValue": "[deployment().location]",
+			"defaultValue": "usgovvirginia",
 			"metadata": {
 				"description": "Optional. Location of the Resource Group. It uses the deployment's location when not provided."
 			}
@@ -324,13 +324,13 @@
 	"functions": [
 	],
 	"outputs": {
-		"resourceGroupName": {
-			"type": "string",
-			"value": "[parameters('resourceGroupName')]",
-			"metadata": {
-				"description": "The name of the Resource Group"
-			}
-		},
+		//"resourceGroupName": {
+		//	"type": "string",
+		//	"value": "[parameters('resourceGroupName')]",
+		//	"metadata": {
+		//		"description": "The name of the Resource Group"
+		//	}
+		//},
         "resourceGroupResourceId": {
             "type": "string",
             "value": "[subscriptionResourceId('Microsoft.Resources/resourceGroups', parameters('resourceGroupName'))]",
