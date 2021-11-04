@@ -45,7 +45,6 @@
       "networkSettings": {
         "virtualNetworkAddressPrefix": "[parameters('addressprefix')]",
         "subnetAddressPrefix": "[parameters('addresssubnet')]",
-        "virtualMachinesIPAddress": "[parameters('ip')]",
         "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), parameters('subnetname'))]",
         "privateIPAllocationMethod": "Static",
         "publicIpAllocationMethod": "Dynamic"
