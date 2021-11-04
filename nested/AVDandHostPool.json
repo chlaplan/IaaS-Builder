@@ -281,7 +281,7 @@
             "metadata": {
                 "description": "Number of session hosts that will be created and added to the hostpool."
             },
-            "defaultValue": 0
+            "defaultValue": 1
         },
         "vmNamePrefix": {
             "type": "string",
@@ -414,6 +414,7 @@
         },
         "hostpoolType": {
             "type": "string",
+            "defaultValue": "Pooled",
             "allowedValues": [
                 "Personal",
                 "Pooled"
@@ -738,7 +739,7 @@
                             "apiVersion": "2019-12-10-preview",
                             "name": "[parameters('workSpaceName')]",
                             "type": "Microsoft.DesktopVirtualization/workspaces",
-                            "location": "[parameters('workspaceLocation')]",
+                            "location": "[parameters('location')]",
                             "properties": {
                                 "applicationGroupReferences": "[variables('applicationGroupReferencesArr')]"
                             }
