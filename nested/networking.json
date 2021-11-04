@@ -42,7 +42,6 @@
     "variables": {
       "dscScript": "dsc/Configuration.zip",
       "VirtualNetworkName": "[parameters('VirtualNetworkName')]",
-      "domainName": "[parameters('DomainName')]",
       "networkSettings": {
         "virtualNetworkAddressPrefix": "[parameters('addressprefix')]",
         "subnetAddressPrefix": "[parameters('addresssubnet')]",
