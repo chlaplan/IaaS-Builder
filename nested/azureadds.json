@@ -1,0 +1,158 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "apiVersion": {
+            "type": "string"
+        },
+        "sku": {
+            "type": "string"
+        },
+        "domainConfigurationType": {
+            "type": "string"
+        },
+        "domainName": {
+            "type": "string"
+        },
+        "filteredSync": {
+            "type": "string"
+        },
+        "location": {
+            "type": "string"
+        },
+        "notificationSettings": {
+            "type": "object"
+        },
+        "subnetName": {
+            "type": "string"
+        },
+        "tags": {
+            "type": "object"
+        },
+        "vnetName": {
+            "type": "string"
+        },
+        "tlsV1": {
+            "type": "string"
+        },
+        "ntlmV1": {
+            "type": "string"
+        },
+        "syncNtlmPasswords": {
+            "type": "string"
+        },
+        "syncOnPremPasswords": {
+            "type": "string"
+        },
+        "kerberosRc4Encryption": {
+            "type": "string"
+        },
+        "kerberosArmoring": {
+            "type": "string"
+        },
+        "vnetAddressPrefixes": {
+            "type": "array"
+        },
+        "subnetAddressPrefix": {
+            "type": "string"
+        },
+        "nsgName": {
+            "type": "string"
+        }
+    },
+    "resources": [
+        {
+            "apiVersion": "2021-05-01",
+            "type": "Microsoft.AAD/DomainServices",
+            "name": "[parameters('domainName')]",
+            "location": "[parameters('location')]",
+            "tags": "[parameters('tags')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/virtualNetworks/', parameters('vnetName'))]"
+            ],
+            "properties": {
+                "domainName": "[parameters('domainName')]",
+                "filteredSync": "[parameters('filteredSync')]",
+                "domainConfigurationType": "[parameters('domainConfigurationType')]",
+                "notificationSettings": "[parameters('notificationSettings')]",
+                "replicaSets": [
+                    {
+                        "subnetId": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/virtualNetworks/', parameters('vnetName'), '/subnets/', parameters('subnetName'))]",
+                        "location": "[parameters('location')]"
+                    }
+                ],
+                "domainSecuritySettings": {
+                    "tlsV1": "[parameters('tlsV1')]",
+                    "ntlmV1": "[parameters('ntlmV1')]",
+                    "syncNtlmPasswords": "[parameters('syncNtlmPasswords')]",
+                    "syncOnPremPasswords": "[parameters('syncOnPremPasswords')]",
+                    "kerberosRc4Encryption": "[parameters('kerberosRc4Encryption')]",
+                    "kerberosArmoring": "[parameters('kerberosArmoring')]"
+                },
+                "sku": "[parameters('sku')]"
+            }
+        },
+        {
+            "type": "Microsoft.Network/NetworkSecurityGroups",
+            "name": "[parameters('nsgName')]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "AllowPSRemoting",
+                        "properties": {
+                            "access": "Allow",
+                            "priority": 301,
+                            "direction": "Inbound",
+                            "protocol": "Tcp",
+                            "sourceAddressPrefix": "AzureActiveDirectoryDomainServices",
+                            "sourcePortRange": "*",
+                            "destinationAddressPrefix": "*",
+                            "destinationPortRange": "5986"
+                        }
+                    },
+                    {
+                        "name": "AllowRD",
+                        "properties": {
+                            "access": "Allow",
+                            "priority": 201,
+                            "direction": "Inbound",
+                            "protocol": "Tcp",
+                            "sourceAddressPrefix": "CorpNetSaw",
+                            "sourcePortRange": "*",
+                            "destinationAddressPrefix": "*",
+                            "destinationPortRange": "3389"
+                        }
+                    }
+                ]
+            },
+            "apiVersion": "2021-05-01"
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks",
+            "name": "[parameters('vnetName')]",
+            "location": "[parameters('location')]",
+            "apiVersion": "2021-05-01",
+            "dependsOn": [
+                "[concat('Microsoft.Network/NetworkSecurityGroups/', parameters('nsgName'))]"
+            ],
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": "[parameters('vnetAddressPrefixes')]"
+                },
+                "subnets": [
+                    {
+                        "name": "[parameters('subnetName')]",
+                        "properties": {
+                            "addressPrefix": "[parameters('subnetAddressPrefix')]",
+                            "networkSecurityGroup": {
+                                "id": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/NetworkSecurityGroups/', parameters('nsgName'))]"
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    ],
+    "outputs": {}
+}

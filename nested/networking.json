@@ -1,0 +1,106 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "VirtualNetworkName": {
+        "type": "string",
+        "metadata": {
+          "description": "Name of Virtual Network. "
+        }
+      },
+      "NSG": {
+        "type": "string",
+        "metadata": {
+          "description": "Name of Network Security Group. "
+        }
+      },
+      "subnetname": {
+        "type": "string",
+        "metadata": {
+          "description": "Name of Subnet. "
+        }
+      },
+      "addressprefix": {
+        "type": "string",
+        "metadata": {
+          "description": "Subnet subnet prefix  ex: 10.1.0.0/16"
+        }
+      },
+      "addresssubnet": {
+        "type": "string",
+        "metadata": {
+          "description": "Subnet for servers"
+        }
+      },
+      "location": {
+        "type": "string",
+        "metadata": {
+          "description": "Location for all resources."
+        }
+      }
+    },
+    "variables": {
+      "dscScript": "dsc/Configuration.zip",
+      "VirtualNetworkName": "[parameters('VirtualNetworkName')]",
+      "domainName": "[parameters('DomainName')]",
+      "networkSettings": {
+        "virtualNetworkAddressPrefix": "[parameters('addressprefix')]",
+        "subnetAddressPrefix": "[parameters('addresssubnet')]",
+        "virtualMachinesIPAddress": "[parameters('ip')]",
+        "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), parameters('subnetname'))]",
+        "privateIPAllocationMethod": "Static",
+        "publicIpAllocationMethod": "Dynamic"
+      }
+    },
+    "resources": [
+      {
+        "type": "Microsoft.Network/virtualNetworks",
+        "apiVersion": "2020-05-01",
+        "name": "[variables('virtualNetworkName')]",
+        "location": "[parameters('location')]",
+        "properties": {
+          "addressSpace": {
+            "addressPrefixes": [
+              "[variables('networkSettings').subnetAddressPrefix]"
+            ]
+          },
+          "subnets": [
+            {
+              "name": "[parameters('subnetname')]",
+              "properties": {
+                "addressPrefix": "[variables('networkSettings').subnetAddressPrefix]"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "type": "Microsoft.Network/networkSecurityGroups",
+        "apiVersion": "2020-05-01",
+        "name": "[parameters('NSG')]",
+        "location": "[parameters('location')]",
+        "properties": {
+          //"securityRules": [
+          //  {
+          //    "name": "[variables('securityGroupRule').name]",
+          //    "properties": {
+          //      "priority": "[variables('securityGroupRule').priority]",
+          //      "sourceAddressPrefix": "[variables('securityGroupRule').sourceAddressPrefix]",
+          //      "protocol": "[variables('securityGroupRule').protocol]",
+          //      "destinationPortRange": "[variables('securityGroupRule').destinationPortRange]",
+          //      "access": "[variables('securityGroupRule').access]",
+          //      "direction": "[variables('securityGroupRule').direction]",
+          //      "sourcePortRange": "[variables('securityGroupRule').sourcePortRange]",
+          //      "destinationAddressPrefix": "[variables('securityGroupRule').destinationAddressPrefix]"
+          //    }
+          //  }
+          //]
+        }
+      }
+  
+    ],
+    "outputs": {
+  
+    }
+  }
+  
