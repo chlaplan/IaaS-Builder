@@ -11,7 +11,7 @@
         "domainConfigurationType": {
             "type": "string"
         },
-        "domainName": {
+        "domain": {
             "type": "string"
         },
         "filteredSync": {
@@ -64,14 +64,14 @@
         {
             "apiVersion": "2021-05-01",
             "type": "Microsoft.AAD/DomainServices",
-            "name": "[parameters('domainName')]",
+            "name": "[parameters('domain')]",
             "location": "[parameters('location')]",
             "tags": "[parameters('tags')]",
             "dependsOn": [
                 "[concat('Microsoft.Network/virtualNetworks/', parameters('vnetName'))]"
             ],
             "properties": {
-                "domainName": "[parameters('domainName')]",
+                "domain": "[parameters('domain')]",
                 "filteredSync": "[parameters('filteredSync')]",
                 "domainConfigurationType": "[parameters('domainConfigurationType')]",
                 "notificationSettings": "[parameters('notificationSettings')]",
