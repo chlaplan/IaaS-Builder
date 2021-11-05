@@ -570,7 +570,7 @@
             "metadata": {
                 "description": "IMPORTANT: Please don't use this parameter as AAD Join is not supported yet. True if AAD Join, false if AD join"
             },
-            "defaultValue": false
+            "defaultValue": true
         },
         "intune": {
             "type": "bool",
