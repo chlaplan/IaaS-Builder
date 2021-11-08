@@ -10,7 +10,7 @@
 		},
 		"location": {
 			"type": "string",
-			"defaultValue": "usgovvirginia",
+			"defaultValue": "[deployment().location]",
 			"metadata": {
 				"description": "Optional. Location of the Resource Group. It uses the deployment's location when not provided."
 			}

@@ -535,7 +535,7 @@
             "metadata": {
                 "description": "GUID for the deployment"
             },
-            "defaultValue": ""
+            "defaultValue": "[newGuid()]"
         },
         "validationEnvironment": {
             "type": "bool",
