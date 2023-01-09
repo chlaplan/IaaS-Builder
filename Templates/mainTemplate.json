@@ -1,0 +1,636 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "aadJoin": {
+      "type": "bool",
+      "defaultValue": true
+    },
+    "_artifactsLocation": {
+      "type": "string",
+      "metadata": {
+        "description": "The base URI where artifacts required by this template are located. When the template is deployed using the accompanying scripts, a private location in the subscription will be used and this value will be automatically generated."
+      },
+      "defaultValue": "[split(deployment().properties.templateLink.uri, 'mainTemplate.json')[0]]"
+    },
+    "_artifactsLocationSasToken": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The sasToken required to access _artifactsLocation.  When the template is deployed using the accompanying scripts, a sasToken will be automatically generated."
+      },
+      "defaultValue": ""
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Location where the resources will be deployed."
+      }
+    },
+    "administratorAccountUsername": {
+      "type": "string",
+      "metadata": {
+        "description": "A username in the domain that has privileges to join the session hosts to the domain. For example, 'vmjoiner@contoso.com'."
+      },
+      "defaultValue": ""
+    },
+    "administratorAccountPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The password that corresponds to the existing domain username."
+      },
+      "defaultValue": ""
+    },
+    "azureADAdminUsername": {
+      "type": "string",
+      "metadata": {
+        "description": "The Username that has permissions to Azure Active Directory."
+      },
+      "defaultValue": ""
+    },
+    "azureADAdminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The password for the Azure Admin username."
+      },
+      "defaultValue": ""
+    },
+    "vmAdministratorAccountUsername": {
+      "type": "string",
+      "metadata": {
+        "description": "A username to be used as the virtual machine administrator account. The vmAdministratorAccountUsername and  vmAdministratorAccountPassword parameters must both be provided. Otherwise, domain administrator credentials provided by administratorAccountUsername and administratorAccountPassword will be used."
+      },
+      "defaultValue": "xadmin"
+    },
+    "vmAdministratorAccountPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The password associated with the virtual machine administrator account. The vmAdministratorAccountUsername and  vmAdministratorAccountPassword parameters must both be provided. Otherwise, domain administrator credentials provided by administratorAccountUsername and administratorAccountPassword will be used."
+      }
+    },
+    "vmSize": {
+      "type": "string",
+      "metadata": {
+        "description": "The size of the session host VMs."
+      },
+      "defaultValue": "Standard_DS2_v2"
+    },
+    "vmNumberOfInstances": {
+      "type": "int",
+      "minValue": 1,
+      "maxValue": 800,
+      "defaultValue": 1,
+      "metadata": {
+        "description": "Optional. If no explicit values were provided in the vmNames parameter, this parameter will be used to generate VM names, using the vmNamePrefix and the vmInitialNumber values."
+      }
+    },
+    "virtualNetworkNewOrExisting": {
+      "type": "string",
+      "defaultValue": "new",
+      "allowedValues": [
+        "new",
+        "existing"
+      ],
+      "metadata": {
+        "description": "Determines whether or not a new virtual network should be provisioned."
+      }
+    },
+    "virtualNetworkResourceGroupName": {
+      "type": "string",
+      "metadata": {
+        "description": "The resource group containing the existing virtual network."
+      },
+      "defaultValue": ""
+    },
+    "subnetname": {
+      "type": "string",
+      "defaultValue": "avdsubnet",
+      "metadata": {
+        "description": "AVD Subnet Name"
+      }
+    },
+    "addressprefix": {
+      "type": "string",
+      "defaultValue": "10.1.0.0/16",
+      "metadata": {
+        "description": "AVD Subnet Address Prefix"
+      }
+    },
+    "addresssubnet": {
+      "type": "string",
+      "defaultValue": "10.1.1.0/24",
+      "metadata": {
+        "description": "AVD Subnet Address"
+      }
+    },
+    "onPremDomain": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Domain Name of ADDS"
+      }
+    },
+    "azureDomain": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Domain Name of Azure AD"
+      }
+    },
+    "VirtualNetworkName": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Name of the Virtual Network"
+      }
+    },
+    "hostpoolName": {
+      "type": "string",
+      "defaultValue": "hp-avd",
+      "metadata": {
+        "description": "Name of HostPool"
+      }
+    },
+    "workSpaceName": {
+      "type": "string",
+      "defaultValue": "wkspace01",
+      "metadata": {
+        "description": "Name of HostPool"
+      }
+    },
+    "hostpoolType": {
+      "type": "string",
+      "defaultValue": "Pooled",
+      "metadata": {
+        "description": "Type of HostPool, Personal or Pooled"
+      }
+    },
+    "addToWorkspace": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Add to Workspace"
+      }
+    },
+    "vmGalleryImageOffer": {
+      "type": "string",
+      "metadata": {
+        "description": "(Required when vmImageType = Gallery) Gallery image Offer."
+      },
+      "defaultValue": "Windows-10"
+    },
+    "vmGalleryImagePublisher": {
+      "type": "string",
+      "metadata": {
+        "description": "(Required when vmImageType = Gallery) Gallery image Publisher."
+      },
+      "defaultValue": "MicrosoftWindowsDesktop"
+    },
+    "NSG": {
+      "type": "string",
+      "defaultValue": "nsg-avd",
+      "metadata": {
+        "description": "NSG Name"
+      }
+    },
+    "sasTokenValidityLength": {
+      "defaultValue": "PT8H",
+      "type": "string",
+      "metadata": {
+        "description": "Optional. SAS token validity length. Usage: 'PT8H' - valid for 8 hours; 'P5D' - valid for 5 days; 'P1Y' - valid for 1 year. When not provided, the SAS token will be valid for 8 hours."
+      }
+    },
+    "baseTime": {
+      "type": "string",
+      "defaultValue": "[utcNow('u')]",
+      "metadata": {
+        "description": "Generated. Do not provide a value! This date value is used to generate a SAS token to access the modules."
+      }
+    },
+    "projectName": {
+      "type": "string",
+      "defaultValue": "[substring(uniqueString(resourceGroup().name), 0, 5)]",
+      "metadata": {
+        "description": "Used for the prefix and workspace."
+      }
+    },
+    "enableStigs": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Apply Stigs to image."
+      }
+    },
+    "vmInitialNumber": {
+      "type": "int",
+      "metadata": {
+        "description": "VM name prefix initial number."
+      },
+      "defaultValue": 1
+    },
+    "workLoadType": {
+      "type": "string",
+      "defaultValue": "light",
+      "metadata": {
+        "description": "The expected user workload type for the host pools."
+      }
+    },
+    "accountsCsvUri": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the URI for the CSV file containing the user accounts information for creation."
+      },
+      "defaultValue": ""
+    },
+    "usernameList": {
+      "type": "array",
+      "metadata": {
+        "description": "Array of usernames that will be created in AAD with random passwords stored in Key Vault."
+      },
+      "defaultValue": []
+    },
+    "addAllUsers": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Add all AAD users to the AVD Application Group."
+      }
+    },
+    "vmImageVhdUri": {
+      "type": "string",
+      "metadata": {
+        "description": "URI of the sysprepped image vhd file to be used to create the session host VMs."
+      },
+      "defaultValue": ""
+    },
+    "vmCustomImageSourceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Resource ID of the image."
+      },
+      "defaultValue": ""
+    }
+  },
+  "variables": {
+    // VMNames can only be 15 characters long
+    "vmNamePrefix": "[concat('avd-', take(parameters('projectName'),8))]",
+    "Domain": "[if(parameters('aadJoin'), parameters('azureDomain'), parameters('onPremDomain'))]",
+    "artifactPath": "[split(parameters('_artifactsLocation'), 'applicationResourceTemplate.json')[0]]",
+    "nestedTemplateFolder": "nestedtemplates",
+    "customRdpProperty": "[if(equals(parameters('aadJoin'),bool('true')), 'targetisaadjoined:i:1', '')]",
+    // SAS token validity calculation - DO NOT CHANGE THESE VALUES !
+    "accountSasProperties": {
+      "signedServices": "b", //Blob (b), Queue (q), Table (t), File (f).
+      "signedPermission": "r", //Read (r), Write (w), Delete (d), List (l), Add (a), Create (c), Update (u) and Process (p)
+      "signedExpiry": "[dateTimeAdd(parameters('baseTime'), parameters('sasTokenValidityLength'))]", //format: 2017-05-24T10:42:03Z
+      "signedResourceTypes": "o", //Service (s): Access to service-level APIs; Container (c): Access to container-level APIs; Object (o): Access to object-level APIs for blobs, queue messages, table entities, and files.
+      "signedProtocol": "https"
+    },
+    "projectWorkspaceName": "[concat(parameters('projectName'), '-', parameters('workSpaceName'))]",
+    "virtualNetworkResourceGroupName": "[if(empty(parameters('virtualNetworkResourceGroupName')), resourceGroup().name, parameters('virtualNetworkResourceGroupName'))]",
+    "resourcegroup": "[resourceGroup().name]",
+    "keyVaultName": "[take(concat('kv-', parameters('projectName'),'-', uniqueString(resourceGroup().id)), 24)]",
+    "vmGalleryImageSKU": "[concat(if(equals(parameters('vmGalleryImageOffer'), 'Windows-10'), '21h1-evd-g2', ''), if(equals(parameters('vmGalleryImageOffer'), 'office-365'), '21h1-evd-o365pp-g2', ''))]",
+    "copy": [
+      {
+        "name": "usernameCollection",
+        "count": "[length(parameters('usernameList'))]",
+        "input": "[parameters('usernameList')[copyIndex('usernameCollection')].colUser]"
+      }
+    ],
+    "VirtualNetworkName": "[if(empty(parameters('VirtualNetworkName')), concat('vn-avd-', parameters('projectName')), parameters('VirtualNetworkName'))]",
+    "calculateHostPoolSizingResourceName": "[concat('CalculateHostPoolSizing-', parameters('projectName'))]",
+    "networkingResourceName": "[concat('Networking-', parameters('projectName'))]",
+    "keyVaultResourceName": "[concat('Keyvault-', parameters('projectName'))]",
+    "avdAndHostPoolResourceName": "[concat('AVDandHostPool-', parameters('projectName'))]",
+    "vmImageType": "[if(empty(parameters('vmImageVhdUri')), if(empty(parameters('vmCustomImageSourceId')), 'Gallery', 'CustomImage'), 'CustomVHD')]"
+  },
+  "resources": [
+    // https://docs.microsoft.com/en-us/azure/marketplace/azure-partner-customer-usage-attribution
+    {
+      "apiVersion": "2020-06-01",
+      "name": "pid-e4e8cec6-cbf7-46e9-bd42-e77391de4a40-partnercenter",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+        "mode": "Incremental",
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "resources": []
+        }
+      }
+    },
+    // Run calculate host pool size deploymentScript
+    {
+      "apiVersion": "2021-04-01",
+      "name": "[variables('calculateHostPoolSizingResourceName')]",
+      "type": "Microsoft.Resources/deployments",
+      "condition": "[equals(parameters('hostpoolType'), 'Pooled')]",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[uri(variables('artifactPath'), concat(variables('nestedTemplateFolder'), '/hostPoolSizing.json', parameters('_artifactsLocationSasToken')))]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "_artifactsLocation": {
+            "value": "[variables('artifactPath')]"
+          },
+          "_artifactsLocationSasToken": {
+            "value": "[parameters('_artifactsLocationSasToken')]"
+          },
+          "azureADAdminUsername": {
+            "value": "[parameters('azureADAdminUsername')]"
+          },
+          "azureADAdminPassword": {
+            "value": "[parameters('azureADAdminPassword')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "WorkloadType": {
+            "value": "[parameters('WorkloadType')]"
+          },
+          "numberOfUsers": {
+            "value": "[parameters('vmNumberOfInstances')]"
+          },
+          "projectName": {
+            "value": "[parameters('projectName')]"
+          }
+        }
+      }
+    },
+    ///////////////////
+    // Networking Setup
+    ///////////////////
+    {
+      "apiVersion": "2021-01-01",
+      "name": "[variables('networkingResourceName')]",
+      "type": "Microsoft.Resources/deployments",
+      "resourceGroup": "[variables('virtualNetworkResourceGroupName')]",
+      "condition": "[equals(parameters('virtualNetworkNewOrExisting'), 'new')]",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[uri(variables('artifactPath'), concat(variables('nestedTemplateFolder'), '/networking.json', parameters('_artifactsLocationSasToken')))]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "subnetname": {
+            "value": "[parameters('subnetname')]"
+          },
+          "addressprefix": {
+            "value": "[parameters('addressprefix')]"
+          },
+          "addresssubnet": {
+            "value": "[parameters('addresssubnet')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "VirtualNetworkName": {
+            "value": "[variables('VirtualNetworkName')]"
+          },
+          "NSG": {
+            "value": "[concat(parameters('NSG'), '-', parameters('projectName'))]"
+          }
+        }
+      }
+    },
+    /////////////////
+    // Keyvault Setup
+    /////////////////
+    {
+      "apiVersion": "2021-01-01",
+      "name": "[variables('keyVaultResourceName')]",
+      "type": "Microsoft.Resources/deployments",
+      "condition": "[not(empty(variables('usernameCollection')))]",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[uri(variables('artifactPath'), concat(variables('nestedTemplateFolder'), '/keyvault.json', parameters('_artifactsLocationSasToken')))]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "vaultName": {
+            "value": "[variables('keyVaultName')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          }
+        }
+      }
+    },
+    ///////////////////////////
+    // VM's and  Hostpool Setup
+    ///////////////////////////
+    {
+      "apiVersion": "2021-01-01",
+      "name": "[variables('avdAndHostPoolResourceName')]",
+      "type": "Microsoft.Resources/deployments",
+      "resourceGroup": "[variables('resourcegroup')]",
+      "dependsOn": [
+        "[variables('networkingResourceName')]",
+        "[variables('calculateHostPoolSizingResourceName')]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[uri(variables('artifactPath'), concat(variables('nestedTemplateFolder'), '/AVDandHostPool.json', parameters('_artifactsLocationSasToken')))]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "domain": {
+            "value": "[variables('domain')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "aadjoin": {
+            "value": "[parameters('aadjoin')]"
+          },
+          "vmlocation": {
+            "value": "[parameters('location')]"
+          },
+          "existingSubnetName": {
+            "value": "[parameters('subnetname')]"
+          },
+          "existingVnetName": {
+            "value": "[variables('VirtualNetworkName')]"
+          },
+          "vmResourceGroup": {
+            "value": "[variables('resourcegroup')]"
+          },
+          "storageAccountResourceGroupName": {
+            "value": "[variables('resourcegroup')]"
+          },
+          "virtualNetworkResourceGroupName": {
+            "value": "[variables('virtualNetworkResourceGroupName')]"
+          },
+          "hostpoolName": {
+            "value": "[concat(parameters('hostpoolName'), '-', parameters('projectName'))]"
+          },
+          "hostpoolType": {
+            "value": "[parameters('hostpoolType')]"
+          },
+          "vmNamePrefix": {
+            "value": "[variables('vmNamePrefix')]"
+          },
+          "vmSize": {
+            "value": "[if(equals(parameters('hostpoolType'), 'Pooled'), reference(variables('calculateHostPoolSizingResourceName')).outputs.vmSize.value, parameters('vmSize'))]"
+          },
+          "vmGalleryImageOffer": {
+            "value": "[parameters('vmGalleryImageOffer')]"
+          },
+          "vmGalleryImagePublisher": {
+            "value": "[parameters('vmGalleryImagePublisher')]"
+          },
+          "vmGalleryImageSKU": {
+            "value": "[variables('vmGalleryImageSKU')]"
+          },
+          "vmImageType": {
+            "value": "[variables('vmImageType')]"
+          },
+          "vmImageVhdUri": {
+            "value": "[parameters('vmImageVhdUri')]"
+          },
+          "vmCustomImageSourceId": {
+            "value": "[parameters('vmCustomImageSourceId')]"
+          },
+          "workSpaceName": {
+            "value": "[variables('projectWorkspaceName')]"
+          },
+          "addToWorkspace": {
+            "value": "[parameters('addToWorkspace')]"
+          },
+          "administratorAccountUsername": {
+            "value": "[if(empty(parameters('administratorAccountUsername')), parameters('azureADAdminUsername'), parameters('administratorAccountUsername'))]"
+          },
+          "administratorAccountPassword": {
+            "value": "[if(empty(parameters('administratorAccountPassword')), parameters('azureADAdminPassword'), parameters('administratorAccountPassword'))]"
+          },
+          "vmAdministratorAccountUsername": {
+            "value": "[parameters('vmAdministratorAccountUsername')]"
+          },
+          "vmAdministratorAccountPassword": {
+            "value": "[parameters('vmAdministratorAccountPassword')]"
+          },
+          "vmNumberOfInstances": {
+            "value": "[if(equals(parameters('hostpoolType'), 'Pooled'), reference(variables('calculateHostPoolSizingResourceName')).outputs.vmCount.value, parameters('vmNumberOfInstances'))]"
+          },
+          "tokenExpirationTime": {
+            "value": "[variables('accountSasProperties').signedExpiry]"
+          },
+          "customRdpProperty": {
+            "value": "[variables('customRdpProperty')]"
+          },
+          "vmInitialNumber": {
+            "value": "[parameters('vmInitialNumber')]"
+          },
+          "deploymentId": {
+            "value": "[parameters('projectName')]"
+          }
+        }
+      }
+    },
+    // Apply STIGs
+    {
+      "apiVersion": "2021-01-01",
+      "name": "[concat('ApplyStigs-', parameters('projectName'))]",
+      "type": "Microsoft.Resources/deployments",
+      "dependsOn": [
+        "[variables('avdAndHostPoolResourceName')]"
+      ],
+      "condition": "[parameters('enableStigs')]",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[uri(variables('artifactPath'), concat(variables('nestedTemplateFolder'), '/vmExtensions.json', parameters('_artifactsLocationSasToken')))]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "_artifactsLocation": {
+            "value": "[variables('artifactPath')]"
+          },
+          "_artifactsLocationSasToken": {
+            "value": "[parameters('_artifactsLocationSasToken')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "vmNumberOfInstances": {
+            "value": "[if(equals(parameters('hostpoolType'), 'Pooled'), reference(variables('calculateHostPoolSizingResourceName')).outputs.vmCount.value, parameters('vmNumberOfInstances'))]"
+          },
+          "prefix": {
+            "value": "[variables('vmNamePrefix')]"
+          },
+          "vmInitialNumber": {
+            "value": "[parameters('vmInitialNumber')]"
+          },
+          "vmGalleryImageSKU": {
+            "value": "[variables('vmGalleryImageSKU')]"
+          }
+        }
+      }
+    },
+    // Run deploymentScript
+    {
+      "apiVersion": "2021-04-01",
+      "name": "[concat('directoryManagementScript-', parameters('projectName'))]",
+      "type": "Microsoft.Resources/deployments",
+      "dependsOn": [
+        "[variables('avdAndHostPoolResourceName')]",
+        "[variables('keyVaultResourceName')]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[uri(variables('artifactPath'), concat(variables('nestedTemplateFolder'), '/directoryManagementScript.json', parameters('_artifactsLocationSasToken')))]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "_artifactsLocation": {
+            "value": "[variables('artifactPath')]"
+          },
+          "_artifactsLocationSasToken": {
+            "value": "[parameters('_artifactsLocationSasToken')]"
+          },
+          "azureADAdminUsername": {
+            "value": "[parameters('azureADAdminUsername')]"
+          },
+          "azureADAdminPassword": {
+            "value": "[parameters('azureADAdminPassword')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "projectName": {
+            "value": "[parameters('projectName')]"
+          },
+          "resourceGroupName": {
+            "value": "[variables('resourcegroup')]"
+          },
+          "keyVaultName": {
+            "value": "[variables('keyVaultName')]"
+          },
+          "accountsCsvUri": {
+            "value": "[parameters('accountsCsvUri')]"
+          },
+          "usernameCollection": {
+            "value": "[variables('usernameCollection')]"
+          },
+          "addAllUsers": {
+            "value": "[parameters('addAllUsers')]"
+          },
+          "applicationGroupName": {
+            "value": "[reference(variables('avdAndHostPoolResourceName')).outputs.applicationGroupName.value]"
+          },
+          "azureDomainName": {
+            "value": "[parameters('azureDomain')]"
+          }
+        }
+      }
+    }
+  ],
+  "outputs": {}
+}
