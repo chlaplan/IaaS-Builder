@@ -1,3 +1,5 @@
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fchlaplan%2FIaaS-Builder%2Fmaster%2FTemplates%2FmainTemplate.json)
+
 # IaaS-Builder
 Azure Automation IaaS Builder is a GUI based script that allows you to enter basic information about the domain and servers you want to build in Azure.
 
