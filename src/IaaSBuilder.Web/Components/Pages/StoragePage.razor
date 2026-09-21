@@ -1,0 +1,231 @@
+@page "/storage"
+@inject PlanState PlanState
+@implements IDisposable
+
+<PageTitle>Storage - IaaS Builder</PageTitle>
+
+<h1>Storage</h1>
+<p>Where the DSC package comes from, so the virtual machines can read it during deployment.</p>
+
+<GettingStarted CurrentPage="storage" />
+
+<ValidationPanel Compact="true" />
+
+@*
+    The default. The DSC extension only ever needed a URL it could reach from inside the VM -
+    Azure Storage was simply where the original script put the package, and it is what drags in
+    the blob data-plane role that Owner and Contributor do not grant.
+*@
+<div class="panel">
+    <h2>Package source</h2>
+
+    <CheckField Label="Fetch the DSC package from a public URL (no storage account needed)"
+                Value="@Plan.Artifacts.UsePublicPackageUrl"
+                ValueChanged="@(v => Set(() => Plan.Artifacts.UsePublicPackageUrl = v))"
+                Hint="Leave this on unless your virtual machines cannot reach the internet." />
+
+    @if (Plan.Artifacts.UsePublicPackageUrl)
+    {
+        <div class="alert info">
+            Nothing is uploaded and <strong>no role assignment is required</strong>. Each VM
+            downloads the package directly from this URL, so the VMs need outbound access to it -
+            which a staging account equally required. The link is checked before anything is
+            created.
+        </div>
+
+        <TextField Label="Package URL"
+                   Path="artifacts.publicPackageUrl"
+                   Value="@Plan.Artifacts.PublicPackageUrl"
+                   ValueChanged="@(v => Set(() => Plan.Artifacts.PublicPackageUrl = v ?? ""))"
+                   Hint="Must link directly to the .zip, not to a web page about it. Point this at your own server if the default is unreachable." />
+
+        @if (!string.Equals(Plan.Artifacts.PublicPackageUrl, PublicPackageSource.DefaultUrl, StringComparison.Ordinal))
+        {
+            <p class="muted">
+                Using a custom location.
+                <button type="button" class="link" @onclick="UseDefaultPackageUrl">
+                    Reset to the published package
+                </button>
+            </p>
+        }
+    }
+    else
+    {
+        <div class="alert info">
+            The package will be uploaded to the storage account below and handed to each VM with a
+            short-lived SAS token. This needs blob data access - see the account settings.
+        </div>
+    }
+</div>
+
+@if (!Plan.Artifacts.UsePublicPackageUrl)
+{
+<div class="panel">
+    <h2>Staging account</h2>
+    <p class="muted">
+        The DSC package is uploaded to a storage account and handed to each VM with a short-lived
+        SAS token. The account is created fresh for every deployment inside the plan's resource
+        group, which is why the name carries a random suffix.
+    </p>
+
+    @*
+        Contributor on the subscription is enough. The tool tries your own Entra identity first
+        and mints a user delegation SAS when it can; on a 403 it falls back to the account key,
+        which Contributor can read because listKeys is a control-plane action. Saying so here
+        stops operators chasing a "Storage Blob Data Contributor" grant they no longer need.
+    *@
+    <div class="alert info">
+        No extra role assignment is needed. Subscription <strong>Contributor</strong> covers this:
+        the tool signs the package with this account's own key if your identity cannot write blob
+        data directly.
+    </div>
+
+    <div class="grid-2">
+        <TextField Label="Storage account name"
+                   Path="artifacts.storageAccountName"
+                   Value="@Plan.Artifacts.StorageAccountName"
+                   ValueChanged="@(v => Set(() => Plan.Artifacts.StorageAccountName = v ?? ""))"
+                   Hint="3-24 characters, lowercase letters and digits only - no hyphens or capitals." />
+
+        <TextField Label="Container"
+                   Path="artifacts.containerName"
+                   Value="@Plan.Artifacts.ContainerName"
+                   ValueChanged="@(v => Set(() => Plan.Artifacts.ContainerName = v ?? ""))"
+                   Hint="Lowercase letters, digits and hyphens." />
+
+        <TextField Label="DSC package path"
+                   Path="artifacts.dscPackagePath"
+                   Value="@Plan.Artifacts.DscPackagePath"
+                   ValueChanged="@(v => Set(() => Plan.Artifacts.DscPackagePath = v ?? ""))"
+                   Hint="Relative to the application folder." />
+
+        @*
+            The escape hatch for tenants that will not grant a blob data role on demand. The
+            staging account is otherwise created fresh, with a new random name, in the lab's
+            resource group on every run - so a role granted once never applies to the next
+            deployment, which is why the same grant kept being asked for.
+        *@
+        <TextField Label="Storage resource group (optional)"
+                   Path="artifacts.storageResourceGroup"
+                   Value="@Plan.Artifacts.StorageResourceGroup"
+                   ValueChanged="@(v => Set(() => Plan.Artifacts.StorageResourceGroup = v ?? ""))"
+                   Hint="Leave blank to create the staging account in the lab's resource group. Set it to reuse a storage account you already have blob access on - that account must already exist." />
+    </div>
+</div>
+}
+
+<div class="panel">
+    <h2>Pre-staged artifacts</h2>
+    <p class="muted">
+        For an air-gapped enclave, or any environment where the package is already in place and
+        should not be uploaded again.
+    </p>
+
+    <CheckField Label="Skip upload (artifacts are already staged)"
+                Value="@Plan.Artifacts.SkipUpload"
+                ValueChanged="@(v => Set(() => Plan.Artifacts.SkipUpload = v))"
+                Hint="When ticked, both fields below are required - nothing uploads the package for you." />
+
+    <div class="grid-2">
+        <TextField Label="Pre-staged artifacts URL"
+                   Path="artifacts.artifactsLocationOverride"
+                   Value="@Plan.Artifacts.ArtifactsLocationOverride"
+                   ValueChanged="@(v => Set(() => Plan.Artifacts.ArtifactsLocationOverride = Blank(v)))"
+                   Hint="The container URL the VMs should read the package from." />
+
+        @*
+            This had no field at all until now, so an operator who ticked "skip upload" could get
+            as far as a deployment that failed inside the VM extension with nothing on screen
+            explaining why.
+        *@
+        <TextField Label="Pre-staged SAS token"
+                   Path="artifacts.artifactsSasTokenOverride"
+                   Value="@Plan.Artifacts.ArtifactsSasTokenOverride"
+                   ValueChanged="@(v => Set(() => Plan.Artifacts.ArtifactsSasTokenOverride = Blank(v)))"
+                   Password="true"
+                   Hint="Leading '?' optional. Needs read access for the lifetime of the deployment." />
+    </div>
+</div>
+
+@*
+    A separate problem from everything above. Those settings move the DSC package; this one governs
+    what the package downloads once it is already running inside the VM - Configuration Manager,
+    the ADK, Exchange, the STIG GPOs and the security baseline - all of which came from fixed
+    addresses on the public internet with no way to change them.
+*@
+<div class="panel">
+    <h2>Installer media</h2>
+    <p class="muted">
+        Some roles download installers from Microsoft while they configure themselves, inside the
+        VM, long after the deployment reports success. If those addresses are unreachable, point
+        this at a copy you control instead.
+    </p>
+
+    <TextField Label="Install media location (optional)"
+               Path="artifacts.installMediaLocation"
+               Value="@Plan.Artifacts.InstallMediaLocation"
+               ValueChanged="@(v => Set(() => Plan.Artifacts.InstallMediaLocation = v ?? ""))"
+               Hint="An https URL, a UNC share such as \\fs01\media\installers, or a path on the VM such as D:\installers. Leave blank to download from Microsoft." />
+
+    @if (Plan.Artifacts.InstallMediaLocation.Trim().Length > 0)
+    {
+        <CheckField Label="If a file is missing here, download it from Microsoft instead"
+                    Value="@Plan.Artifacts.InstallMediaFallbackToInternet"
+                    ValueChanged="@(v => Set(() => Plan.Artifacts.InstallMediaFallbackToInternet = v))"
+                    Hint="Leave this off for a disconnected network. Falling back there replaces a clear 'stage this file' error with a long hang that never mentions media." />
+
+        @*
+            Only the files this plan will actually ask for. Listing all ten would tell somebody
+            building a plain domain controller to go and find a 6 GB Exchange ISO.
+        *@
+        @if (RequiredMedia.Count > 0)
+        {
+            <p>Stage these files in that location, using exactly these names:</p>
+            <ul class="media-list">
+                @foreach (var file in RequiredMedia)
+                {
+                    <li>
+                        <code>@file</code>
+                        <span class="muted">— @DscInstallMedia.Descriptions[file]</span>
+                    </li>
+                }
+            </ul>
+        }
+        else
+        {
+            <p class="muted">
+                Nothing in this plan downloads installer media, so this location will not be used.
+                It is harmless to set it now in case you add Configuration Manager, Exchange or a
+                hardening baseline later.
+            </p>
+        }
+    }
+</div>
+
+@code {
+    private DeploymentPlan Plan => PlanState.Plan;
+
+    private List<string> RequiredMedia => DscInstallMedia.RequiredFor(Plan).ToList();
+
+    protected override void OnInitialized() => PlanState.Changed += Refresh;
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => PlanState.Changed -= Refresh;
+
+    private void Set(Action mutate)
+    {
+        mutate();
+        PlanState.NotifyChanged();
+    }
+
+    private void UseDefaultPackageUrl() =>
+        Set(() => Plan.Artifacts.PublicPackageUrl = PublicPackageSource.DefaultUrl);
+
+    /// <summary>
+    /// These overrides are null when unset, not empty: the validator treats an empty string as
+    /// "supplied but blank" and the deployment path tests them for null.
+    /// </summary>
+    private static string? Blank(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value;
+}

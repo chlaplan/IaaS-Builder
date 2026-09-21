@@ -1,0 +1,234 @@
+@implements IDisposable
+@inject PlanState PlanState
+@inject CatalogState Catalog
+
+@*
+    The SCCA boundary lives on the Network page because it decides how the servers are wired.
+
+    The legacy F5 SACA editor has been removed from the UI. The plan model, the ARM templates and
+    the deployment steps are all still present, so an existing plan file with SACA enabled still
+    deploys through the CLI - see LegacySacaNotice, which is what stops that being a silent
+    mismatch when such a plan is loaded here.
+*@
+
+<div class="panel">
+    <h2>Microsoft SACA - Mission Landing Zone</h2>
+    <p class="hint">
+        Microsoft's current primary deployment for Secure Cloud Computing Architecture. Mission
+        Landing Zone builds an SCCA-aligned hub and spoke - Azure Firewall Premium with IDPS for
+        the VDSS role, Log Analytics and optional Defender, Sentinel and policy - with no
+        third-party appliance licences.
+    </p>
+
+    <div class="alert info">
+        <strong>Mission Landing Zone runs alongside the lab network, it does not replace it.</strong>
+        MLZ builds its own hub and spoke in its own resource groups; the virtual network below is
+        still deployed, and attaching the lab servers to an MLZ spoke is a manual step today.
+    </div>
+
+    <CheckField Label="Deploy Mission Landing Zone"
+                Value="@(Plan.Mlz?.Enabled == true)"
+                ValueChanged="OnMlzToggled"
+                Hint="Deploys Templates/MLZ/mlz.json, vendored unmodified from Azure/missionlz." />
+
+    @if (Mlz is { Enabled: true })
+    {
+        <div class="alert warn">
+            <strong>Read before deploying.</strong>
+            <ul>
+                <li>
+                    This deploys at <strong>subscription</strong> scope and creates its own resource
+                    groups, one per tier. It does not deploy into
+                    <code>@Plan.Azure.ResourceGroup</code>.
+                </li>
+                <li>
+                    You need <strong>Owner</strong> on the subscription (it assigns roles and
+                    policy), and the <strong>Encryption At Host</strong> feature registered.
+                </li>
+                <li>
+                    The lab servers in this plan are <strong>not</strong> attached to Mission
+                    Landing Zone spokes automatically. The two run side by side; wiring the lab into
+                    an MLZ spoke is a manual step.
+                </li>
+                <li>Azure caps subscription diagnostic settings at five.</li>
+            </ul>
+        </div>
+
+        <div class="grid-3">
+            <TextField Label="Identifier"
+                       Path="mlz.identifier"
+                       Value="@Mlz.Identifier"
+                       ValueChanged="@(v => Set(() => Mlz.Identifier = (v ?? "").Trim()))"
+                       Hint="1-5 alphanumeric characters. Woven into every resource name MLZ creates." />
+
+            <div class="field">
+                <label>Environment</label>
+                <select value="@Mlz.EnvironmentAbbreviation"
+                        @onchange="@(e => Set(() => Mlz.EnvironmentAbbreviation = e.Value?.ToString() ?? "dev"))">
+                    <option value="dev">dev</option>
+                    <option value="test">test</option>
+                    <option value="prod">prod</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label>Azure Firewall SKU</label>
+                <select value="@Mlz.FirewallSkuTier"
+                        @onchange="@(e => Set(() => Mlz.FirewallSkuTier = e.Value?.ToString() ?? "Premium"))">
+                    <option value="Premium">Premium</option>
+                    <option value="Standard">Standard</option>
+                </select>
+                <span class="hint">Only Premium has IDPS, which the SCCA VDSS role expects.</span>
+            </div>
+
+            <div class="field">
+                <label>Intrusion detection</label>
+                <select value="@Mlz.FirewallIntrusionDetectionMode"
+                        @onchange="@(e => Set(() => Mlz.FirewallIntrusionDetectionMode = e.Value?.ToString() ?? "Alert"))">
+                    <option value="Alert">Alert</option>
+                    <option value="Deny">Deny</option>
+                    <option value="Off">Off</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label>Threat intelligence</label>
+                <select value="@Mlz.FirewallThreatIntelMode"
+                        @onchange="@(e => Set(() => Mlz.FirewallThreatIntelMode = e.Value?.ToString() ?? "Alert"))">
+                    <option value="Alert">Alert</option>
+                    <option value="Deny">Deny</option>
+                    <option value="Off">Off</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label>Defender plan</label>
+                <select value="@Mlz.DefenderSkuTier"
+                        @onchange="@(e => Set(() => Mlz.DefenderSkuTier = e.Value?.ToString() ?? "Free"))">
+                    <option value="Free">Free</option>
+                    <option value="Standard">Standard</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="grid-3">
+            <CheckField Label="Identity tier"
+                        Value="@Mlz.DeployIdentity"
+                        ValueChanged="@(v => Set(() => Mlz.DeployIdentity = v))"
+                        Hint="Opt-in upstream. Hub, operations and shared services are always built." />
+
+            <CheckField Label="Bastion"
+                        Value="@Mlz.DeployBastion"
+                        ValueChanged="@(v => Set(() => Mlz.DeployBastion = v))" />
+
+            <CheckField Label="Defender for Cloud"
+                        Value="@Mlz.DeployDefender"
+                        ValueChanged="@(v => Set(() => Mlz.DeployDefender = v))" />
+
+            <CheckField Label="Microsoft Sentinel"
+                        Value="@Mlz.DeploySentinel"
+                        ValueChanged="@(v => Set(() => Mlz.DeploySentinel = v))" />
+
+            <CheckField Label="Azure Policy"
+                        Value="@Mlz.DeployPolicy"
+                        ValueChanged="@(v => Set(() => Mlz.DeployPolicy = v))" />
+
+            @if (Mlz.DeployPolicy)
+            {
+                <div class="field">
+                    <label>Policy initiative</label>
+                    <select value="@Mlz.Policy"
+                            @onchange="@(e => Set(() => Mlz.Policy = e.Value?.ToString() ?? "NISTRev4"))">
+                        <option value="NISTRev4">NIST SP 800-53 Rev. 4</option>
+                        <option value="NISTRev5">NIST SP 800-53 Rev. 5</option>
+                        <option value="IL5">DoD Impact Level 5</option>
+                        <option value="CMMC">CMMC Level 3</option>
+                    </select>
+                </div>
+            }
+        </div>
+
+        @if (Mlz.DeployDefender)
+        {
+            <TextField Label="Security contact email"
+                       Path="mlz.emailSecurityContact"
+                       Value="@Mlz.EmailSecurityContact"
+                       ValueChanged="@(v => Set(() => Mlz.EmailSecurityContact = v ?? ""))"
+                       Hint="Where Defender for Cloud sends alerts. Without it, nobody is notified." />
+        }
+
+        <details>
+            <summary>Tier subscriptions (advanced)</summary>
+            <p class="hint">
+                Leave blank to deploy every tier into this plan's subscription, which is the
+                single-subscription layout and the upstream default.
+            </p>
+            <div class="grid-2">
+                <TextField Label="Hub subscription"
+                           Value="@(Mlz.HubSubscriptionId ?? "")"
+                           ValueChanged="@(v => Set(() => Mlz.HubSubscriptionId = Blank(v)))" />
+                <TextField Label="Identity subscription"
+                           Value="@(Mlz.IdentitySubscriptionId ?? "")"
+                           ValueChanged="@(v => Set(() => Mlz.IdentitySubscriptionId = Blank(v)))" />
+                <TextField Label="Operations subscription"
+                           Value="@(Mlz.OperationsSubscriptionId ?? "")"
+                           ValueChanged="@(v => Set(() => Mlz.OperationsSubscriptionId = Blank(v)))" />
+                <TextField Label="Shared services subscription"
+                           Value="@(Mlz.SharedServicesSubscriptionId ?? "")"
+                           ValueChanged="@(v => Set(() => Mlz.SharedServicesSubscriptionId = Blank(v)))" />
+            </div>
+        </details>
+    }
+</div>
+
+@code {
+    private DeploymentPlan Plan => PlanState.Plan;
+    private SacaSpec? Saca => Plan.Saca;
+    private MlzSpec? Mlz => Plan.Mlz;
+
+    protected override void OnInitialized()
+    {
+        PlanState.Changed += Refresh;
+        Catalog.Changed += Refresh;
+    }
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        PlanState.Changed -= Refresh;
+        Catalog.Changed -= Refresh;
+    }
+
+    /// <summary>Empty text means "use the plan's subscription", which the binder resolves.</summary>
+    private static string? Blank(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private void OnMlzToggled(bool enabled) =>
+        Set(() =>
+        {
+            // Seed the identifier from the network prefix so the single required parameter is not
+            // an empty box. MLZ caps it at 5 alphanumeric characters.
+            Plan.Mlz ??= new MlzSpec
+            {
+                Identifier = new string(
+                    (Plan.Network.Prefix ?? "mlz")
+                        .Where(char.IsLetterOrDigit)
+                        .Take(5)
+                        .ToArray())
+            };
+
+            if (Plan.Mlz.Identifier.Length == 0)
+            {
+                Plan.Mlz.Identifier = "mlz";
+            }
+
+            Plan.Mlz.Enabled = enabled;
+        });
+
+    private void Set(Action mutate)
+    {
+        mutate();
+        PlanState.NotifyChanged();
+    }
+}

@@ -1,0 +1,14 @@
+@page "/saca"
+@inject NavigationManager Nav
+
+@*
+    SACA moved onto the Network page, because it decides how the servers are wired. The old route
+    is kept so existing bookmarks and the links in the README land somewhere useful instead of 404.
+*@
+
+<PageTitle>Microsoft SACA - IaaS Builder</PageTitle>
+
+@code {
+    protected override void OnInitialized() =>
+        Nav.NavigateTo("network", replace: true);
+}

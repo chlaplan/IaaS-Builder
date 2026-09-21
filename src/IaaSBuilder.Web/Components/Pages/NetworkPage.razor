@@ -1,0 +1,169 @@
+@page "/network"
+@implements IDisposable
+@inject PlanState PlanState
+
+<PageTitle>Network - IaaS Builder</PageTitle>
+
+<div class="page-head">
+    <h1>Network</h1>
+    <p>
+        The SCCA boundary comes first, because it decides how the servers are wired. Everything
+        below it is the standard lab network: virtual network, workload subnet and Bastion.
+        Addresses are checked as you type.
+    </p></div>
+
+<ValidationPanel Compact="true" />
+
+@* Silent unless a loaded plan file still enables the legacy F5 stack. *@
+<LegacySacaNotice />
+
+@* The SCCA boundary comes first: it decides how the servers are wired. *@
+<NetworkBoundary />
+
+<div class="panel">
+    <h2>Virtual network</h2>
+
+    @*
+        A real deployment failed here: the address space was moved and the Bastion prefix was left
+        behind on the old range. ARM accepts the virtual network and then rejects the subnet inside
+        it, several minutes and one resource group later. Validation catches it and now blocks the
+        deployment, but telling someone their subnet is outside the address space still leaves them
+        doing CIDR arithmetic to get out of it.
+    *@
+    @if (NeedsRefit)
+    {
+        <div class="alert warn">
+            <strong>A subnet no longer fits inside the address space.</strong>
+            Azure accepts the virtual network and then rejects the subnet, part-way through the
+            deployment.
+            <div class="button-row">
+                <button class="secondary" @onclick="RefitSubnets">Fit the subnets to the address space</button>
+            </div>
+        </div>
+    }
+
+    <div class="grid-2">
+        <TextField Label="Resource name prefix"
+                   Path="network.prefix"
+                   Value="@Plan.Network.Prefix"
+                   ValueChanged="@(v => Set(() => Plan.Network.Prefix = v ?? ""))"
+                   Hint="Prepended to generated resource names." />
+
+        <TextField Label="Virtual network name"
+                   Value="@Plan.Network.VirtualNetworkName"
+                   ValueChanged="@(v => Set(() => Plan.Network.VirtualNetworkName = string.IsNullOrWhiteSpace(v) ? null : v))"
+                   Placeholder="@Plan.Network.EffectiveVirtualNetworkName"
+                   Hint="Leave blank to derive it from the prefix." />
+
+        <TextField Label="Address space"
+                   Path="network.addressPrefix"
+                   Value="@Plan.Network.AddressPrefix"
+                   ValueChanged="@(v => Set(() => Plan.Network.AddressPrefix = v ?? ""))"
+                   Hint="CIDR, e.g. 10.10.0.0/16" />
+
+        <TextField Label="Network security group name"
+                   Value="@Plan.Network.NetworkSecurityGroupName"
+                   ValueChanged="@(v => Set(() => Plan.Network.NetworkSecurityGroupName = string.IsNullOrWhiteSpace(v) ? null : v))"
+                   Placeholder="@Plan.Network.EffectiveNetworkSecurityGroupName" />
+
+        <TextField Label="Workload subnet name"
+                   Value="@Plan.Network.SubnetName"
+                   ValueChanged="@(v => Set(() => Plan.Network.SubnetName = v ?? ""))" />
+
+        <TextField Label="Workload subnet prefix"
+                   Path="network.subnetPrefix"
+                   Value="@Plan.Network.SubnetPrefix"
+                   ValueChanged="@(v => Set(() => Plan.Network.SubnetPrefix = v ?? ""))"
+                   Hint="Must sit inside the address space. Azure reserves the first four and last address." />
+    </div>
+
+    <CheckField Label="Create a private DNS zone for the domain"
+                Value="@Plan.Network.CreateDomainPrivateDnsZone"
+                ValueChanged="@(v => Set(() => Plan.Network.CreateDomainPrivateDnsZone = v))" />
+
+    <CheckField Label="Reach the artifacts storage account over a private endpoint"
+                Value="@Plan.Network.UsePrivateEndpointForArtifacts"
+                ValueChanged="@(v => Set(() => Plan.Network.UsePrivateEndpointForArtifacts = v))"
+                Hint="Keeps the DSC package off the public internet." />
+</div>
+
+<div class="panel">
+    <h2>Bastion</h2>
+    <CheckField Label="Deploy Azure Bastion"
+                Value="@Plan.Bastion.Enabled"
+                ValueChanged="@(v => Set(() => Plan.Bastion.Enabled = v))"
+                Hint="Lets you reach the VMs without a public IP on each one." />
+
+    @if (Plan.Bastion.Enabled)
+    {
+        <TextField Label="AzureBastionSubnet prefix"
+                   Path="bastion.subnetPrefix"
+                   Value="@Plan.Bastion.SubnetPrefix"
+                   ValueChanged="@(v => Set(() => Plan.Bastion.SubnetPrefix = v ?? ""))"
+                   Hint="Azure requires /26 or larger, and it must not overlap the workload subnet." />
+    }
+
+    <CheckField Label="Give each VM a public IP"
+                Value="@Plan.Network.AssignPublicIps"
+                ValueChanged="@(v => Set(() => Plan.Network.AssignPublicIps = v))"
+                Hint="Leave this off. The built-in policy 'Network interfaces should not have public IPs' is set to deny in many tenants, and it rejects the entire VM deployment - not just the address." />
+
+    @if (Plan.Network.AssignPublicIps)
+    {
+        <div class="alert warn">
+            If your tenant denies public IPs on network interfaces, every VM step will fail with
+            <strong>RequestDisallowedByPolicy</strong> and nothing will be created. Bastion reaches
+            the VMs without one.
+        </div>
+    }
+</div>
+
+<div class="panel">
+    <h2>Dedicated host</h2>
+    <CheckField Label="Place the VMs on a dedicated host"
+                Value="@(Plan.DedicatedHost?.Enabled == true)"
+                ValueChanged="OnDedicatedHostToggled" />
+
+    @if (Plan.DedicatedHost?.Enabled == true)
+    {
+        <div class="grid-2">
+            <TextField Label="Host group name"
+                       Path="dedicatedHost.hostGroupName"
+                       Value="@Plan.DedicatedHost.HostGroupName"
+                       ValueChanged="@(v => Set(() => Plan.DedicatedHost!.HostGroupName = v ?? ""))" />
+
+            <TextField Label="Host SKU"
+                       Path="dedicatedHost.sku"
+                       Value="@Plan.DedicatedHost.Sku"
+                       ValueChanged="@(v => Set(() => Plan.DedicatedHost!.Sku = v ?? ""))"
+                       Hint="For example DSv3-Type3. Must match the VM sizes you selected." />
+        </div>
+    }
+</div>
+
+@code {
+    private DeploymentPlan Plan => PlanState.Plan;
+
+    protected override void OnInitialized() => PlanState.Changed += Refresh;
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => PlanState.Changed -= Refresh;
+
+    private void Set(Action mutate)
+    {
+        mutate();
+        PlanState.NotifyChanged();
+    }
+
+    private bool NeedsRefit => SubnetLayout.NeedsRefit(Plan);
+
+    private void RefitSubnets() => Set(() => SubnetLayout.TryRefit(Plan));
+
+    private void OnDedicatedHostToggled(bool enabled) =>
+        Set(() =>
+        {
+            Plan.DedicatedHost ??= new DedicatedHostSpec();
+            Plan.DedicatedHost.Enabled = enabled;
+        });
+}

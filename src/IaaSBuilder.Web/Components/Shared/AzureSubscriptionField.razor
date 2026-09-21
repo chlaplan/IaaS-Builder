@@ -1,0 +1,105 @@
+@*
+    Picks a subscription from the list the signed-in account can see, while never making the list
+    the only way in: an air-gapped operator, or someone authoring a plan for a subscription their
+    current login cannot see, can still type an id. Same principle as ComboField.
+*@
+
+<div class="field">
+    <label for="@_id">@Label</label>
+
+    @if (Subscriptions.Count > 0 && !_manual)
+    {
+        <select id="@_id" value="@Value" @onchange="OnSelected">
+            @if (string.IsNullOrWhiteSpace(Value))
+            {
+                <option value="">-- choose a subscription --</option>
+            }
+            else if (Known(Value) is null)
+            {
+                @* A plan loaded from disk may name a subscription this login cannot see. *@
+                <option value="@Value">@Value (not visible to this account)</option>
+            }
+
+            @foreach (var subscription in Subscriptions)
+            {
+                <option value="@subscription.SubscriptionId">@Describe(subscription)</option>
+            }
+
+            <option value="@ManualSentinel">Enter a different id...</option>
+        </select>
+    }
+    else
+    {
+        <input id="@_id"
+               type="text"
+               value="@Value"
+               placeholder="00000000-0000-0000-0000-000000000000"
+               @onchange="OnTyped" />
+    }
+
+    @if (!string.IsNullOrWhiteSpace(EffectiveHint))
+    {
+        <span class="hint">@EffectiveHint</span>
+    }
+
+    @if (_manual && Subscriptions.Count > 0)
+    {
+        <button class="link" type="button" @onclick="() => _manual = false">
+            Back to the list
+        </button>
+    }
+</div>
+
+@code {
+    private const string ManualSentinel = "__manual__";
+
+    private readonly string _id = $"f{Guid.NewGuid():N}";
+    private bool _manual;
+
+    [Parameter] public string Label { get; set; } = "Subscription";
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public IReadOnlyList<AzureSubscriptionInfo> Subscriptions { get; set; } = [];
+    [Parameter] public string? Hint { get; set; }
+
+    private AzureSubscriptionInfo? Known(string? id) =>
+        string.IsNullOrWhiteSpace(id)
+            ? null
+            : Subscriptions.FirstOrDefault(
+                s => s.SubscriptionId.Equals(id, StringComparison.OrdinalIgnoreCase));
+
+    private static string Describe(AzureSubscriptionInfo subscription) =>
+        subscription.IsUsable
+            ? $"{subscription.Label} - {subscription.SubscriptionId}"
+            : $"{subscription.Label} ({subscription.State}) - {subscription.SubscriptionId}";
+
+    private string? EffectiveHint
+    {
+        get
+        {
+            var selected = Known(Value);
+            if (selected is not null && !selected.IsUsable)
+            {
+                return $"This subscription is {selected.State}. Azure will refuse a deployment into it.";
+            }
+
+            return Hint;
+        }
+    }
+
+    private Task OnSelected(ChangeEventArgs e)
+    {
+        var chosen = e.Value?.ToString() ?? "";
+
+        if (chosen == ManualSentinel)
+        {
+            _manual = true;
+            return Task.CompletedTask;
+        }
+
+        return ValueChanged.InvokeAsync(chosen);
+    }
+
+    private Task OnTyped(ChangeEventArgs e) =>
+        ValueChanged.InvokeAsync((e.Value?.ToString() ?? "").Trim());
+}

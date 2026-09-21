@@ -1,0 +1,661 @@
+@page "/azure"
+@implements IDisposable
+@inject PlanState PlanState
+@inject OperatorSettingsStore SettingsStore
+@inject AzureSession Session
+@inject CatalogState Catalog
+@inject PriceState Prices
+@inject AzureDirectoryState AzureDirectory
+@inject EntraOptions Entra
+@inject HostingMode Hosting
+@inject IServiceProvider Services
+@inject IJSRuntime JS
+
+<PageTitle>Azure &amp; Identity - IaaS Builder</PageTitle>
+
+<div class="page-head">
+    <h1>Azure &amp; Identity</h1>
+    <p>Subscription, region and the domain credentials the DSC configurations run with.</p>
+</div>
+
+<GettingStarted CurrentPage="azure" />
+
+<ValidationPanel Compact="true" />
+
+<div class="panel">
+    <h2>Sign in</h2>
+
+    @*
+        Cloud comes first and deliberately so. It decides which Entra authority the sign-in goes
+        to, and picking it afterwards means authenticating against the wrong one - which used to
+        be unrecoverable without restarting the app.
+    *@
+    <StepBlock Anchor="cloud">
+    <div class="field">
+        <label for="cloud">Cloud</label>
+        <select id="cloud"
+                value="@Plan.Azure.Cloud"
+                disabled="@CloudLocked"
+                @onchange="OnCloudChanged">
+            @foreach (var cloud in Enum.GetValues<AzureCloud>())
+            {
+                <option value="@cloud">@CloudLabel(cloud)</option>
+            }
+        </select>
+        @if (CloudLocked)
+        {
+            <p class="hint">
+                @(Session.IsSignedIn
+                    ? "Sign out to target a different cloud."
+                    : "Cancel the sign-in to target a different cloud.")
+            </p>
+        }
+        else
+        {
+            <p class="hint">Choose this before signing in. Each cloud has its own sign-in page, subscriptions and regions.</p>
+        }
+        @if (Plan.Azure.Cloud == AzureCloud.Custom)
+        {
+            @if (CustomCloud.IsConfigured)
+            {
+                <p class="hint">
+                    Endpoints loaded from @CustomCloud.LoadedFrom &mdash;
+                    @CustomCloud.Definition!.ResourceManagerEndpoint
+                </p>
+            }
+            else
+            {
+                <p class="hint error">
+                    No @CustomCloud.FileName found beside the application. Create one with your
+                    enclave's authorityHost, resourceManagerEndpoint, resourceManagerAudience
+                    and blobSuffix, then restart.
+                </p>
+            }
+        }
+    </div>
+    </StepBlock>
+
+    <StepBlock Anchor="signin">
+    @if (Session.IsSignedIn)
+    {
+        <div class="alert ok">
+            Signed in to @CloudLabel(Session.Cloud) with @AzureSession.Describe(Session.Method).
+            @if (Session.AccountName is { Length: > 0 } account)
+            {
+                <text> Account <strong>@account</strong>.</text>
+            }
+        </div>
+        <button @onclick="SignOut">Sign out</button>
+    }
+    else
+    {
+        @if (Session.State == SignInState.AwaitingBrowser)
+        {
+            <div class="alert info">
+                <p><strong>Finish signing in in your browser.</strong></p>
+                <p class="muted">
+                    A new tab has opened on the Microsoft Entra sign-in page. This page completes
+                    on its own once you are done. If no tab appeared, your browser may have blocked
+                    it &mdash; use device code below instead.
+                </p>
+            </div>
+        }
+        else if (Session.State == SignInState.AwaitingDeviceCode)
+        {
+            @if (Session.DeviceCodeUserCode is { Length: > 0 } userCode)
+            {
+                <div class="alert info">
+                    <p>
+                        <strong>Step 1.</strong>
+                        <a href="@Session.DeviceCodeVerificationUri" target="_blank" rel="noopener noreferrer">
+                            Open @CloudLabel(Session.Cloud) sign-in
+                        </a>
+                        <span class="muted">(@Session.DeviceCodeVerificationUri)</span>
+                    </p>
+                    <p><strong>Step 2.</strong> Enter this code, then sign in as usual:</p>
+                    <div class="status-line">
+                        <span class="device-code mono">@userCode</span>
+                        <button @onclick="CopyDeviceCode">Copy code</button>
+                        @if (_copied)
+                        {
+                            <span class="badge ok">Copied</span>
+                        }
+                    </div>
+                    @if (Session.DeviceCodeExpiresOn is { } expires)
+                    {
+                        <p class="muted">Code expires @expires.ToLocalTime().ToString("HH:mm:ss").</p>
+                    }
+                    <p class="muted">
+                        Never enter a code somebody else gave you. A code you did not generate on
+                        this page signs <em>them</em> in as you.
+                    </p>
+                </div>
+            }
+            else
+            {
+                <div class="alert info">Requesting a device code...</div>
+            }
+        }
+        else if (Session.State == SignInState.Connecting)
+        {
+            <div class="alert info">Signing in...</div>
+        }
+
+        @if (Session.State == SignInState.Failed && Session.Error is not null)
+        {
+            <div class="alert err">@Session.Error</div>
+        }
+
+        <p class="muted">
+            Sign-in is only needed to deploy or to refresh the catalog. Plans can be authored,
+            validated and saved with no connection at all.
+        </p>
+
+        <div class="button-row">
+            @if (Session.CanCancel)
+            {
+                @* Cancelling is the only way out of a device code that has fifteen minutes to run,
+                   or a browser tab opened against the wrong cloud. *@
+                <button class="danger" @onclick="CancelSignIn">Cancel sign-in</button>
+            }
+            else
+            {
+                @if (Entra.IsConfigured)
+                {
+                    @* A challenge has to be issued on a real HTTP request, so this is a link, not an
+                       @onclick - a SignalR circuit cannot redirect the browser to Entra itself. *@
+                    <a class="button primary" href="/MicrosoftIdentity/Account/SignIn">
+                        Sign in with Microsoft Entra
+                    </a>
+                }
+                else if (Hosting.IsLocalOperator)
+                {
+                    <button class="primary" @onclick="SignInBrowser">
+                        Sign in with Microsoft Entra
+                    </button>
+                }
+
+                <button class="@(PrimaryAvailable ? "" : "primary")" @onclick="SignInDeviceCode">
+                    Sign in with device code
+                </button>
+
+                <button @onclick="SignInDefault">
+                    Use ambient credential (Azure CLI / managed identity)
+                </button>
+            }
+        </div>
+
+        @if (!PrimaryAvailable)
+        {
+            <div class="alert warn">
+                <strong>Redirect sign-in is not available here.</strong>
+                @Hosting.Reason
+                This site is reachable from the network, so it cannot open a browser on your
+                machine &mdash; that would open one on the server. Configure an app registration in
+                the <code>Entra</code> section of appsettings.json to redirect visitors to Entra
+                properly. Until then the only interactive option is the device code, which is the
+                least secure of the three.
+            </div>
+        }
+
+        <details>
+            <summary class="muted">Which of these is safest?</summary>
+            <ul class="muted">
+                <li>
+                    <strong>Entra redirect</strong> &mdash; best. You authenticate on Microsoft's
+                    own page, so Conditional Access, MFA and device compliance all apply, and
+                    there is no code that can be repeated to anyone.
+                </li>
+                <li>
+                    <strong>Device code</strong> &mdash; weakest, and offered only because it is
+                    the one flow that works with no browser at all. The code is phishable: an
+                    attacker starts a flow against their own session and talks someone into
+                    entering their code. Microsoft recommends blocking it with Conditional Access
+                    where it is not needed.
+                </li>
+                <li>
+                    <strong>Ambient credential</strong> &mdash; not a sign-in at all. It reuses
+                    whatever the machine already has (Azure CLI, managed identity, environment
+                    variables), which is right for CI and wrong for a shared machine, where it
+                    silently borrows somebody else's logon.
+                </li>
+            </ul>
+        </details>
+    }
+    </StepBlock>
+</div>
+
+<div class="panel">
+    <h2>Target</h2>
+    <div class="grid-2">
+        <TextField Label="Plan name"
+                   Value="@Plan.Name"
+                   ValueChanged="@(v => Set(() => Plan.Name = v ?? ""))"
+                   Hint="Used to name the deployment, not an Azure resource." />
+
+        <StepBlock Anchor="subscription">
+        <AzureSubscriptionField Label="Subscription"
+                                Value="@Plan.Azure.SubscriptionId"
+                                ValueChanged="OnSubscriptionChanged"
+                                Subscriptions="AzureDirectory.Subscriptions"
+                                Hint="@SubscriptionHint" />
+        </StepBlock>
+
+        <TextField Label="Tenant id (optional)"
+                   Value="@Plan.Azure.TenantId"
+                   ValueChanged="@(v => Set(() => Plan.Azure.TenantId = v))"
+                   Hint="Needed when your account can see more than one tenant." />
+
+        <StepBlock Anchor="region">
+        <ComboField Label="Region"
+                    Path="azure.location"
+                    Value="@Plan.Azure.Location"
+                    ValueChanged="OnLocationChanged"
+                    Options="Catalog.LocationNames"
+                    Hint="@RegionHint" />
+        </StepBlock>
+
+        <StepBlock Anchor="resourcegroup">
+        <ComboField Label="Resource group"
+                    Path="azure.resourceGroup"
+                    Value="@Plan.Azure.ResourceGroup"
+                    ValueChanged="@(v => Set(() => Plan.Azure.ResourceGroup = v ?? ""))"
+                    Options="AzureDirectory.ResourceGroupNames"
+                    Hint="@ResourceGroupHint" />
+        </StepBlock>
+    </div>
+
+    <div class="button-row">
+        <button disabled="@(IsBusy || !Session.IsSignedIn)" @onclick="RefreshFromAzure">
+            Refresh from Azure
+        </button>
+        @if (BusyMessage is not null)
+        {
+            <span class="muted">@BusyMessage</span>
+        }
+        @if (Catalog.LastError is not null)
+        {
+            <span class="muted">@Catalog.LastError</span>
+        }
+        @if (AzureDirectory.LastError is not null)
+        {
+            <span class="muted">@AzureDirectory.LastError</span>
+        }
+    </div>
+
+    @*
+        Cloud, subscription, region, resource group, domain and administrator name start blank
+        because they are choices rather than defaults. This is how an operator who makes the same
+        choices every time stops retyping them, without the tool inventing answers for someone
+        who has never been here. The password is never included.
+    *@
+    <CheckField Label="Show VM prices"
+                Value="@Prices.Enabled"
+                ValueChanged="@(v => Prices.Enabled = v)"
+                Hint="Retrieves published rates from prices.azure.com so the size dropdown can show cost. That is a public endpoint, separate from Azure Resource Manager and needing no sign-in - turn it off if this machine should not reach it. Prices are never used to validate or block anything." />
+
+    <div class="button-row" style="margin-top:.5rem">
+        <button type="button" @onclick="SaveSettings">Save these settings</button>
+        @if (SettingsStore.HasSaved)
+        {
+            <button type="button" @onclick="ForgetSettings">Forget saved settings</button>
+        }
+        @if (_settingsMessage is not null)
+        {
+            <span class="muted">@_settingsMessage</span>
+        }
+    </div>
+    <p class="hint">
+        Remembered in this browser only, so they come back next time. The administrator password
+        is never saved.
+    </p>
+</div>
+
+<div class="panel">
+    <h2>Hardening</h2>
+    <CheckField Label="Apply DISA STIG configuration"
+                Value="@Plan.Hardening.ApplyStig"
+                ValueChanged="@(v => Set(() => Plan.Hardening.ApplyStig = v))" />
+    <CheckField Label="Apply Microsoft security baseline"
+                Value="@Plan.Hardening.ApplyMicrosoftBaseline"
+                ValueChanged="@(v => Set(() => Plan.Hardening.ApplyMicrosoftBaseline = v))" />
+</div>
+
+@code {
+    private DeploymentPlan Plan => PlanState.Plan;
+
+    /// <summary>
+    /// Without this the page never redraws while a sign-in is in flight, and the device code -
+    /// which arrives on a background thread from the MSAL callback, part-way through an await that
+    /// does not return until the code is redeemed - is never shown. The button appears to do
+    /// nothing for the full lifetime of the code.
+    /// </summary>
+    protected override void OnInitialized()
+    {
+        Session.Changed += Refresh;
+        Catalog.Changed += Refresh;
+        AzureDirectory.Changed += Refresh;
+    }
+
+    /// <summary>
+    /// When the site signs visitors in through Entra, the redirect completed before this circuit
+    /// existed, so there is no button to press - pick the delegated credential up and carry on as
+    /// if they had just signed in.
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Entra.IsConfigured || Session.IsSignedIn || Session.IsBusy)
+        {
+            return;
+        }
+
+        if (await EntraSignIn.TryAdoptAsync(Services, Session, Entra))
+        {
+            await AfterSignInAsync();
+        }
+    }
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    /// <remarks>
+    /// Read here rather than relying on MainLayout having already done it. Its read is an async
+    /// JS round trip, so this page can and does render first - which left the "Forget saved
+    /// settings" button hidden on a visit that had restored settings perfectly well.
+    /// </remarks>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        await SettingsStore.EnsureLoadedAsync();
+        StateHasChanged();
+    }
+
+    private string? _settingsMessage;
+
+    private async Task SaveSettings()
+    {
+        _settingsMessage = await SettingsStore.SaveAsync(OperatorSettings.Capture(Plan, Prices.Enabled))
+            ? "Saved in this browser."
+            : "This browser would not let the tool store settings.";
+    }
+
+    private async Task ForgetSettings()
+    {
+        _settingsMessage = await SettingsStore.ClearAsync()
+            ? "Forgotten. The next visit starts blank."
+            : "This browser would not let the tool clear settings.";
+    }
+
+    public void Dispose()
+    {
+        Session.Changed -= Refresh;
+        Catalog.Changed -= Refresh;
+        AzureDirectory.Changed -= Refresh;
+    }
+
+    private string RegionHint =>
+        Catalog.DiscardedForeignSnapshot
+            ? $"The saved catalog was captured against another cloud and was ignored. Showing a " +
+              $"short built-in list for {CloudLabel(Session.Cloud)} until a refresh succeeds."
+            : Catalog.ServedFromCache
+                ? "From the offline catalog snapshot. Any region name can be typed."
+                : "Live from Azure.";
+
+    private void Set(Action mutate)
+    {
+        mutate();
+        PlanState.NotifyChanged();
+    }
+
+    /// <summary>
+    /// Changing cloud invalidates everything downstream: subscriptions, resource groups, regions
+    /// and VM sizes all belong to the cloud they were read from, and commercial and US Government
+    /// share no region names. Leaving them on screen looked authoritative and was entirely wrong.
+    /// </summary>
+    private async Task OnCloudChanged(ChangeEventArgs e)
+    {
+        if (!Enum.TryParse<AzureCloud>(e.Value?.ToString(), out var cloud) ||
+            cloud == Plan.Azure.Cloud)
+        {
+            return;
+        }
+
+        Set(() =>
+        {
+            Plan.Azure.Cloud = cloud;
+            Plan.Azure.SubscriptionId = "";
+            Plan.Azure.Location = "";
+        });
+
+        AzureDirectory.Clear();
+        await Catalog.ClearForCloudChangeAsync();
+    }
+
+    /// <summary>Locked once a sign-in starts, because the cloud chooses the Entra authority.</summary>
+    private bool CloudLocked => Session.IsSignedIn || Session.IsBusy;
+
+    private void CancelSignIn() => Session.CancelSignIn();
+
+    private static string CloudLabel(AzureCloud cloud) => cloud switch
+    {
+        AzureCloud.Public => "Azure commercial",
+        AzureCloud.UsGovernment => "Azure US Government",
+        AzureCloud.China => "Azure China",
+        AzureCloud.Custom => CustomCloud.IsConfigured
+            ? $"{CustomCloud.Definition!.Name} (cloud.json)"
+            : "Custom / air-gapped cloud (needs cloud.json)",
+        _ => cloud.ToString()
+    };
+
+    private async Task SignInDeviceCode()
+    {
+        await Session.SignInAsync(Plan.Azure.Cloud, Plan.Azure.TenantId);
+        await AfterSignInAsync();
+    }
+
+    /// <summary>
+    /// Only reachable when <see cref="HostingMode.IsLocalOperator"/>, because the browser opens
+    /// on the machine running the server.
+    /// </summary>
+    private async Task SignInBrowser()
+    {
+        if (!Hosting.IsLocalOperator)
+        {
+            return;
+        }
+
+        await Session.SignInWithBrowserAsync(Plan.Azure.Cloud, Plan.Azure.TenantId);
+        await AfterSignInAsync();
+    }
+
+    /// <summary>
+    /// True when a redirect-based flow is on offer, which is the only case where the device code
+    /// should not be styled as the primary action.
+    /// </summary>
+    private bool PrimaryAvailable => Entra.IsConfigured || Hosting.IsLocalOperator;
+
+    private bool _copied;
+
+    private async Task CopyDeviceCode()
+    {
+        if (Session.DeviceCodeUserCode is not { Length: > 0 } code)
+        {
+            return;
+        }
+
+        _copied = await JS.InvokeAsync<bool>("iaasBuilder.copyText", code);
+    }
+
+    private async Task SignInDefault()
+    {
+        await Session.SignInWithDefaultCredentialAsync(Plan.Azure.Cloud, Plan.Azure.TenantId);
+        await AfterSignInAsync();
+    }
+
+    /// <summary>
+    /// Everything worth pulling the moment a connection exists. Ordered so the subscription is
+    /// known before anything that depends on it, and every step tolerates failure.
+    /// </summary>
+    private async Task AfterSignInAsync()
+    {
+        if (!Session.IsSignedIn)
+        {
+            return;
+        }
+
+        await AzureDirectory.LoadSubscriptionsAsync();
+
+        // One visible subscription, and nothing chosen yet: choosing it for the operator is
+        // unambiguous and saves the most common paste.
+        if (string.IsNullOrWhiteSpace(Plan.Azure.SubscriptionId) &&
+            AzureDirectory.Subscriptions.Count == 1)
+        {
+            await OnSubscriptionChanged(AzureDirectory.Subscriptions[0].SubscriptionId);
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(Plan.Azure.SubscriptionId))
+        {
+            await LoadForSubscriptionAsync(Plan.Azure.SubscriptionId);
+        }
+    }
+
+    private async Task OnSubscriptionChanged(string? subscriptionId)
+    {
+        var id = (subscriptionId ?? "").Trim();
+        Set(() => Plan.Azure.SubscriptionId = id);
+
+        // The tenant is only needed for multi-tenant accounts, and the directory already knows
+        // it, so fill it rather than asking. Never overwrite one the operator typed.
+        var known = AzureDirectory.FindSubscription(id);
+        if (known?.TenantId is { Length: > 0 } tenant &&
+            string.IsNullOrWhiteSpace(Plan.Azure.TenantId))
+        {
+            Set(() => Plan.Azure.TenantId = tenant);
+        }
+
+        await LoadForSubscriptionAsync(id);
+    }
+
+    private async Task LoadForSubscriptionAsync(string subscriptionId, bool force = false)
+    {
+        if (string.IsNullOrWhiteSpace(subscriptionId) || !Session.IsSignedIn)
+        {
+            return;
+        }
+
+        await AzureDirectory.LoadResourceGroupsAsync(subscriptionId);
+
+        // Regions and VM sizes are subscription-scoped, so the catalog is only meaningful once a
+        // subscription is known. Image SKUs are fetched for the selected region only - sweeping
+        // every region is a multi-minute job and belongs to the offline snapshot, not to sign-in.
+        await Catalog.RefreshAsync(subscriptionId, Plan.Azure.Location, force);
+
+        // Signing in to a different cloud leaves no valid region selected. Pick the first the
+        // cloud actually offers rather than leaving a blank that fails validation later.
+        if (string.IsNullOrWhiteSpace(Plan.Azure.Location) &&
+            Catalog.LocationNames.Count > 0)
+        {
+            await OnLocationChanged(Catalog.LocationNames[0]);
+        }
+    }
+
+    private void SignOut()
+    {
+        Session.SignOut();
+        AzureDirectory.Clear();
+    }
+
+    private string ResourceGroupHint
+    {
+        get
+        {
+            if (AzureDirectory.IsLoadingResourceGroups)
+            {
+                return "Loading resource groups...";
+            }
+
+            var name = Plan.Azure.ResourceGroup;
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return AzureDirectory.ResourceGroups.Count > 0
+                    ? "Pick an existing group, or type a new name to create one."
+                    : "Created if it does not already exist.";
+            }
+
+            var existing = AzureDirectory.FindResourceGroup(name);
+            if (existing is not null)
+            {
+                return existing.Location.Equals(Plan.Azure.Location, StringComparison.OrdinalIgnoreCase)
+                    ? $"Exists in {existing.Location}."
+                    : $"Exists in {existing.Location}, not {Plan.Azure.Location}. That is allowed - " +
+                      "the group's region only sets where its metadata lives.";
+            }
+
+            return AzureDirectory.ResourceGroups.Count > 0
+                ? $"New. Will be created in {Plan.Azure.Location}."
+                : "Created if it does not already exist.";
+        }
+    }
+
+    private string SubscriptionHint
+    {
+        get
+        {
+            if (AzureDirectory.IsLoadingSubscriptions)
+            {
+                return "Loading subscriptions...";
+            }
+
+            if (!Session.IsSignedIn)
+            {
+                return "Sign in to pick from a list.";
+            }
+
+            return AzureDirectory.Subscriptions.Count > 0
+                ? $"{AzureDirectory.Subscriptions.Count} visible to this account."
+                : "Signed in, but no subscriptions were returned for this account.";
+        }
+    }
+
+    /// <summary>
+    /// Pressing Refresh is an explicit request for a round trip, so it bypasses the snapshot
+    /// freshness shortcut that would otherwise make the button appear to do nothing.
+    /// </summary>
+    private async Task RefreshFromAzure()
+    {
+        await AzureDirectory.LoadSubscriptionsAsync();
+        await LoadForSubscriptionAsync(Plan.Azure.SubscriptionId, force: true);
+    }
+
+    /// <summary>Says which step is running, so a slow one is never a blank wait.</summary>
+    private string? BusyMessage
+    {
+        get
+        {
+            if (AzureDirectory.IsLoadingSubscriptions) return "Loading subscriptions...";
+            if (AzureDirectory.IsLoadingResourceGroups) return "Loading resource groups...";
+            if (Catalog.IsRefreshing) return $"Refreshing regions, VM sizes and images for {Plan.Azure.Location}...";
+            return null;
+        }
+    }
+
+    private bool IsBusy => BusyMessage is not null;
+
+    /// <summary>
+    /// Changing region invalidates the image SKUs, which are cached per region. Cheap now that
+    /// only the selected region is fetched.
+    /// </summary>
+    private async Task OnLocationChanged(string? location)
+    {
+        Set(() => Plan.Azure.Location = location ?? "");
+
+        if (Session.IsSignedIn && !string.IsNullOrWhiteSpace(Plan.Azure.SubscriptionId))
+        {
+            await Catalog.RefreshAsync(Plan.Azure.SubscriptionId, Plan.Azure.Location);
+        }
+    }
+}

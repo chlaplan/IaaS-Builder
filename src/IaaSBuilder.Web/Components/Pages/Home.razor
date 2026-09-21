@@ -1,0 +1,184 @@
+@page "/overview"
+@implements IDisposable
+@inject PlanState PlanState
+@inject AzureSession Session
+@inject CatalogState Catalog
+@inject NavigationManager Nav
+
+<PageTitle>IaaS Builder</PageTitle>
+
+<div class="page-head">
+    <h1>Overview</h1>
+    <p>Review what is about to be built, then deploy.</p>
+</div>
+
+<ValidationPanel Compact="true" />
+
+<div class="panel">
+    <h2>Plan</h2>
+    <div class="grid-3">
+        <div>
+            <div class="muted">Name</div>
+            <div class="mono">@Plan.Name</div>
+        </div>
+        <div>
+            <div class="muted">Domain</div>
+            <div class="mono">@DisplayOrDash(Plan.Identity.DomainName)</div>
+        </div>
+        <div>
+            <div class="muted">Region</div>
+            <div class="mono">@DisplayOrDash(Plan.Azure.Location)</div>
+        </div>
+        <div>
+            <div class="muted">Resource group</div>
+            <div class="mono">@DisplayOrDash(Plan.Azure.ResourceGroup)</div>
+        </div>
+        <div>
+            <div class="muted">Subscription</div>
+            <div class="mono">@DisplayOrDash(Plan.Azure.SubscriptionId)</div>
+        </div>
+        <div>
+            <div class="muted">Cloud</div>
+            <div class="mono">@Plan.Azure.Cloud</div>
+        </div>
+        <div>
+            <div class="muted">Address space</div>
+            <div class="mono">@Plan.Network.AddressPrefix</div>
+        </div>
+        <div>
+            <div class="muted">Workload subnet</div>
+            <div class="mono">@Plan.Network.SubnetPrefix</div>
+        </div>
+        <div>
+            <div class="muted">Saved to</div>
+            <div class="mono">@(PlanState.PlanPath ?? "(not saved)")</div>
+        </div>
+    </div>
+</div>
+
+<div class="panel">
+    <h2>Servers (@Plan.EnabledServers.Count() enabled of @Plan.Servers.Count)</h2>
+    @if (Plan.Servers.Count == 0)
+    {
+        <p class="muted">No servers yet. <a href="servers">Add one</a>.</p>
+    }
+    else
+    {
+        <table>
+            <thead>
+                <tr><th></th><th>Name</th><th>Role</th><th>IP</th><th>Size</th><th>Image</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var server in Plan.Servers)
+                {
+                    <tr>
+                        <td>
+                            @if (server.Enabled)
+                            {
+                                <span class="badge ok">On</span>
+                            }
+                            else
+                            {
+                                <span class="badge muted">Off</span>
+                            }
+                        </td>
+                        <td class="mono">@server.Name</td>
+                        <td>@RoleCatalog.DisplayNameOf(server.Role)</td>
+                        <td class="mono">@server.PrivateIpAddress</td>
+                        <td class="mono">@server.VmSize</td>
+                        <td class="mono">@server.Image.Sku</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+<div class="panel">
+    <h2>Add-ons</h2>
+    <div class="status-line">
+        <span class="badge @(Plan.Bastion.Enabled ? "ok" : "muted")">Bastion</span>
+        <span class="badge @(Plan.Avd?.Enabled == true ? "ok" : "muted")">Azure Virtual Desktop</span>
+        <span class="badge @(Plan.Mlz?.Enabled == true ? "ok" : "muted")">Mission Landing Zone</span>
+        @* Only shown when a loaded plan file still has it; there is no longer an editor for it. *@
+        @if (Plan.Saca is { Enabled: true })
+        {
+            <span class="badge err">Legacy F5 SACA</span>
+        }
+        <span class="badge @(Plan.Hardening.ApplyStig ? "ok" : "muted")">STIG</span>
+        <span class="badge @(Plan.Hardening.ApplyMicrosoftBaseline ? "ok" : "muted")">Microsoft baseline</span>
+        <span class="badge @(Plan.DedicatedHost?.Enabled == true ? "ok" : "muted")">Dedicated host</span>
+    </div>
+
+    @if (Plan.Mlz is { Enabled: true } mlz)
+    {
+        @* Everything else on this page is scoped to one resource group. MLZ is not, and an
+           overview that implied otherwise would be actively misleading. *@
+        <div class="alert warn" style="margin-top:.75rem">
+            Mission Landing Zone <code>@mlz.Identifier</code> deploys at <strong>subscription</strong>
+            scope and creates its own resource groups - not <code>@Plan.Azure.ResourceGroup</code>.
+            It needs Owner on the subscription, and the servers below are not attached to its spokes
+            automatically.
+        </div>
+    }
+</div>
+
+<div class="panel">
+    <h2>Environment</h2>
+    <div class="status-line" style="margin-bottom:.75rem">
+        @if (Session.IsSignedIn)
+        {
+            <span class="badge ok">Signed in to @Session.Cloud</span>
+        }
+        else
+        {
+            <span class="badge muted">Not signed in</span>
+            <span class="muted">Authoring and validation work offline; deploying does not.</span>
+        }
+    </div>
+    <div class="status-line">
+        @if (Catalog.HasSnapshot)
+        {
+            <span class="badge @(Catalog.Catalog.IsStale(TimeSpan.FromDays(30)) ? "warn" : "ok")">
+                Catalog snapshot @Catalog.Catalog.CapturedUtc.ToString("yyyy-MM-dd")
+            </span>
+            <span class="muted">@Catalog.Catalog.Locations.Count region(s) cached at @Catalog.SnapshotPath</span>
+        }
+        else
+        {
+            <span class="badge warn">No catalog snapshot</span>
+            <span class="muted">
+                Using built-in fallback lists. Run <code>iaasbuilder catalog</code> on a connected
+                machine and copy <code>catalog.json</code> next to the executable.
+            </span>
+        }
+    </div>
+</div>
+
+<div class="button-row">
+    <button class="primary" @onclick="@(() => Nav.NavigateTo("deploy"))">Deploy</button>
+    <button @onclick="@(() => Nav.NavigateTo("servers"))">Edit servers</button>
+</div>
+
+@code {
+    private DeploymentPlan Plan => PlanState.Plan;
+
+    protected override void OnInitialized()
+    {
+        PlanState.Changed += Refresh;
+        Session.Changed += Refresh;
+        Catalog.Changed += Refresh;
+    }
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        PlanState.Changed -= Refresh;
+        Session.Changed -= Refresh;
+        Catalog.Changed -= Refresh;
+    }
+
+    private static string DisplayOrDash(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? "-" : value;
+}

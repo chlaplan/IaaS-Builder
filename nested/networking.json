@@ -59,7 +59,7 @@
         "properties": {
           "addressSpace": {
             "addressPrefixes": [
-              "[variables('networkSettings').subnetAddressPrefix]"
+              "[variables('networkSettings').virtualNetworkAddressPrefix]"
             ]
           },
           "subnets": [

@@ -1,0 +1,251 @@
+@page "/deploy"
+@implements IDisposable
+@using IaaSBuilder.Core.Validation
+@inject PlanState PlanState
+@inject AzureSession Session
+@inject DeploymentRunner Runner
+@inject ValidationState Validation
+
+<PageTitle>Deploy - IaaS Builder</PageTitle>
+
+<div class="page-head">
+    <h1>Deploy</h1>
+    <p>
+        Steps run in dependency order and in parallel where they can. Progress streams here as
+        it happens, and the run can be cancelled.
+    </p>
+</div>
+
+<ValidationPanel />
+
+<div class="panel">
+    <StepBlock Anchor="deploy">
+    <h2>Run</h2>
+
+    @if (!Session.IsSignedIn)
+    {
+        <div class="alert warn">
+            Not signed in. <a href="azure">Sign in</a> to deploy. Validation and authoring work offline.
+        </div>
+    }
+
+    @if (string.IsNullOrEmpty(PlanState.AdminPassword))
+    {
+        <div class="alert warn">
+            No administrator password set. <a href="identity">Set one</a> before deploying.
+        </div>
+    }
+
+    @*
+        The Deploy button used to be live regardless of validation - it only required a sign-in
+        and a password. A plan with an invalid storage account name would start, create the
+        resource group and network, and fail at the step that finally tried to use it. Errors now
+        stop the run before anything exists, and each one names the page it is on, because
+        "artifacts.storageAccountName" is only obvious if you already know where that lives.
+    *@
+    @if (Blocking.Count > 0)
+    {
+        <div class="alert err">
+            <strong>@Blocking.Count problem(s) must be fixed before deploying.</strong>
+            <ul class="issue-list">
+                @foreach (var issue in Blocking)
+                {
+                    <li>
+                        <a href="@PageFor(issue.Path)">@PageNameFor(issue.Path)</a>
+                        <span class="issue-path">@issue.Path</span>@issue.Message
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+
+    <div class="button-row">
+        <button class="primary" disabled="@(!CanRun)" @onclick="@(() => Start(whatIf: false))">
+            Deploy
+        </button>
+        <button disabled="@(!CanRun)" @onclick="@(() => Start(whatIf: true))">
+            What-if (validate only)
+        </button>
+        <button class="danger" disabled="@(!Runner.IsRunning)" @onclick="Runner.Cancel">
+            Cancel
+        </button>
+
+        @if (Runner.State != RunState.Idle)
+        {
+            <span class="badge @StateClass">
+                @(Runner.WasWhatIf ? "What-if: " : "")@Runner.State
+            </span>
+            @if (Runner.StartedUtc is not null)
+            {
+                <span class="muted">@Elapsed</span>
+            }
+        }
+    </div>
+
+    @if (Runner.FatalError is not null)
+    {
+        <div class="alert err" style="margin-top:.75rem">@Runner.FatalError</div>
+    }
+    </StepBlock>
+</div>
+
+@if (Runner.Steps.Count > 0)
+{
+    <div class="panel">
+        <h2>Steps (@Runner.CompletedCount / @Runner.Steps.Count)</h2>
+        <div class="progress" style="margin-bottom:.75rem">
+            <div style="width:@(Runner.PercentComplete)%"></div>
+        </div>
+
+        <table>
+            <thead>
+                <tr><th>Status</th><th>Step</th><th>Waits for</th><th>Duration</th><th>Detail</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var step in Runner.Steps)
+                {
+                    <tr @key="step.Id">
+                        <td><span class="badge @Badge(step.Status)">@step.Status</span></td>
+                        <td>@step.DisplayName</td>
+                        <td class="mono muted">@(step.DependsOn.Count == 0 ? "-" : string.Join(", ", step.DependsOn))</td>
+                        <td class="mono">@Format(step.Duration)</td>
+                        <td class="muted">@step.Error</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@if (Runner.Log.Count > 0)
+{
+    <div class="panel">
+        <h2>Log</h2>
+        <div class="log">
+            @foreach (var entry in Runner.Log)
+            {
+                <div class="@(entry.IsError ? "err" : "")">
+                    <span class="ts">@entry.Timestamp.ToLocalTime().ToString("HH:mm:ss")</span>@entry.Message
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private System.Threading.Timer? _ticker;
+
+    private bool CanRun =>
+        !Runner.IsRunning
+        && Session.IsSignedIn
+        && !string.IsNullOrEmpty(PlanState.AdminPassword)
+        && Blocking.Count == 0;
+
+    private IReadOnlyList<ValidationIssue> Blocking => [.. Validation.Result.Errors];
+
+    /// <summary>
+    /// Maps a validation path to the page that edits it. Matched on the leading segment, which
+    /// is how the validator groups them, so a new rule under an existing section needs no change
+    /// here. Anything unrecognised sends the operator to the overview rather than nowhere.
+    /// </summary>
+    private static string PageFor(string path) => Section(path) switch
+    {
+        "azure" => "azure",
+        "identity" or "secrets" => "identity",
+        "artifacts" => "storage",
+        "network" or "bastion" or "dedicatedHost" or "mlz" or "saca" => "network",
+        "servers" => "servers",
+        "avd" => "avd",
+        _ => "overview"
+    };
+
+    private static string PageNameFor(string path) => PageFor(path) switch
+    {
+        "azure" => "Azure",
+        "identity" => "Identity",
+        "storage" => "Storage",
+        "network" => "Network",
+        "servers" => "Servers",
+        "avd" => "Azure Virtual Desktop",
+        _ => "Overview"
+    };
+
+    private static string Section(string path)
+    {
+        var cut = path.IndexOfAny(['.', '[']);
+        return cut < 0 ? path : path[..cut];
+    }
+
+    private string StateClass => Runner.State switch
+    {
+        RunState.Running => "run",
+        RunState.Succeeded => "ok",
+        RunState.Failed => "err",
+        RunState.Cancelled => "warn",
+        _ => "muted"
+    };
+
+    private string Elapsed
+    {
+        get
+        {
+            var end = Runner.FinishedUtc ?? DateTimeOffset.UtcNow;
+            var span = end - Runner.StartedUtc!.Value;
+            return span.TotalMinutes >= 1
+                ? $"{span.TotalMinutes:F1} min elapsed"
+                : $"{span.TotalSeconds:F0}s elapsed";
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        Runner.Changed += Refresh;
+
+        // CanRun depends on both of these, so the Deploy button would otherwise stay disabled
+        // after signing in on another page until something else forced a render.
+        Session.Changed += Refresh;
+        PlanState.Changed += Refresh;
+
+        // Subscribed explicitly rather than relying on ValidationState's own PlanState handler
+        // running before this one. It does today, but handler order is not something to build the
+        // Deploy button's enabled state on.
+        Validation.Changed += Refresh;
+
+        // Keeps the elapsed timer moving between step transitions.
+        _ticker = new System.Threading.Timer(
+            _ => { if (Runner.IsRunning) { Refresh(); } },
+            null,
+            TimeSpan.FromSeconds(1),
+            TimeSpan.FromSeconds(1));
+    }
+
+    private Task Start(bool whatIf) =>
+        Runner.StartAsync(PlanState.Plan, PlanState.AdminPassword, whatIf);
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    private static string Badge(StepStatus status) => status switch
+    {
+        StepStatus.Succeeded => "ok",
+        StepStatus.Running => "run",
+        StepStatus.Failed => "err",
+        StepStatus.Skipped or StepStatus.Cancelled => "warn",
+        _ => "muted"
+    };
+
+    private static string Format(TimeSpan? duration) =>
+        duration is null
+            ? "-"
+            : duration.Value.TotalMinutes >= 1
+                ? $"{duration.Value.TotalMinutes:F1}m"
+                : $"{duration.Value.TotalSeconds:F0}s";
+
+    public void Dispose()
+    {
+        Runner.Changed -= Refresh;
+        Session.Changed -= Refresh;
+        PlanState.Changed -= Refresh;
+        Validation.Changed -= Refresh;
+        _ticker?.Dispose();
+    }
+}

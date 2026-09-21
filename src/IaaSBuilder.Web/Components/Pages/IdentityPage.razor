@@ -1,0 +1,192 @@
+@page "/identity"
+@using IaaSBuilder.Core.Validation
+@inject PlanState PlanState
+@inject IJSRuntime JS
+@implements IDisposable
+
+<PageTitle>Identity - IaaS Builder</PageTitle>
+
+<h1>Identity</h1>
+<p>The Active Directory domain the lab builds, and the account every DSC configuration runs as.</p>
+
+<GettingStarted CurrentPage="identity" />
+
+<ValidationPanel Compact="true" />
+
+<div class="panel">
+    <h2>Domain</h2>
+    <div class="grid-2">
+        <StepBlock Anchor="identity">
+        <TextField Label="Domain name"
+                   Path="identity.domainName"
+                   Value="@Plan.Identity.DomainName"
+                   ValueChanged="@(v => Set(() => Plan.Identity.DomainName = v ?? ""))"
+                   Hint="Fully qualified, e.g. contoso.local. The NetBIOS name is derived from it." />
+
+        <TextField Label="Administrator username"
+                   Path="identity.adminUsername"
+                   Value="@Plan.Identity.AdminUsername"
+                   ValueChanged="@(v => Set(() => Plan.Identity.AdminUsername = v ?? ""))"
+                   Hint="Azure rejects 'administrator', 'admin', 'root' and similar." />
+        </StepBlock>
+
+        <TextField Label="ADFS service account"
+                   Value="@Plan.Identity.AdfsServiceAccountName"
+                   ValueChanged="@(v => Set(() => Plan.Identity.AdfsServiceAccountName = v ?? ""))"
+                   Hint="Only used when an AD FS server is in the plan." />
+    </div>
+</div>
+
+<div class="panel">
+    <h2>Certificate authority</h2>
+    <p class="muted">
+        An Active Directory forest has exactly one enterprise root CA, so this is a choice of
+        where it goes rather than a list of things to tick.
+    </p>
+    <div class="field">
+        <label for="ca-placement">Enterprise root CA</label>
+        @* Bound, not value="...": a value attribute on a select is not HTML and browsers ignore
+           it, so a loaded plan would show whichever option happens to be first. *@
+        <select id="ca-placement" @bind="CertificateAuthority">
+            <option value="@nameof(CertificateAuthorityPlacement.DomainController)">
+                Install on the domain controller
+            </option>
+            <option value="@nameof(CertificateAuthorityPlacement.DedicatedServer)">
+                Install on a dedicated Certificate Authority server
+            </option>
+            <option value="@nameof(CertificateAuthorityPlacement.None)">
+                Do not install a certificate authority
+            </option>
+        </select>
+        <FieldIssues Path="identity.certificateAuthority" Hint="@CertificateAuthorityHint" />
+    </div>
+</div>
+
+<div class="panel">
+    <h2>Administrator password</h2>
+    <StepBlock Anchor="password">
+    <div>
+        <TextField Label="Administrator password"
+                   Path="secrets.adminPassword"
+                   Value="@PlanState.AdminPassword"
+                   ValueChanged="OnPasswordChanged"
+                   Password="@(!_showPassword)"
+                   Hint="Held in memory only. It is never written to the plan file." />
+        <div class="button-row">
+            <button type="button" @onclick="GeneratePassword">Generate</button>
+            <button type="button" @onclick="@(() => _showPassword = !_showPassword)"
+                    disabled="@(PlanState.AdminPassword.Length == 0)">
+                @(_showPassword ? "Hide" : "Show")
+            </button>
+            <button type="button" @onclick="CopyPassword"
+                    disabled="@(PlanState.AdminPassword.Length == 0)">Copy</button>
+            @if (_passwordCopied)
+            {
+                <span class="badge ok">Copied</span>
+            }
+        </div>
+        @if (_generated)
+        {
+            @* A generated password that nobody records locks the operator out of the lab
+               they just built: it is deliberately never written to the plan file, so this
+               is the only moment it can be saved. *@
+            <div class="alert warn" style="margin-top:.5rem">
+                Save this now - it is not stored anywhere. Every VM, the domain administrator
+                and the DSC configurations all use it.
+            </div>
+        }
+    </div>
+    </StepBlock>
+
+    <details>
+        <summary class="muted">What the password has to satisfy</summary>
+        <ul class="muted">
+            <li>@PasswordPolicy.MinLength to @PasswordPolicy.MaxLength characters.</li>
+            <li>Three of: lowercase, uppercase, digit, special character.</li>
+            <li>It cannot contain the administrator username, and Azure rejects a list of
+                common choices such as <code>Password1</code>.</li>
+            <li>
+                <strong>Generate</strong> avoids quotes, backslashes and shell metacharacters.
+                Those are legal in Azure but travel through ARM, then DSC, then PowerShell, and
+                a password that is merely legal can still break a configuration part way into a
+                build.
+            </li>
+        </ul>
+    </details>
+</div>
+
+@code {
+    private DeploymentPlan Plan => PlanState.Plan;
+
+    private bool _showPassword;
+    private bool _generated;
+    private bool _passwordCopied;
+
+    protected override void OnInitialized() => PlanState.Changed += Refresh;
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => PlanState.Changed -= Refresh;
+
+    private void Set(Action mutate)
+    {
+        mutate();
+        PlanState.NotifyChanged();
+    }
+
+    private string CertificateAuthorityHint => Plan.Identity.CertificateAuthority switch
+    {
+        CertificateAuthorityPlacement.DomainController =>
+            "What every previous version of this tool did. Convenient for a lab; a CA on a "
+            + "domain controller is not a pattern to copy into production.",
+        CertificateAuthorityPlacement.DedicatedServer =>
+            "Add a Certificate Authority server on the Servers page. The domain controller "
+            + "will not install one.",
+        _ => "No certificate authority is installed. Anything needing certificates - AD FS, "
+            + "Exchange, LDAPS - will need one from elsewhere."
+    };
+
+    private CertificateAuthorityPlacement CertificateAuthority
+    {
+        get => Plan.Identity.CertificateAuthority;
+        set => Set(() => Plan.Identity.CertificateAuthority = value);
+    }
+
+    private void OnPasswordChanged(string? value)
+    {
+        PlanState.AdminPassword = value ?? "";
+        _generated = false;
+        PlanState.NotifyChanged();
+    }
+
+    /// <summary>
+    /// Generates a password and reveals it, because it is never persisted - if the operator
+    /// cannot read it here, it is gone.
+    /// </summary>
+    private void GeneratePassword()
+    {
+        PlanState.AdminPassword = PasswordGenerator.Generate(Plan.Identity.AdminUsername);
+        _showPassword = true;
+        _generated = true;
+        _passwordCopied = false;
+        PlanState.NotifyChanged();
+    }
+
+    private async Task CopyPassword()
+    {
+        if (PlanState.AdminPassword is not { Length: > 0 } password)
+        {
+            return;
+        }
+
+        try
+        {
+            await JS.InvokeVoidAsync("copyText", password);
+            _passwordCopied = true;
+        }
+        catch (JSException)
+        {
+            // Clipboard access can be refused; the value is on screen either way.
+        }
+    }
+}

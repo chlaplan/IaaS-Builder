@@ -1,0 +1,183 @@
+@implements IDisposable
+@inject PlanState PlanState
+@using IaaSBuilder.Core.Validation
+
+@*
+    Where the NICs land. The Servers page lets you type a static private IP, which is only
+    meaningful against a subnet defined on a different page - so restate the network here
+    rather than making the operator hold it in their head or click back and forth.
+*@
+<div class="panel">
+    <h2>Network placement</h2>
+
+    @* Silent unless a loaded plan file still enables the legacy F5 stack. *@
+    <LegacySacaNotice />
+
+    <div class="grid-2">
+        <div class="field">
+            <label>Virtual network</label>
+            <p class="value mono">@Plan.Network.EffectiveVirtualNetworkName</p>
+            <p class="hint">
+                Address space @Plan.Network.AddressPrefix.
+                @if (!AddressSpaceValid)
+                {
+                    <span class="error">Not a valid CIDR.</span>
+                }
+            </p>
+        </div>
+
+        <div class="field">
+            <label>Subnet</label>
+            <p class="value mono">@Plan.Network.SubnetName &mdash; @Plan.Network.SubnetPrefix</p>
+            <p class="hint">@SubnetHint</p>
+        </div>
+    </div>
+
+    @if (Subnets.Count > 1)
+    {
+        <table class="subnet-table">
+            <thead>
+                <tr><th>Subnet</th><th>Prefix</th><th>Usable range</th><th>Holds</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var subnet in Subnets)
+                {
+                    <tr>
+                        <td class="mono">@subnet.Name</td>
+                        <td class="mono">@subnet.Prefix</td>
+                        <td class="mono">@subnet.UsableRange</td>
+                        <td>
+                            @subnet.Holds
+                            @if (!IsInsideAddressSpace(subnet.Prefix))
+                            {
+                                <span class="error"> &mdash; outside the address space</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    @if (Plan.Mlz is { Enabled: true })
+    {
+        <div class="alert info">
+            Mission Landing Zone is on. It builds its own hub and spoke networks in their own
+            resource groups; it does not replace the lab network above, and these servers are not
+            attached to it automatically. Peer the lab virtual network to the MLZ hub afterwards
+            if you want them behind the firewall.
+        </div>
+    }
+
+    <p class="muted">
+        Edit any of this on the <a href="/network">Network</a> page. Static IPs below must sit
+        inside the workload subnet, and Azure reserves the first four and the last address of
+        every subnet.
+    </p>
+</div>
+
+@code {
+    private DeploymentPlan Plan => PlanState.Plan;
+
+    /// <summary>
+    /// Subscribed because this restates state owned by the Network page. Without it, changing a
+    /// subnet there would leave a stale prefix showing here - which is worse than not showing it,
+    /// since an operator would size static IPs against a range that no longer exists.
+    /// </summary>
+    protected override void OnInitialized() => PlanState.Changed += Refresh;
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => PlanState.Changed -= Refresh;
+
+    private bool SacaTakesOver => Plan.Saca is { Enabled: true };
+
+    private bool AddressSpaceValid => Cidr.TryParse(Plan.Network.AddressPrefix, out _);
+
+    /// <summary>
+    /// Easy to miss once the address space is retyped: the Bastion subnet keeps its old prefix
+    /// and is now in a different network entirely, which Azure rejects at deployment time.
+    /// </summary>
+    private bool IsInsideAddressSpace(string prefix) =>
+        !Cidr.TryParse(Plan.Network.AddressPrefix, out var space) ||
+        !Cidr.TryParse(prefix, out var subnet) ||
+        space.Contains(subnet);
+
+    private string SubnetHint
+    {
+        get
+        {
+            if (!Cidr.TryParse(Plan.Network.SubnetPrefix, out var subnet))
+            {
+                return "Not a valid CIDR.";
+            }
+
+            var range = subnet.FirstUsableAddress() is { } first && subnet.LastUsableAddress() is { } last
+                ? $"{first} to {last}"
+                : "no assignable addresses - the subnet is too small";
+
+            var inside = Cidr.TryParse(Plan.Network.AddressPrefix, out var space) && space.Contains(subnet)
+                ? ""
+                : " Warning: this subnet is not inside the address space.";
+
+            return $"Assignable {range} ({subnet.UsableAddressCount()} addresses).{inside}";
+        }
+    }
+
+    private List<SubnetRow> Subnets
+    {
+        get
+        {
+            var rows = new List<SubnetRow>
+            {
+                Row(Plan.Network.SubnetName, Plan.Network.SubnetPrefix, ServerSummary)
+            };
+
+            if (Plan.Bastion.Enabled)
+            {
+                rows.Add(Row("AzureBastionSubnet", Plan.Bastion.SubnetPrefix, "Azure Bastion"));
+            }
+
+            if (SacaTakesOver)
+            {
+                foreach (var subnet in Plan.Saca!.Subnets.Values.OrderBy(s => s.Name))
+                {
+                    rows.Add(Row(subnet.Name, subnet.AddressPrefix, "SACA"));
+                }
+            }
+
+            return rows;
+        }
+    }
+
+    private string ServerSummary
+    {
+        get
+        {
+            var count = Plan.EnabledServers.Count();
+            return count switch
+            {
+                0 => "No enabled servers",
+                1 => "1 server",
+                _ => $"{count} servers"
+            };
+        }
+    }
+
+    private static SubnetRow Row(string name, string prefix, string holds)
+    {
+        var range = Cidr.TryParse(prefix, out var cidr)
+            ? (cidr.FirstUsableAddress() is { } first && cidr.LastUsableAddress() is { } last
+                ? $"{first} - {last}"
+                : "too small")
+            : "invalid";
+
+        return new SubnetRow(
+            string.IsNullOrWhiteSpace(name) ? "(unnamed)" : name,
+            string.IsNullOrWhiteSpace(prefix) ? "(not set)" : prefix,
+            range,
+            holds);
+    }
+
+    private sealed record SubnetRow(string Name, string Prefix, string UsableRange, string Holds);
+}

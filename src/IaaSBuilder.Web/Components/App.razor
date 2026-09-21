@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <ResourcePreloader />
+    <link rel="stylesheet" href="@Assets["app.css"]" />
+    <link rel="stylesheet" href="@Assets["IaaSBuilder.styles.css"]" />
+    <ImportMap />
+    <title>IaaS Builder</title>
+    <HeadOutlet @rendermode="InteractiveServer" />
+</head>
+
+<body>
+    @* Render mode is opt-in per component in a Blazor Web App. Program.cs registering
+       AddInteractiveServerComponents/AddInteractiveServerRenderMode is not enough on its own:
+       without @rendermode here every page is statically rendered and no @onclick anywhere in
+       the app is ever wired up. Applied at the root so it covers every page. *@
+    <Routes @rendermode="InteractiveServer" />
+    <ReconnectModal />
+    <script src="@Assets["_framework/blazor.web.js"]"></script>
+    <script src="@Assets["app.js"]"></script>
+</body>
+
+</html>

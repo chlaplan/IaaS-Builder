@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/IaaSBuilder.Cli/IaaSBuilder.Cli.csproj" />
+    <Project Path="src/IaaSBuilder.Core/IaaSBuilder.Core.csproj" />
+    <Project Path="src/IaaSBuilder.Web/IaaSBuilder.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/IaaSBuilder.Core.Tests/IaaSBuilder.Core.Tests.csproj" />
+  </Folder>
+</Solution>

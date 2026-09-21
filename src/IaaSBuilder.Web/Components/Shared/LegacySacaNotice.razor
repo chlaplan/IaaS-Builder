@@ -1,0 +1,56 @@
+@implements IDisposable
+@inject PlanState PlanState
+
+@*
+    Renders nothing at all in the normal case, which is the point: the legacy F5 SACA editor is
+    gone and the pages stay clean.
+
+    It has to exist, though. Removing an editor does not remove the setting - SacaSpec is still in
+    the plan model, still deployed by the CLI, and still changes the deployment completely. Loading
+    such a plan file here with no indication at all would be the exact failure this project keeps
+    running into: configuration that silently does something the screen does not mention.
+*@
+
+@if (Plan.Saca is { Enabled: true } saca)
+{
+    <div class="alert err">
+        <strong>This plan enables the legacy F5 SACA stack, which can no longer be edited here.</strong>
+        <p>
+            It was deployed from a plan file rather than from this page. A @saca.Tier-tier SACA
+            network is built <em>instead of</em> the virtual network below, and the servers are not
+            wired into it - their NICs still point at
+            <code>@Plan.Network.EffectiveVirtualNetworkName</code> /
+            <code>@Plan.Network.SubnetName</code>, which nothing in this plan creates. Deployment
+            will fail on the first server.
+        </p>
+        <p>
+            The templates and deployment steps are all still present, so this plan still runs
+            through the CLI. To carry on in the browser, turn it off and use Mission Landing Zone
+            instead.
+        </p>
+        <button class="danger" @onclick="Disable">Turn legacy SACA off</button>
+    </div>
+}
+
+@code {
+    private DeploymentPlan Plan => PlanState.Plan;
+
+    protected override void OnInitialized() => PlanState.Changed += Refresh;
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => PlanState.Changed -= Refresh;
+
+    /// <summary>
+    /// Clears the flag rather than the whole SacaSpec, so the addresses and appliances survive in
+    /// the plan file and the choice can still be reversed by hand.
+    /// </summary>
+    private void Disable()
+    {
+        if (Plan.Saca is not null)
+        {
+            Plan.Saca.Enabled = false;
+            PlanState.NotifyChanged();
+        }
+    }
+}

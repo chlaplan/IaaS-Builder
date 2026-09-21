@@ -1,0 +1,133 @@
+@*
+    A real dropdown that lists every option, with an escape hatch for values the catalog has never
+    heard of.
+
+    This replaces ComboField's <input list="..."> for the long catalogs. A datalist looks like a
+    dropdown but is a type-ahead: the browser filters it by whatever is already in the box, so
+    opening a VM size field that already reads "Standard_A2_v2" showed the handful of sizes
+    containing that string rather than the 879 the region offers. The data was never filtered -
+    the control was.
+
+    A plain <select> cannot be the whole answer either, because an offline snapshot can be missing
+    a size, and a hand-edited plan can name anything. So: the current value is always present as an
+    option even when the catalog does not list it, and "Enter a value" switches to a text box.
+*@
+
+@implements IDisposable
+@inject ValidationState Validation
+
+<div class="field">
+    <label for="@_id">@Label</label>
+
+    @if (_typing)
+    {
+        <input id="@_id"
+               type="text"
+               value="@Value"
+               class="@InvalidClass"
+               aria-invalid="@(IsInvalid ? "true" : null)"
+               placeholder="@Placeholder"
+               @onchange="OnTyped"
+               disabled="@Disabled" />
+    }
+    else
+    {
+        <select id="@_id"
+                value="@Value"
+                class="@InvalidClass"
+                aria-invalid="@(IsInvalid ? "true" : null)"
+                @onchange="OnPicked"
+                disabled="@Disabled">
+            @if (string.IsNullOrEmpty(Value))
+            {
+                <option value="">@(Options.Count == 0 ? "Nothing to choose from yet" : "Choose...")</option>
+            }
+            else if (!Options.Any(o => string.Equals(o.Value, Value, StringComparison.OrdinalIgnoreCase)))
+            {
+                @* Never silently drop a value the catalog does not know. An offline snapshot is
+                   routinely behind Azure, and losing the operator's choice on render would be far
+                   worse than showing it with a note. *@
+                <option value="@Value">@Value — not in the catalog for this region</option>
+            }
+
+            @foreach (var group in Grouped)
+            {
+                @if (group.Key is null)
+                {
+                    @foreach (var option in group)
+                    {
+                        <option value="@option.Value">@option.Label</option>
+                    }
+                }
+                else
+                {
+                    <optgroup label="@group.Key">
+                        @foreach (var option in group)
+                        {
+                            <option value="@option.Value">@option.Label</option>
+                        }
+                    </optgroup>
+                }
+            }
+        </select>
+    }
+
+    <FieldIssues Path="@Path" Hint="@Hint" />
+
+    @if (AllowCustom)
+    {
+        <button type="button" class="link" @onclick="ToggleTyping">
+            @(_typing ? "Choose from the list" : "Enter a value not listed")
+        </button>
+    }
+</div>
+
+@code {
+    private readonly string _id = $"f{Guid.NewGuid():N}";
+    private bool _typing;
+
+    /// <summary>One entry in the dropdown. <paramref name="Group"/> renders an optgroup.</summary>
+    public sealed record Option(string Value, string? Label = null, string? Group = null)
+    {
+        public string Text => Label ?? Value;
+    }
+
+    [Parameter, EditorRequired] public string Label { get; set; } = "";
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public IReadOnlyList<Option> Options { get; set; } = [];
+    [Parameter] public string? Hint { get; set; }
+    [Parameter] public string? Placeholder { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+
+    /// <summary>
+    /// Whether the operator can type something outside the list. On for anything the catalog
+    /// supplies, because the catalog can be stale or absent. Off for closed sets such as disk
+    /// type, where a free-text value would only ever be a typo Azure rejects at deployment time.
+    /// </summary>
+    [Parameter] public bool AllowCustom { get; set; } = true;
+
+    /// <summary>The dotted path the validator reports this value under.</summary>
+    [Parameter] public string? Path { get; set; }
+
+    private bool IsInvalid => Validation.HasError(Path);
+
+    private string? InvalidClass => IsInvalid ? "invalid" : null;
+
+    private IEnumerable<IGrouping<string?, Option>> Grouped =>
+        Options.GroupBy(o => o.Group);
+
+    protected override void OnInitialized() => Validation.Changed += Refresh;
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Validation.Changed -= Refresh;
+
+    private void ToggleTyping() => _typing = !_typing;
+
+    private Task OnPicked(ChangeEventArgs e) =>
+        ValueChanged.InvokeAsync(e.Value?.ToString() ?? "");
+
+    private Task OnTyped(ChangeEventArgs e) =>
+        ValueChanged.InvokeAsync(e.Value?.ToString() ?? "");
+}

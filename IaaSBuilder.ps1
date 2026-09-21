@@ -1,5 +1,8 @@
-﻿split-path $SCRIPT:MyInvocation.MyCommand.Path -parent
-$Date = Get-Date -Format yyyymmdd_HHMM
+﻿# Anchor the session to the script directory so every relative path below (.\form.xml,
+# .\Templates\*, .\DSC\*) resolves no matter what the caller's working directory is.
+Push-Location (Split-Path $SCRIPT:MyInvocation.MyCommand.Path -Parent)
+$Date = Get-Date -Format 'yyyyMMdd_HHmm'
+if (-not (Test-Path -Path 'Logs')) { New-Item -Path 'Logs' -ItemType Directory | Out-Null }
 Start-Transcript -Path "Logs\$Date.txt"
 $DefaultVMSize = "Standard_F2s"
 $DefaultVMDisk = "Premium_LRS"
@@ -9,9 +12,8 @@ $DefaultWVDImage = "20h1-evd-o365pp"
 
 $AzureModule = Get-Module -ListAvailable -Name Az.*
 $updatemodule = get-command Update-Module
-$UpdateVer = $updatemodule.Version.ToString()
 
-if($UpdateVer -le "2.2.4"){
+if([version]$updatemodule.Version -lt [version]'2.2.5'){
     Write-Host "Update-Module Function needs to be updated"
     Install-Module -Name PowerShellGet -RequiredVersion 2.2.5 -Force
 }
@@ -26,13 +28,13 @@ if($UpdateVer -le "2.2.4"){
     Write-Host "Found Azure Module"
     $StorageModule = Get-InstalledModule -Name Az.Storage
     $AccountModule = Get-InstalledModule -Name Az.Accounts
-        if($StorageModule.Version -clt "3.0.0"){
+        if([version]$StorageModule.Version -lt [version]"3.0.0"){
         Write-Host "Updating Azure Storage Module"
         Update-Module -Name Az.Storage -Force -Scope CurrentUser -WarningAction Ignore
         Import-Module -Name Az.Storage -RequiredVersion 3.0.0
         #Import-Module Az -Scope Global
         }
-        if($AccountModule.Version -clt "2.1.2"){
+        if([version]$AccountModule.Version -lt [version]"2.1.2"){
         Write-Host "Updating Azure Accounts Module"
         Update-Module -Name Az.Accounts -Force -Scope CurrentUser -WarningAction Ignore
         Import-Module -Name Az.Accounts -RequiredVersion 2.1.2
@@ -80,9 +82,9 @@ $c = [System.Management.Automation.Host.ChoiceDescription]::new("&3 Reconnect Go
 $c.HelpMessage = "Get disk information"
 $c | Add-Member -MemberType ScriptMethod -Name Invoke -Value {Connect-AzAccount -Force -Environment AzureUSGovernment -Verbose ; Return} -force
 $coll+=$c
- 
+
 $q = [System.Management.Automation.Host.ChoiceDescription]::new("&Quit")
-$q | Add-Member -MemberType ScriptMethod -Name Invoke -Value {Write-Host "Have a nice day." -ForegroundColor Green | Exit-PSSession} -force
+$q | Add-Member -MemberType ScriptMethod -Name Invoke -Value {Write-Host "Have a nice day." -ForegroundColor Green} -force
 $q.HelpMessage = "Quit and exit"
 $coll+=$q
  
@@ -117,7 +119,7 @@ $b | Add-Member -MemberType ScriptMethod -Name Invoke -Value {Connect-AzAccount 
 $coll+=$b
  
 $q = [System.Management.Automation.Host.ChoiceDescription]::new("&Quit")
-$q | Add-Member -MemberType ScriptMethod -Name Invoke -Value {Write-Host "Have a nice day." -ForegroundColor Green | Exit-PSSession} -force
+$q | Add-Member -MemberType ScriptMethod -Name Invoke -Value {Write-Host "Have a nice day." -ForegroundColor Green} -force
 $q.HelpMessage = "Quit and exit"
 $coll+=$q
  
@@ -922,10 +924,9 @@ $WPFBuild1.Add_Click({
     Select-AzSubscription -Subscription $WPFSubscription1.SelectedItem
     #-------------------------------------------------------------------------------------------------------------------
     # Creating new Resource Group
-    $Getrg = Get-AzResourceGroup -Verbose
+    $newrg = Get-AzResourceGroup -Name $rg -ErrorAction SilentlyContinue
 
-      if ($Getrg.ResourceGroupName -eq $rg) {
-        $newrg = Get-AzResourceGroup -Name $rg -Verbose
+      if ($newrg) {
         write-host "Resource group already exist" -ForegroundColor Green
       }
       else
@@ -937,11 +938,10 @@ $WPFBuild1.Add_Click({
 
     #-------------------------------------------------------------------------------------------------------------------
     # Creating new storage Account to upload files
-    $GetSA = Get-AzStorageAccount -Verbose
-  
-      if ($GetSA.StorageAccountName -eq $saname) {
+    $storageaccount = Get-AzStorageAccount -ResourceGroupName $rg -Name $saname -ErrorAction SilentlyContinue
+
+      if ($storageaccount) {
       write-host "Storage Account already exist" -ForegroundColor Green
-        $storageaccount = Get-AzStorageAccount -ResourceGroupName $rg -Name $saname -Verbose
       }
       else
       {
@@ -951,13 +951,9 @@ $WPFBuild1.Add_Click({
 
     #-------------------------------------------------------------------------------------------------------------------
     # Creating new File Share to upload files and scripts
-      $GetFS = Get-AzStorageShare -Context $storageaccount.Context -Verbose
-  
-      if ($GetFS.Name -eq "dscstatus") {
-      $fs = Get-AzStorageShare -Name "dscstatus" -Context $storageaccount.Context
-      }
-      else
-      {
+      $fs = Get-AzStorageShare -Name "dscstatus" -Context $storageaccount.Context -ErrorAction SilentlyContinue
+
+      if (-not $fs) {
       $fs = New-AzStorageShare -Name "dscstatus" -Context $storageaccount.Context
       }
 
@@ -965,11 +961,10 @@ $WPFBuild1.Add_Click({
     #-------------------------------------------------------------------------------------------------------------------
 
     # Creating storage containers
-    $GetSC = Get-AzStorageContainer -Context $storageaccount.Context -Verbose
-  
-      if ($GetSC.Name -eq "dsc") {
+    $dsccontainer = Get-AzStorageContainer -Name dsc -Context $storageaccount.Context -ErrorAction SilentlyContinue
+
+      if ($dsccontainer) {
       write-host "Storage container already exist" -ForegroundColor Green
-      $dsccontainer = Get-AzStorageContainer -Name dsc -Context $storageaccount.Context -Verbose
       }
       else
       {
@@ -980,11 +975,15 @@ $WPFBuild1.Add_Click({
 
             ## Copying DSC to Azure Storage
             write-host "Uploading DSC to Azure Storage Container" -ForegroundColor Green
-            Set-AzStorageBlobContent -Container $dsccontainer.Name -File .\DSC\Configuration.zip -Blob 'Configuration.zip' -Context $dsccontainer.Context -Force -Verbose -AsJob 
+            $UploadJob = Set-AzStorageBlobContent -Container $dsccontainer.Name -File .\DSC\Configuration.zip -Blob 'Configuration.zip' -Context $dsccontainer.Context -Force -Verbose -AsJob
             Get-AzStorageContainer -Name $dsccontainer.Name -Context $dsccontainer.Context -Verbose
-        
-            write-host "Sleeping for 60secs so the DSC files can upload" -ForegroundColor Green
-            Start-Sleep -Seconds 60
+
+            write-host "Waiting for the DSC files to finish uploading" -ForegroundColor Green
+            $UploadJob | Wait-Job -Timeout 900 | Out-Null
+            if ($UploadJob.State -ne 'Completed') {
+                Write-Host "DSC upload did not complete (state: $($UploadJob.State)). Deployments that consume Configuration.zip will fail." -ForegroundColor Red
+                $UploadJob | Receive-Job -ErrorAction Continue
+            }
             $DSCs = Get-AzStorageBlob -Container dsc -Context $dsccontainer.Context -Verbose
         
             # Get uri DSC for Deployment
@@ -1678,8 +1677,24 @@ $WPFBuild1.Add_Click({
     #####################################################################################################
     # WVD Build
     if ($WPFWVD.IsChecked -eq $true){
-    Write-Host "Building Windows Virtual Desktop, will sleep for 11mins allow time for the DC to build." -ForegroundColor Green
-    Start-Sleep -Seconds 660 -Verbose
+    Write-Host "Building Windows Virtual Desktop, waiting for the DC deployment to finish first." -ForegroundColor Green
+
+    if ($WPFserver1.IsChecked -eq $true) {
+        $DCDeploymentName = $WPFServer1Name.Text
+        $Deadline = (Get-Date).AddMinutes(45)
+        do {
+            Start-Sleep -Seconds 30
+            $DCDeployment = Get-AzResourceGroupDeployment -ResourceGroupName $rg -Name $DCDeploymentName -ErrorAction SilentlyContinue
+            $DCState = $DCDeployment.ProvisioningState
+            Write-Host "DC deployment state: $DCState" -ForegroundColor Cyan
+        } until ($DCState -in @('Succeeded','Failed','Canceled') -or (Get-Date) -gt $Deadline)
+
+        if ($DCState -ne 'Succeeded') {
+            Write-Host "DC deployment did not succeed (state: $DCState). Skipping Windows Virtual Desktop build." -ForegroundColor Red
+            return
+        }
+    }
+
     New-AzResourceGroupDeployment -TemplateFile .\Templates\AzureWVD.json -Name "WVD" `
                                   -hostpoolName $WPFWVD_HostName.text `
                                   -domain $DomainName `

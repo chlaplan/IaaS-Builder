@@ -1,0 +1,14 @@
+{
+  // Rename this file to cloud.json and place it beside IaaSBuilder.exe to enable the
+  // "Custom / air-gapped cloud" option on the Azure & Identity page.
+  //
+  // Required for sovereign or disconnected clouds - notably the US Government Secret and
+  // Top Secret regions used for IL6 - whose endpoints are not public and therefore are not
+  // compiled into the Azure SDK. Get the correct values from your enclave's cloud operator;
+  // the values below are placeholders and will NOT work as written.
+  "name": "Azure Government Secret",
+  "authorityHost": "https://login.microsoftonline.example.gov/",
+  "resourceManagerEndpoint": "https://management.example.gov/",
+  "resourceManagerAudience": "https://management.example.gov/",
+  "blobSuffix": "blob.core.example.gov"
+}

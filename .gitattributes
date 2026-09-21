@@ -1,0 +1,44 @@
+# Let Git decide for anything not named below.
+* text=auto
+
+# ---------------------------------------------------------------------------
+# Binary. Being explicit matters more than usual here: DSC/Configuration.zip is
+# served straight to deploying VMs from raw.githubusercontent.com, so a zip put
+# through line-ending normalisation would not be a cosmetic problem - it would
+# be a corrupt package that fails minutes into every deployment.
+# ---------------------------------------------------------------------------
+*.zip   binary
+*.docx  binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.pfx   binary
+*.exe   binary
+*.dll   binary
+
+# ---------------------------------------------------------------------------
+# Windows-targeted text. These run on Windows VMs and in Windows PowerShell.
+# ---------------------------------------------------------------------------
+*.ps1   text eol=crlf
+*.psm1  text eol=crlf
+*.psd1  text eol=crlf
+*.cmd   text eol=crlf
+*.bat   text eol=crlf
+
+# ---------------------------------------------------------------------------
+# Source and configuration.
+# ---------------------------------------------------------------------------
+*.cs      text diff=csharp
+*.razor   text diff=html
+*.csproj  text eol=crlf
+*.slnx    text eol=crlf
+*.json    text
+*.xml     text
+*.md      text
+*.css     text
+*.js      text
+
+# Keep ARM templates out of diffs by default; they are generated-ish and large.
+Templates/**/*.json linguist-generated=false

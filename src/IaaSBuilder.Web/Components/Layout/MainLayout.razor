@@ -1,0 +1,131 @@
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject PlanState Plan
+@inject AzureSession Session
+@inject CatalogState Catalog
+@inject DeploymentRunner Runner
+@inject OperatorSettingsStore Settings
+@inject PriceState Prices
+
+<div class="app">
+    <nav class="sidebar">
+        <div class="brand">
+            IaaS Builder
+            <small>Azure lab environment builder</small>
+        </div>
+
+        <div class="nav">
+            @* Ordered the way the getting-started checklist walks through them. Azure used to
+               carry identity and storage as well and had grown past 780 lines, which meant the
+               password and the staging account sat below several screens of sign-in markup. *@
+            <NavLink href="azure">Azure</NavLink>
+            <NavLink href="identity">Identity</NavLink>
+            <NavLink href="network">Network</NavLink>
+            <NavLink href="servers">Servers</NavLink>
+            <NavLink href="avd">Azure Virtual Desktop</NavLink>
+            <NavLink href="storage">Storage</NavLink>
+            @* Microsoft SACA has no nav entry of its own: it lives on the Network page, because
+               the SCCA boundary decides how the servers are wired. *@
+            <NavLink href="overview">Overview</NavLink>
+            <NavLink href="deploy">Deploy</NavLink>
+            <NavLink href="plan-file">Plan file</NavLink>
+        </div>
+
+        <div style="margin-top:auto">
+            <div class="status-line">
+                @if (Session.IsSignedIn)
+                {
+                    <span class="badge ok">Azure connected</span>
+                }
+                else
+                {
+                    <span class="badge muted">Offline</span>
+                }
+
+                @if (Catalog.ServedFromCache)
+                {
+                    <span class="badge warn" title="@CatalogTitle">Catalog cached</span>
+                }
+                else
+                {
+                    <span class="badge ok">Catalog live</span>
+                }
+
+                @if (Plan.IsDirty)
+                {
+                    <span class="badge warn">Unsaved</span>
+                }
+            </div>
+        </div>
+    </nav>
+
+    <main class="content">
+        @Body
+    </main>
+</div>
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
+</div>
+
+@code {
+    private string CatalogTitle =>
+        Catalog.HasSnapshot
+            ? $"Snapshot captured {Catalog.Catalog.CapturedUtc:u} ({Catalog.Catalog.Age.TotalDays:F0} days old)"
+            : "No catalog snapshot on disk; using built-in fallback values.";
+
+    protected override async Task OnInitializedAsync()
+    {
+        Plan.Changed += Refresh;
+        Session.Changed += Refresh;
+        Catalog.Changed += Refresh;
+        Runner.Changed += Refresh;
+
+        // Each circuit gets its own CatalogState now, so the snapshot is warmed here rather than
+        // once at startup.
+        await Catalog.EnsureLoadedAsync();
+    }
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    /// <remarks>
+    /// localStorage is only reachable once the circuit is interactive, so this cannot go in
+    /// OnInitializedAsync - during prerender the JS call throws. Guarded on IsPristine so a plan
+    /// the operator loaded from a file in the same circuit is never overwritten by stale saved
+    /// choices.
+    /// </remarks>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _settingsLoaded)
+        {
+            return;
+        }
+
+        _settingsLoaded = true;
+
+        if (await Settings.EnsureLoadedAsync() is { } saved)
+        {
+            // Applied whatever the plan's state, unlike the plan fields below: this is a
+            // preference about whether the app may reach the public retail pricing endpoint, and
+            // loading a plan file is no reason to start doing that again.
+            Prices.Enabled = saved.ShowVmPrices;
+
+            if (Plan.IsPristine)
+            {
+                Plan.ApplySavedSettings(saved);
+            }
+        }
+    }
+
+    private bool _settingsLoaded;
+
+    public void Dispose()
+    {
+        Plan.Changed -= Refresh;
+        Session.Changed -= Refresh;
+        Catalog.Changed -= Refresh;
+        Runner.Changed -= Refresh;
+    }
+}

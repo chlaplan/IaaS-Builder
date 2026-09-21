@@ -1,0 +1,136 @@
+@page "/avd"
+@implements IDisposable
+@inject PlanState PlanState
+@inject CatalogState Catalog
+
+<PageTitle>Azure Virtual Desktop - IaaS Builder</PageTitle>
+
+<div class="page-head">
+    <h1>Azure Virtual Desktop</h1>
+    <p>
+        Session hosts are domain joined, so this waits for the Domain Controller deployment to
+        actually finish rather than sleeping for eleven minutes and hoping.
+    </p>
+</div>
+
+<ValidationPanel Compact="true" />
+
+<div class="panel">
+    <CheckField Label="Deploy an AVD host pool"
+                Value="@(Plan.Avd?.Enabled == true)"
+                ValueChanged="OnToggled" />
+
+    @if (Plan.Avd?.Enabled == true)
+    {
+        var avd = Plan.Avd;
+
+        <div class="grid-2">
+            <TextField Label="Host pool name"
+                       Path="avd.hostPoolName"
+                       Value="@avd.HostPoolName"
+                       ValueChanged="@(v => Set(() => avd.HostPoolName = v ?? ""))" />
+
+            <ComboField Label="Metadata region"
+                        Path="avd.metadataLocation"
+                        Value="@avd.MetadataLocation"
+                        ValueChanged="@(v => Set(() => avd.MetadataLocation = v))"
+                        Options="Catalog.AvdLocations"
+                        Hint="AVD objects live in a subset of regions; session hosts still go in the plan region." />
+
+            <div class="field">
+                <label>Host pool type</label>
+                <select value="@avd.HostPoolType" @onchange="@(e => Set(() => avd.HostPoolType = e.Value?.ToString() ?? ""))">
+                    <option value="Pooled">Pooled</option>
+                    <option value="Personal">Personal</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label>Load balancer</label>
+                <select value="@avd.LoadBalancerType"
+                        disabled="@(avd.HostPoolType == "Personal")"
+                        @onchange="@(e => Set(() => avd.LoadBalancerType = e.Value?.ToString() ?? ""))">
+                    <option value="BreadthFirst">Breadth first</option>
+                    <option value="DepthFirst">Depth first</option>
+                </select>
+            </div>
+
+            <NumberField Label="Session host count"
+                         Path="avd.sessionHostCount"
+                         Min="1" Max="100"
+                         Value="@avd.SessionHostCount"
+                         ValueChanged="@(v => Set(() => avd.SessionHostCount = v))" />
+
+            <NumberField Label="Registration token lifetime (hours)"
+                         Path="avd.tokenLifetimeHours"
+                         Min="1" Max="24"
+                         Value="@avd.TokenLifetimeHours"
+                         ValueChanged="@(v => Set(() => avd.TokenLifetimeHours = v))" />
+
+            <ComboField Label="Session host VM size"
+                        Value="@avd.VmSize"
+                        ValueChanged="@(v => Set(() => avd.VmSize = v))"
+                        Options="Catalog.VmSizeNames(Plan.Azure.Location)" />
+
+            <div class="field">
+                <label>Disk type</label>
+                <select value="@avd.DiskType" @onchange="@(e => Set(() => avd.DiskType = e.Value?.ToString() ?? ""))">
+                    <option value="Premium_LRS">Premium_LRS</option>
+                    <option value="StandardSSD_LRS">StandardSSD_LRS</option>
+                    <option value="Standard_LRS">Standard_LRS</option>
+                </select>
+            </div>
+
+            <ComboField Label="Image publisher"
+                        Value="@avd.Image.Publisher"
+                        ValueChanged="@(v => Set(() => avd.Image.Publisher = v ?? ""))"
+                        Options="Catalog.ImagePublishers(Plan.Azure.Location)" />
+
+            <ComboField Label="Image offer"
+                        Value="@avd.Image.Offer"
+                        ValueChanged="@(v => Set(() => avd.Image.Offer = v ?? ""))"
+                        Options="Catalog.ImageOffers(Plan.Azure.Location, avd.Image.Publisher)" />
+
+            <ComboField Label="Image SKU"
+                        Value="@avd.Image.Sku"
+                        ValueChanged="@(v => Set(() => avd.Image.Sku = v))"
+                        Options="Catalog.ImageSkus(Plan.Azure.Location, avd.Image.Publisher, avd.Image.Offer)"
+                        Hint="Multi-session SKUs are only valid for pooled host pools." />
+        </div>
+    }
+</div>
+
+@code {
+    private DeploymentPlan Plan => PlanState.Plan;
+
+    protected override void OnInitialized()
+    {
+        PlanState.Changed += Refresh;
+        Catalog.Changed += Refresh;
+    }
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        PlanState.Changed -= Refresh;
+        Catalog.Changed -= Refresh;
+    }
+
+    private void Set(Action mutate)
+    {
+        mutate();
+        PlanState.NotifyChanged();
+    }
+
+    private void OnToggled(bool enabled) =>
+        Set(() =>
+        {
+            Plan.Avd ??= new AvdSpec
+            {
+                HostPoolName = $"{Plan.Network.Prefix}-hostpool",
+                MetadataLocation = Plan.Azure.Location
+            };
+            Plan.Avd.Enabled = enabled;
+        });
+}

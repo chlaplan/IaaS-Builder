@@ -1,0 +1,64 @@
+@*
+    A labelled text input bound to a plan property, which notifies PlanState on change so
+    validation and every other open component stay in sync. The legacy form had no such loop:
+    values were only ever read at deployment time, so mistakes surfaced minutes into a build.
+*@
+
+@implements IDisposable
+@inject ValidationState Validation
+
+<div class="field">
+    <label for="@_id">@Label</label>
+    @if (Multiline)
+    {
+        <textarea id="@_id" rows="@Rows" value="@Value" class="@InvalidClass"
+                  aria-invalid="@(IsInvalid ? "true" : null)"
+                  @onchange="OnChanged" disabled="@Disabled"></textarea>
+    }
+    else
+    {
+        <input id="@_id"
+               type="@(Password ? "password" : "text")"
+               value="@Value"
+               class="@InvalidClass"
+               aria-invalid="@(IsInvalid ? "true" : null)"
+               placeholder="@Placeholder"
+               @onchange="OnChanged"
+               disabled="@Disabled" />
+    }
+    <FieldIssues Path="@Path" Hint="@Hint" />
+</div>
+
+@code {
+    private readonly string _id = $"f{Guid.NewGuid():N}";
+
+    [Parameter, EditorRequired] public string Label { get; set; } = "";
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+    [Parameter] public string? Hint { get; set; }
+    [Parameter] public string? Placeholder { get; set; }
+    [Parameter] public bool Password { get; set; }
+    [Parameter] public bool Multiline { get; set; }
+    [Parameter] public int Rows { get; set; } = 4;
+    [Parameter] public bool Disabled { get; set; }
+
+    /// <summary>
+    /// The dotted path the validator reports this value under, e.g.
+    /// <c>artifacts.storageAccountName</c>. Supplying it is what turns the field red when the
+    /// value breaks a rule; the rule itself stays in the validator.
+    /// </summary>
+    [Parameter] public string? Path { get; set; }
+
+    private bool IsInvalid => Validation.HasError(Path);
+
+    private string? InvalidClass => IsInvalid ? "invalid" : null;
+
+    protected override void OnInitialized() => Validation.Changed += Refresh;
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Validation.Changed -= Refresh;
+
+    private Task OnChanged(ChangeEventArgs e) =>
+        ValueChanged.InvokeAsync(e.Value?.ToString() ?? "");
+}

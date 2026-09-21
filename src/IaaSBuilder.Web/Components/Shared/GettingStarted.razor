@@ -1,0 +1,110 @@
+@*
+    A checklist, not a wizard. It reports what the plan already satisfies and points at the next
+    thing to do, but it never blocks navigation - an operator loading a saved plan should not
+    have to click through it.
+
+    It is collapsed to one line by default and disappears once every step is done. The per-field
+    highlighting and the deploy gate already say what is outstanding and where, so an expanded
+    panel on four pages repeated the page's own content and pushed the real fields down.
+*@
+@implements IDisposable
+@using IaaSBuilder.Core.Validation
+@inject PlanState PlanState
+@inject AzureSession Session
+@inject ChecklistState Checklist
+@inject NavigationManager Nav
+
+@{
+    // Materialised once per render. Steps used to be a computed property, so the @foreach below
+    // and Next each built their own list and instance comparison never matched - the "next" step
+    // was never highlighted, which is the entire point of the checklist. It also rebuilt the
+    // list four times per render.
+    var steps = SetupChecklist.For(PlanState.Plan, Session.IsSignedIn, PlanState.AdminPassword);
+    var next = SetupChecklist.NextStep(steps);
+    var doneCount = steps.Count(s => s.Done);
+}
+
+@if (next is not null || Checklist.Expanded)
+{
+<div class="panel compact">
+    @if (!Checklist.Expanded)
+    {
+        @* One line: what to do next, and a way in. Nothing else earns the space. *@
+        <div class="status-line">
+            <span class="muted">@doneCount of @(steps.Count - 1)</span>
+            @if (next is { } n)
+            {
+                <span>Next: <strong>@n.Title</strong></span>
+                @if (n.Page != CurrentPage)
+                {
+                    <button type="button" class="link"
+                            @onclick="@(() => Nav.NavigateTo(n.Page))">Go</button>
+                }
+            }
+            else
+            {
+                <span class="badge ok">Ready to deploy</span>
+            }
+            <button type="button" class="link" @onclick="@(() => Checklist.Expanded = true)">Show steps</button>
+        </div>
+    }
+    else
+    {
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:1rem">
+            <h2 style="margin-bottom:.25rem">Getting started</h2>
+            <span class="muted">@doneCount of @(steps.Count - 1) done</span>
+        </div>
+
+        <ol class="checklist">
+            @foreach (var step in steps)
+            {
+                // Compared on Title, which SetupChecklistTests pins as unique, rather than on
+                // instance identity - identity silently stops matching the moment anything
+                // recomputes the list, and the only symptom is that no step is ever highlighted.
+                var isNext = next is not null && step.Title == next.Title;
+                <li class="@(step.Done ? "done" : isNext ? "next" : "")">
+                    <div class="checklist-title">
+                        @if (step.Done)
+                        {
+                            <span class="badge ok">Done</span>
+                        }
+                        else if (isNext)
+                        {
+                            <span class="badge run">Do this next</span>
+                        }
+                        <strong>@step.Title</strong>
+                        @if (isNext && step.Page != CurrentPage)
+                        {
+                            <button type="button" class="link"
+                                    @onclick="@(() => Nav.NavigateTo(step.Page))">Go</button>
+                        }
+                    </div>
+                    <div class="hint">@step.Detail</div>
+                </li>
+            }
+        </ol>
+        <button type="button" class="link" @onclick="@(() => Checklist.Expanded = false)">Hide steps</button>
+    }
+</div>
+}
+
+@code {
+    /// <summary>Route of the page hosting this, so the "Go" button is not offered to itself.</summary>
+    [Parameter] public string CurrentPage { get; set; } = "";
+
+    protected override void OnInitialized()
+    {
+        PlanState.Changed += Refresh;
+        Session.Changed += Refresh;
+        Checklist.Changed += Refresh;
+    }
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        PlanState.Changed -= Refresh;
+        Session.Changed -= Refresh;
+        Checklist.Changed -= Refresh;
+    }
+}

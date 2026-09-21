@@ -1,0 +1,178 @@
+@implements IDisposable
+@inject PlanState PlanState
+
+@*
+    The settings a server's DSC configuration actually consumes, shown on the server itself.
+
+    Every DSC script in the package takes the same twenty parameters, but each role only reads a
+    handful of them, and until now those lived on other pages with nothing to say which role they
+    affected - so adding an AD FS server told you nothing about the service account it was about to
+    create. The editable values here are the same plan properties those pages bind to; editing one
+    here changes the plan, not a copy of it.
+
+    The read-only rows are the values this server's DSC run will receive that are derived from the
+    rest of the plan. They are computed the way TemplateParameterBinder computes them, so an empty
+    one is a real gap in the plan rather than a display artefact, and it is called out as such.
+*@
+
+@if (RoleCatalog.TryGet(Server.Role, out var definition))
+{
+    <div class="panel compact" style="margin-top:.85rem">
+        <h3 style="margin:0 0 .35rem">
+            Role settings
+            <span class="badge muted">DSC @definition.DscToken</span>
+        </h3>
+
+        @if (Editable(definition).Any())
+        {
+            <div class="grid-2">
+                @foreach (var field in Editable(definition))
+                {
+                    <TextField Label="@field.Label"
+                               Path="@field.Path"
+                               Value="@field.Value()"
+                               ValueChanged="@(v => Set(() => field.Set(v ?? "")))"
+                               Hint="@field.Hint" />
+                }
+            </div>
+        }
+
+        <dl class="kv">
+            @foreach (var row in Derived(definition))
+            {
+                <dt>@row.Label</dt>
+                <dd>
+                    @if (string.IsNullOrWhiteSpace(row.Value))
+                    {
+                        <span class="badge warn">@row.Missing</span>
+                    }
+                    else
+                    {
+                        <code>@row.Value</code>
+                    }
+                </dd>
+            }
+        </dl>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public ServerSpec Server { get; set; } = default!;
+
+    private DeploymentPlan Plan => PlanState.Plan;
+
+    private sealed record EditableField(
+        string Label,
+        string Path,
+        Func<string> Value,
+        Action<string> Set,
+        string Hint);
+
+    private sealed record DerivedRow(string Label, string Value, string Missing);
+
+    private List<EditableField> Editable(RoleDefinition definition)
+    {
+        var fields = new List<EditableField>();
+
+        if (Server.Role is ServerRole.DomainController or ServerRole.AdditionalDomainController)
+        {
+            fields.Add(new EditableField(
+                "Domain name",
+                "identity.domainName",
+                () => Plan.Identity.DomainName,
+                v => Plan.Identity.DomainName = v,
+                Server.Role == ServerRole.DomainController
+                    ? "The forest this server creates. Every other server joins it."
+                    : "The forest this server replicates. It must match the first domain controller."));
+        }
+
+        if (Server.Role == ServerRole.Adfs)
+        {
+            fields.Add(new EditableField(
+                "AD FS service account",
+                "identity.adfsServiceAccountName",
+                () => Plan.Identity.AdfsServiceAccountName,
+                v => Plan.Identity.AdfsServiceAccountName = v,
+                "Created in the domain by the AD FS configuration."));
+        }
+
+        if (Server.Role == ServerRole.SharePoint)
+        {
+            fields.Add(new EditableField(
+                "SharePoint version",
+                $"servers[{Plan.Servers.IndexOf(Server)}].sharePointVersion",
+                () => Server.SharePointVersion ?? "",
+                v => Server.SharePointVersion = v,
+                "Passed straight to the SharePoint DSC configuration."));
+        }
+
+        return fields;
+    }
+
+    private List<DerivedRow> Derived(RoleDefinition definition)
+    {
+        var rows = new List<DerivedRow>();
+
+        if (definition.RequiresDomain)
+        {
+            var dc = Plan.EnabledServers.FirstOrDefault(s => s.Role == ServerRole.DomainController);
+            var fqdn = dc is null || string.IsNullOrWhiteSpace(Plan.Identity.DomainName)
+                ? ""
+                : $"{Plan.Network.Prefix}{dc.Name}.{Plan.Identity.DomainName}";
+
+            rows.Add(new DerivedRow("Domain controller", fqdn,
+                "No enabled Domain Controller, so this server has nothing to join"));
+        }
+
+        if (Server.Role == ServerRole.Adfs)
+        {
+            rows.Add(new DerivedRow(
+                "Federation service",
+                string.IsNullOrWhiteSpace(Plan.Identity.DomainName) ? "" : $"sts.{Plan.Identity.DomainName}",
+                "Set a domain name"));
+        }
+
+        if (Server.Role is ServerRole.SharePoint or ServerRole.SccmPrimarySite)
+        {
+            var sql = Plan.EnabledServers.FirstOrDefault(s => s.Role == ServerRole.Sql);
+
+            rows.Add(new DerivedRow("SQL server", sql?.Name ?? "",
+                Server.Role == ServerRole.SccmPrimarySite
+                    ? "None in the plan - ConfigMgr uses SQL on this VM's own image"
+                    : "No enabled SQL Server, which SharePoint requires"));
+        }
+
+        if (Server.Role == ServerRole.SccmDistributionPoint)
+        {
+            var primary = Plan.EnabledServers.FirstOrDefault(s => s.Role == ServerRole.SccmPrimarySite);
+
+            rows.Add(new DerivedRow("Primary site", primary?.Name ?? "",
+                "No enabled Primary Site for this DP/MP to report to"));
+        }
+
+        rows.Add(new DerivedRow(
+            "Hardening",
+            (Plan.Hardening.ApplyStig, Plan.Hardening.ApplyMicrosoftBaseline) switch
+            {
+                (true, true) => "STIG + Microsoft baseline",
+                (true, false) => "STIG",
+                (false, true) => "Microsoft baseline",
+                _ => "none"
+            },
+            ""));
+
+        return rows;
+    }
+
+    private void Set(Action mutate)
+    {
+        mutate();
+        PlanState.NotifyChanged();
+    }
+
+    protected override void OnInitialized() => PlanState.Changed += Refresh;
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => PlanState.Changed -= Refresh;
+}

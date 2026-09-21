@@ -1,0 +1,44 @@
+@* Numeric sibling of TextField; keeps the pages free of manual int parsing. *@
+
+@implements IDisposable
+@inject ValidationState Validation
+
+<div class="field">
+    <label for="@_id">@Label</label>
+    <input id="@_id" type="number" value="@Value" min="@Min" max="@Max"
+           class="@(Validation.HasError(Path) ? "invalid" : null)"
+           aria-invalid="@(Validation.HasError(Path) ? "true" : null)"
+           @onchange="OnChanged" disabled="@Disabled" />
+    <FieldIssues Path="@Path" Hint="@Hint" />
+</div>
+
+@code {
+    private readonly string _id = $"n{Guid.NewGuid():N}";
+
+    [Parameter, EditorRequired] public string Label { get; set; } = "";
+    [Parameter] public int Value { get; set; }
+    [Parameter] public EventCallback<int> ValueChanged { get; set; }
+    [Parameter] public string? Hint { get; set; }
+    [Parameter] public int Min { get; set; } = 0;
+    [Parameter] public int Max { get; set; } = int.MaxValue;
+    [Parameter] public bool Disabled { get; set; }
+
+    /// <summary>The dotted path the validator reports this value under.</summary>
+    [Parameter] public string? Path { get; set; }
+
+    protected override void OnInitialized() => Validation.Changed += Refresh;
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Validation.Changed -= Refresh;
+
+    private Task OnChanged(ChangeEventArgs e)
+    {
+        if (!int.TryParse(e.Value?.ToString(), out var parsed))
+        {
+            return Task.CompletedTask;
+        }
+
+        return ValueChanged.InvokeAsync(Math.Clamp(parsed, Min, Max));
+    }
+}

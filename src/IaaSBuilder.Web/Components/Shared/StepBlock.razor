@@ -1,0 +1,52 @@
+@*
+    Wraps the block of controls that satisfies one checklist step, and highlights it when it is
+    the next thing to do. The checklist alone tells you what to do but not where - on a page with
+    a dozen fields that is still a hunt.
+
+    Matching is on the step's Anchor, not its Title. Titles are prose and get reworded; an anchor
+    is an identifier whose only job is this. A typo in either case fails the same way - nothing is
+    ever highlighted - so StepBlockTests asserts every anchor the checklist emits is rendered by
+    some page.
+*@
+@implements IDisposable
+@using IaaSBuilder.Core.Validation
+@inject PlanState PlanState
+@inject AzureSession Session
+
+<div class="step-block @(IsNext ? "step-next" : "")" id="@($"step-{Anchor}")">
+    @if (IsNext)
+    {
+        <span class="step-flag">Do this next</span>
+    }
+    @ChildContent
+</div>
+
+@code {
+    /// <summary>Matches <see cref="SetupStep.Anchor"/>.</summary>
+    [Parameter, EditorRequired] public string Anchor { get; set; } = "";
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private bool IsNext
+    {
+        get
+        {
+            var steps = SetupChecklist.For(PlanState.Plan, Session.IsSignedIn, PlanState.AdminPassword);
+            return SetupChecklist.NextStep(steps)?.Anchor == Anchor;
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        PlanState.Changed += Refresh;
+        Session.Changed += Refresh;
+    }
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        PlanState.Changed -= Refresh;
+        Session.Changed -= Refresh;
+    }
+}

@@ -1,0 +1,90 @@
+@implements IDisposable
+@inject PlanState Plan
+@inject ValidationState Validation
+
+@*
+    Continuous validation. Every problem the validator can detect up front - an IP outside the
+    subnet, a duplicate computer name, a role whose prerequisite is missing, a DSC configuration
+    that is not in the package - is shown while editing rather than discovered part-way through
+    a 40 minute deployment, which is how the legacy tool behaved.
+*@
+
+@if (_result is null)
+{
+    <div class="panel"><span class="muted">Validating&hellip;</span></div>
+}
+else if (Plan.IsPristine)
+{
+    @*
+        A plan nobody has touched is blank by design - subscription, region, resource group and
+        domain are choices, not defaults, so they start empty. Listing them as errors would greet
+        a first-time visitor with a wall of red describing work they have not had a chance to do,
+        which reads as a broken tool. The checklist above already asks for exactly these, in
+        order. Full validation resumes on the first edit.
+    *@
+    @if (!Compact)
+    {
+        <div class="alert info">
+            Nothing filled in yet. Work through <strong>Getting started</strong> above; problems
+            are reported here as soon as you start editing.
+        </div>
+    }
+}
+else if (_result.IsValid && !_result.Warnings.Any())
+{
+    @if (!Compact)
+    {
+        <div class="alert ok">Plan is valid. @Plan.Plan.EnabledServers.Count() server(s) will be built.</div>
+    }
+}
+else
+{
+    @if (_result.Errors.Any())
+    {
+        <div class="alert err">
+            <strong>@_result.Errors.Count() problem(s) must be fixed before deploying</strong>
+            <ul class="issue-list">
+                @foreach (var issue in _result.Errors)
+                {
+                    <li><span class="issue-path">@issue.Path</span>@issue.Message</li>
+                }
+            </ul>
+        </div>
+    }
+
+    @if (_result.Warnings.Any() && !Compact)
+    {
+        <div class="alert warn">
+            <strong>@_result.Warnings.Count() warning(s)</strong>
+            <ul class="issue-list">
+                @foreach (var issue in _result.Warnings)
+                {
+                    <li><span class="issue-path">@issue.Path</span>@issue.Message</li>
+                }
+            </ul>
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public bool Compact { get; set; }
+
+    private ValidationResult? _result;
+
+    protected override void OnInitialized()
+    {
+        // Reads the shared result rather than validating again. Sixty field components and this
+        // panel all want the same answer on every keystroke, and a full pass walks the plan and
+        // opens the DSC package to read its configuration names.
+        Validation.Changed += Revalidate;
+        Revalidate();
+    }
+
+    private void Revalidate()
+    {
+        _result = Validation.Result;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose() => Validation.Changed -= Revalidate;
+}

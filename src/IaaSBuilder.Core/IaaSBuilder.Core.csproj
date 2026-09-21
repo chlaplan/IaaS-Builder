@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="IaaSBuilder.Core.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Azure.Identity" Version="1.21.0" />
+    <PackageReference Include="Azure.ResourceManager.Compute" Version="1.17.0" />
+    <!--
+      PINNED, DO NOT BUMP TO 1.12.0 WITHOUT READING THIS.
+
+      1.12.0 cannot deploy an ARM template at all. It marks the ArmDeployment* types obsolete and
+      its generated ModelReaderWriterContext omits them, but the still-shipping
+      ArmDeploymentOperationSource asks that same context to deserialise ArmDeploymentData when the
+      long-running operation completes. Every deploy and every what-if dies ~20s in with:
+
+        No ModelReaderWriterTypeBuilder found for ArmDeploymentData
+
+      The obsolete message points at Azure.ResourceManager.Resources.Deployments, which does not
+      exist in 1.12.0 - that namespace ships in a later release that is not on our feed (1.12.0 is
+      the newest of the 30 versions available). So moving forward is not currently an option and
+      1.11.2, where the context still registers those types, is.
+
+      ArmDeploymentTypeBuilderTests pins the exact gap and DeploymentLroTests drives a real
+      long-running operation over a stub transport, so a future bump fails the build rather than
+      failing in someone's subscription.
+    -->
+    <PackageReference Include="Azure.ResourceManager.Resources" Version="1.11.2" />
+    <PackageReference Include="Azure.ResourceManager.Storage" Version="1.7.0" />
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.29.2" />
+  </ItemGroup>
+
+</Project>

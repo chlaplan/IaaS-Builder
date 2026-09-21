@@ -1,0 +1,36 @@
+@*
+    The error and hint text under a field. Shared by every field component so that an invalid
+    storage account name and an invalid IP address look and read the same way.
+
+    The message comes from the validator, not from the markup, so what the operator is told here
+    is exactly what will block the deployment.
+*@
+@implements IDisposable
+@inject ValidationState Validation
+
+@if (Messages.Count > 0)
+{
+    <span class="field-error" role="alert">
+        @foreach (var message in Messages)
+        {
+            <span>@message</span>
+        }
+    </span>
+}
+else if (!string.IsNullOrWhiteSpace(Hint))
+{
+    <span class="hint">@Hint</span>
+}
+
+@code {
+    [Parameter] public string? Path { get; set; }
+    [Parameter] public string? Hint { get; set; }
+
+    private IReadOnlyList<string> Messages => Validation.MessagesFor(Path);
+
+    protected override void OnInitialized() => Validation.Changed += Refresh;
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Validation.Changed -= Refresh;
+}

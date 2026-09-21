@@ -1,0 +1,32 @@
+@implements IDisposable
+@inject ValidationState Validation
+
+<div class="check">
+    <input id="@_id" type="checkbox" checked="@Value" @onchange="OnChanged" disabled="@Disabled" />
+    <label for="@_id" class="@(Validation.HasError(Path) ? "invalid-label" : null)">@Label</label>
+</div>
+<div style="margin:-.25rem 0 .5rem 1.6rem">
+    <FieldIssues Path="@Path" Hint="@Hint" />
+</div>
+
+@code {
+    private readonly string _id = $"c{Guid.NewGuid():N}";
+
+    [Parameter, EditorRequired] public string Label { get; set; } = "";
+    [Parameter] public bool Value { get; set; }
+    [Parameter] public EventCallback<bool> ValueChanged { get; set; }
+    [Parameter] public string? Hint { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+
+    /// <summary>The dotted path the validator reports this value under.</summary>
+    [Parameter] public string? Path { get; set; }
+
+    protected override void OnInitialized() => Validation.Changed += Refresh;
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Validation.Changed -= Refresh;
+
+    private Task OnChanged(ChangeEventArgs e) =>
+        ValueChanged.InvokeAsync(e.Value is bool b && b);
+}

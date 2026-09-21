@@ -1,0 +1,13 @@
+@page "/"
+@inject NavigationManager Nav
+
+@*
+    The build flow starts with Azure & Identity, so the root redirects there rather than
+    hosting a second copy of that page. Keeping one canonical URL per page means the sidebar
+    highlight is correct no matter how the user arrived - a second @page "/azure" route would
+    leave the nav item unhighlighted when reached from the root.
+*@
+
+@code {
+    protected override void OnInitialized() => Nav.NavigateTo("azure", replace: true);
+}

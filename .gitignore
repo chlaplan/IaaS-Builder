@@ -1,0 +1,106 @@
+# ---------------------------------------------------------------------------
+# Visual Studio / .NET build output
+# ---------------------------------------------------------------------------
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+[Ll]og/
+[Ll]ogs/
+artifacts/
+publish/
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+*.rsuser
+*.svclog
+*.VC.db
+*.VC.VC.opendb
+*.psess
+*.vsp
+*.vspx
+*.binlog
+*.received.*
+
+# ---------------------------------------------------------------------------
+# Test results and coverage
+# ---------------------------------------------------------------------------
+[Tt]est[Rr]esult*/
+*.trx
+*.coverage
+*.coveragexml
+coverage*.json
+coverage*.xml
+coverage*.info
+
+# ---------------------------------------------------------------------------
+# NuGet
+# ---------------------------------------------------------------------------
+*.nupkg
+*.snupkg
+packages/
+!packages/build/
+project.lock.json
+project.fragment.lock.json
+
+# ---------------------------------------------------------------------------
+# Runtime state written beside the executable. None of it belongs in source
+# control, and some of it is specific to one operator's tenant.
+# ---------------------------------------------------------------------------
+
+# A snapshot of one subscription's regions, VM sizes and image SKUs, captured
+# after sign-in. Tens of megabytes, and it names the tenant it came from.
+catalog.json
+
+# Cached retail prices, refetched automatically once 30 days old.
+prices.json
+
+# Operator settings: cloud, subscription, the "show VM prices" egress toggle.
+settings.json
+appsettings.*.local.json
+
+# `iaasbuilder init` writes here by default, and a plan an operator has
+# actually used carries their subscription id. Publish samples deliberately,
+# under a name that says so, rather than letting a working file drift in.
+/plan.json
+plan.local.json
+*.plan.json
+
+# Transcripts from the legacy PowerShell tool (Start-Transcript).
+Logs/
+*.transcript.txt
+
+# Real cloud endpoint definitions for a sovereign or air-gapped environment.
+# cloud.sample.json is the committed template; the live one is not.
+cloud.json
+cloud.*.json
+!cloud.sample.json
+
+# ---------------------------------------------------------------------------
+# Secrets. Belt and braces - nothing here should ever have existed, but a
+# public repository is the wrong place to find that out.
+# ---------------------------------------------------------------------------
+*.pfx
+*.p12
+*.pem
+*.key
+*.publishsettings
+*.azurePubxml
+secrets.json
+.env
+.env.*
+
+# ---------------------------------------------------------------------------
+# OS and editor noise
+# ---------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+.idea/
+.vscode/*
+!.vscode/extensions.json

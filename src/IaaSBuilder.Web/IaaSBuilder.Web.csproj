@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\IaaSBuilder.Core\IaaSBuilder.Core.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+    <AssemblyName>IaaSBuilder</AssemblyName>
+    <RootNamespace>IaaSBuilder.Web</RootNamespace>
+  </PropertyGroup>
+
+  <!--
+    Air-gapped distribution: one self-contained executable with the runtime embedded, so the
+    target machine needs no .NET install, no internet and no package feed.
+      dotnet publish src\IaaSBuilder.Web -c Release
+
+    Gated on _IsPublishing so these apply to `dotnet publish` only. Left on every Release
+    *build* they redirect output to net10.0\win-x64\, make an ordinary build self-contained,
+    stop wwwroot being copied (static files 404) and break F5 debugging in Release.
+  -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release' AND '$(_IsPublishing)' == 'true'">
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <!--
+    The ARM templates and the DSC package travel with the app rather than being downloaded,
+    which is what makes a disconnected build possible.
+  -->
+  <ItemGroup>
+    <Content Include="..\..\Templates\**\*.json" LinkBase="Templates" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\..\nested\**\*.json" LinkBase="nested" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\..\DSC\**\*.zip" LinkBase="DSC" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\..\STIG\**\*.zip" LinkBase="STIG" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <!-- Template for the air-gapped cloud endpoints; copied, not renamed, so it is inert until used. -->
+    <Content Include="..\..\cloud.sample.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Identity.Web" Version="4.14.2" />
+    <PackageReference Include="Microsoft.Identity.Web.UI" Version="4.14.2" />
+  </ItemGroup>
+
+</Project>

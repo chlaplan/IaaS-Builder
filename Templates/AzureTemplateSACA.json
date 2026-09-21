@@ -1,4 +1,4 @@
-﻿{
+{
   "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
@@ -125,6 +125,27 @@
         "description": "If STIG -eq $True, STIGs will be downloaded from DISA and Imported into AD "
       }
     },
+    "installMediaLocation": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Where the VMs fetch third-party installer media - Configuration Manager, the Windows ADK, Exchange, the DISA STIG GPOs and the Microsoft security baseline. May be an https URL, a UNC share or a local path on the VM. Empty means download from Microsoft as before. The file names are fixed; see the README for the list to stage."
+      }
+    },
+    "installMediaFallback": {
+      "type": "string",
+      "defaultValue": "false",
+      "metadata": {
+        "description": "'true' lets a VM download from Microsoft when a file is missing from installMediaLocation. Off by default: somebody who named a location usually did so because the internet is unreachable, and silently falling back turns a clear message into a long hang."
+      }
+    },
+    "installCertificateAuthority": {
+      "type": "string",
+      "defaultValue": "false",
+      "metadata": {
+        "description": "'true' installs an enterprise root CA on the domain controller. Off by default because a CA on a DC is a lab convenience, not a production pattern; put it on a CA role server instead. A string rather than a bool to match STIG and MSFTBaseline, which the DSC scripts also receive as strings."
+      }
+    },
     "sharePointVersion": {
       "type": "string",
       "defaultValue": "2016",
@@ -178,6 +199,22 @@
         "description": "The base URI where artifacts required by this template are located including a trailing '/'"
       }
     },
+    "dscPackagePath": {
+      "type": "string",
+      "metadata": {
+        "description": "Path to the DSC package relative to _artifactsLocation. Carried as a parameter rather than hard-coded because a public host can be case-sensitive: 'dsc/Configuration.zip' is a 404 where 'DSC/Configuration.zip' is a 200."
+      },
+      "defaultValue": "dsc/Configuration.zip"
+    },
+
+    "assignPublicIp": {
+      "type": "bool",
+      "metadata": {
+        "description": "Give each VM its own public IP. Off by default: many tenants deny 'Microsoft.Network/networkInterfaces/ipConfigurations[*].publicIpAddress.id' by policy, and Azure Bastion reaches the VMs without one."
+      },
+      "defaultValue": false
+    },
+
     "_artifactsLocationSasToken": {
       "type": "securestring",
       "metadata": {
@@ -201,7 +238,7 @@
     }
   },
   "variables": {
-    "dscScript": "dsc/Configuration.zip",
+    "dscScript": "[parameters('dscPackagePath')]",
     "VirtualNetworkName": "[parameters('VirtualNetworkName')]",
     //"virtualNetworkName": "[concat(toLower(parameters('prefix')), '-vnet')]",
     "domainName": "[parameters('DomainName')]",
@@ -211,7 +248,7 @@
       "virtualMachinesIPAddress": "[parameters('ip')]",
       "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), parameters('subnetname'))]",
       "privateIPAllocationMethod": "Static",
-      "publicIpAllocationMethod": "Dynamic"
+      "publicIpAllocationMethod": "Static"
     },
     "spSettings": {
       "sqlAlias": "SQLAlias",
@@ -255,23 +292,27 @@
     }
   },
   "resources": [
-    //{
-    //  "type": "Microsoft.Network/publicIpAddresses",
-    //  "apiVersion": "2020-05-01",
-    //  "name": "[concat(toLower(parameters('prefix')),toLower(variables('vmname')), '-ip')]",
-    //  "location": "[parameters('location')]",
-    //  "properties": {
-    //    "publicIpAllocationMethod": "[variables('networkSettings').publicIpAllocationMethod]"
-    //  }
-    //},
+    {
+      "condition": "[parameters('assignPublicIp')]",
+      "type": "Microsoft.Network/publicIpAddresses",
+      "apiVersion": "2020-05-01",
+      "name": "[concat(toLower(parameters('prefix')),toLower(variables('vmname')), '-ip')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Standard"
+      },
+      "properties": {
+        "publicIpAllocationMethod": "[variables('networkSettings').publicIpAllocationMethod]"
+      }
+    },
     {
       "type": "Microsoft.Network/networkInterfaces",
       "name": "[concat(toLower(parameters('prefix')),toLower(variables('vmname')), '-ni')]",
       "apiVersion": "2020-05-01",
       "location": "[parameters('location')]",
-      //"dependsOn": [
-      //  "[concat('Microsoft.Network/publicIpAddresses/',toLower(parameters('prefix')),toLower(variables('vmname')), '-ip')]"
-      //],
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIpAddresses', concat(toLower(parameters('prefix')),toLower(variables('vmname')), '-ip'))]"
+      ],
       "properties": {
         "ipConfigurations": [
           {
@@ -282,9 +323,7 @@
               },
               "privateIPAllocationMethod": "[variables('networkSettings').privateIPAllocationMethod]",
               "privateIPAddress": "[concat(variables('networkSettings').virtualMachinesIPAddress)]",
-              //"publicIpAddress": {
-              //  "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIpAddresses', concat(toLower(parameters('prefix')),toLower(variables('vmname')), '-ip'))]"
-              //}
+              "publicIpAddress": "[if(parameters('assignPublicIp'), createObject('id', resourceId(resourceGroup().name, 'Microsoft.Network/publicIpAddresses', concat(toLower(parameters('prefix')),toLower(variables('vmname')), '-ip'))), json('null'))]"
             }
           }
         ]
@@ -369,6 +408,9 @@
             //"ClientName": "[concat(parameters('prefix'),variables('vmname'))]",
             "STIG": "[parameters('STIG')]",
             "MSFTBaseline": "[parameters('MSFTBaseline')]",
+            "InstallCA": "[parameters('installCertificateAuthority')]",
+            "InstallMediaLocation": "[parameters('installMediaLocation')]",
+            "InstallMediaFallback": "[parameters('installMediaFallback')]",
             "PSName": "[concat(parameters('prefix'),variables('vmname'))]",
             "DNSIPAddress": "[parameters('DCip')]",
             "FedServiceDisplayName": "[concat(parameters('prefix'),'_adfs')]",

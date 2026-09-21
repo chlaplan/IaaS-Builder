@@ -1,0 +1,127 @@
+@page "/plan-file"
+@inject PlanState PlanState
+@inject IJSRuntime JS
+
+<PageTitle>Plan file - IaaS Builder</PageTitle>
+
+<div class="page-head">
+    <h1>Plan file</h1>
+    <p>
+        The whole environment is one JSON document. It replaces the hand-written CSV mapping
+        that silently dropped every combo box, checkbox and SACA value, and it can be committed,
+        diffed, and handed to <code>iaasbuilder deploy --plan</code> in CI or in an enclave.
+    </p>
+</div>
+
+<div class="panel">
+    <h2>Save</h2>
+    <div class="grid-2">
+        <TextField Label="Path on this machine"
+                   Value="@_path"
+                   ValueChanged="@(v => _path = v ?? "")"
+                   Hint="Relative paths resolve against the application folder." />
+    </div>
+    <div class="button-row">
+        <button class="primary" @onclick="Save">Save to disk</button>
+        <button @onclick="Download">Download</button>
+        <button @onclick="Load">Load from disk</button>
+        <button class="danger" @onclick="Reset">New plan</button>
+    </div>
+
+    @if (_message is not null)
+    {
+        <div class="alert @(_isError ? "err" : "ok")" style="margin-top:.75rem">@_message</div>
+    }
+
+    <p class="hint" style="margin-top:.75rem">
+        The administrator password is never included. Supply it in the UI, via the
+        <code>IAASBUILDER_ADMIN_PASSWORD</code> environment variable, or from Key Vault.
+    </p>
+</div>
+
+<div class="panel">
+    <h2>Paste a plan</h2>
+    <textarea rows="18" class="mono" value="@_json"
+              @onchange="@(e => _json = e.Value?.ToString() ?? "")"></textarea>
+    <div class="button-row" style="margin-top:.5rem">
+        <button @onclick="Apply">Apply pasted JSON</button>
+        <button @onclick="Show">Show current plan</button>
+    </div>
+</div>
+
+@code {
+    private string _path = "plan.json";
+    private string _json = "";
+    private string? _message;
+    private bool _isError;
+
+    protected override void OnInitialized() => Show();
+
+    private void Show()
+    {
+        _json = PlanState.Serialize();
+        _message = null;
+    }
+
+    private async Task Save()
+    {
+        try
+        {
+            await PlanState.SaveAsync(_path);
+            Report($"Saved to {PlanState.PlanPath}.");
+        }
+        catch (Exception ex)
+        {
+            Report(ex.Message, isError: true);
+        }
+    }
+
+    private async Task Load()
+    {
+        try
+        {
+            await PlanState.LoadAsync(_path);
+            Show();
+            Report($"Loaded {PlanState.PlanPath}.");
+        }
+        catch (Exception ex)
+        {
+            Report(ex.Message, isError: true);
+        }
+    }
+
+    private void Apply()
+    {
+        try
+        {
+            PlanState.Load(_json);
+            Report("Plan applied.");
+        }
+        catch (Exception ex)
+        {
+            Report(ex.Message, isError: true);
+        }
+    }
+
+    private void Reset()
+    {
+        PlanState.Reset();
+        Show();
+        Report("Started a new plan.");
+    }
+
+    private async Task Download()
+    {
+        var name = Path.GetFileName(_path);
+        await JS.InvokeVoidAsync(
+            "iaasBuilder.downloadText",
+            string.IsNullOrWhiteSpace(name) ? "plan.json" : name,
+            PlanState.Serialize());
+    }
+
+    private void Report(string message, bool isError = false)
+    {
+        _message = message;
+        _isError = isError;
+    }
+}

@@ -1,0 +1,469 @@
+@page "/servers"
+@implements IDisposable
+@using System.Net
+@using IaaSBuilder.Core.Catalog
+@using IaaSBuilder.Core.Pricing
+@using IaaSBuilder.Core.Validation
+@inject PlanState PlanState
+@inject CatalogState Catalog
+@inject PriceState Prices
+
+<PageTitle>Servers - IaaS Builder</PageTitle>
+
+<div class="page-head">
+    <h1>Servers</h1>
+    <p>
+        A list, not a fixed set of checkboxes. Each role brings its own defaults and its own
+        prerequisites, and the deployment order is derived from them.
+    </p>
+</div>
+
+<ValidationPanel Compact="true" />
+
+<GettingStarted CurrentPage="servers" />
+
+@* Static IPs below only mean something against the subnet, which is edited on another page. *@
+<NetworkPlacement />
+
+@if (Prices.Enabled && MonthlyTotal() is { } total)
+{
+    <div class="panel subtle">
+        <h2>Estimated cost</h2>
+        <p>
+            About <strong>@total.ToString("N0") @Prices.Currency(Plan.Azure.Location)</strong> a month
+            for the @Plan.Servers.Count(s => s.Enabled) enabled server(s)@(TotalIsPartial() ? ", and at least that - some sizes have no published price" : "").
+        </p>
+        <p class="muted">
+            Windows pay-as-you-go compute only, at @VmPrice.HoursPerMonth hours a month. It does not
+            include disks, bandwidth, Bastion or any other resource in the plan, so treat it as a
+            way to compare sizes rather than as a bill.
+            @if (Prices.CapturedUtc(Plan.Azure.Location) is { } captured)
+            {
+                <text> Rates retrieved @captured.ToLocalTime().ToString("d").</text>
+            }
+        </p>
+    </div>
+}
+
+<div class="panel">
+    <StepBlock Anchor="addserver">
+    <h2>Add a server</h2>
+    <p class="muted">
+        Grouped by administrative trust tier. This is a label, not a boundary - the tool does not
+        yet put the tiers in separate subnets or give them separate administrative accounts.
+    </p>
+    @foreach (var tier in TrustTiers.InOrder)
+    {
+        var roles = RoleCatalog.All.Where(r => r.Tier == tier).OrderBy(r => r.DisplayName).ToList();
+        if (roles.Count == 0)
+        {
+            continue;
+        }
+
+        <div style="margin-top:.85rem">
+            <div class="field">
+                <label>@TrustTiers.DisplayNameOf(tier)</label>
+                <span class="hint">@TrustTiers.DescriptionOf(tier)</span>
+            </div>
+            <div class="button-row">
+                @foreach (var role in roles)
+                {
+                    var blocked = !PlanFactory.CanAddServer(Plan, role.Role, out var why);
+                    <button @onclick="@(() => Add(role.Role))"
+                            disabled="@blocked"
+                            title="@(blocked ? why : Prerequisites(role))">
+                        + @role.DisplayName
+                    </button>
+                }
+            </div>
+        </div>
+    }
+    </StepBlock>
+</div>
+
+@if (Plan.Servers.Count == 0)
+{
+    <div class="panel"><span class="muted">No servers in this plan yet.</span></div>
+}
+
+@* Servers are grouped the same way they are added, so the page reads in build order: Tier 0
+   has to exist before anything below it can join the domain. *@
+@foreach (var group in GroupedServers())
+{
+    <h2 style="margin:1.25rem 0 .5rem">
+        @group.Heading
+        <span class="badge muted">@group.Servers.Count</span>
+    </h2>
+
+    @foreach (var server in group.Servers)
+    {
+    <div class="panel" @key="server">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem">
+            <div>
+                <h2 style="margin-bottom:.25rem">
+                    @(string.IsNullOrWhiteSpace(server.Name) ? "(unnamed)" : server.Name)
+                    <span class="badge muted">@RoleCatalog.Get(server.Role).DisplayName</span>
+                </h2>
+                <div class="hint">
+                    @if (RoleCatalog.TryGet(server.Role, out var definition))
+                    {
+                        <text>DSC configuration <code>@definition.DscToken</code>. @Prerequisites(definition)</text>
+                    }
+                    else
+                    {
+                        <text>This role is no longer supported. Change it or remove the server.</text>
+                    }
+                </div>
+            </div>
+            <div class="button-row">
+                <CheckField Label="Enabled"
+                            Value="@server.Enabled"
+                            ValueChanged="@(v => Set(() => server.Enabled = v))" />
+                <button class="danger" @onclick="@(() => Remove(server))">Remove</button>
+            </div>
+        </div>
+
+        <div class="grid-3">
+            <TextField Label="Computer name"
+                       Path=@ServerPath(server, "name")
+                       Value="@server.Name"
+                       ValueChanged="@(v => Set(() => server.Name = v ?? ""))"
+                       Hint="15 characters maximum." />
+
+            <TextField Label="Private IP"
+                       Path=@ServerPath(server, "privateIpAddress")
+                       Value="@server.PrivateIpAddress"
+                       ValueChanged="@(v => Set(() => server.PrivateIpAddress = v ?? ""))"
+                       Hint="@PrivateIpHint(server)" />
+
+            <PickField Label="VM size"
+                       Path=@ServerPath(server, "vmSize")
+                       Value="@server.VmSize"
+                       ValueChanged="@(v => ChangeSize(server, v))"
+                       Options="SizeOptions()"
+                       Hint="@SizeHint(server)" />
+
+            @* Driven by DiskTypes.For, so a size that cannot do Premium never offers it. The
+               field carries a Path as well, because a plan file written by hand or by an older
+               build can still hold a combination the dropdown would not let you pick. *@
+            <PickField Label="Disk type"
+                       Path=@ServerPath(server, "diskType")
+                       Value="@server.DiskType"
+                       ValueChanged="@(v => Set(() => server.DiskType = v ?? ""))"
+                       Options="DiskOptions(server)"
+                       AllowCustom="false"
+                       Hint="@DiskHint(server)" />
+
+            @* Publisher and offer used to be free text, so the SKU list below - which is keyed on
+               both - was almost always empty and the operator was typing three exact strings from
+               memory. All three are now driven by the catalog, and all three still accept typing
+               so an image the snapshot does not know about is not blocked. *@
+            <PickField Label="Image publisher"
+                       Value="@server.Image.Publisher"
+                       ValueChanged="@(v => Set(() => server.Image.Publisher = v ?? ""))"
+                       Options="@(Catalog.ImagePublishers(Plan.Azure.Location).Select(p => new PickField.Option(p)).ToList())"
+                       Hint="@ImageHint" />
+
+            <PickField Label="Image offer"
+                       Value="@server.Image.Offer"
+                       ValueChanged="@(v => Set(() => server.Image.Offer = v ?? ""))"
+                       Options="@(Catalog.ImageOffers(Plan.Azure.Location, server.Image.Publisher).Select(o => new PickField.Option(o)).ToList())" />
+
+            <PickField Label="Image SKU"
+                       Path=@ServerPath(server, "image")
+                       Value="@server.Image.Sku"
+                       ValueChanged="@(v => Set(() => server.Image.Sku = v ?? ""))"
+                       Options="@(Catalog.ImageSkus(Plan.Azure.Location, server.Image.Publisher, server.Image.Offer).Select(s => new PickField.Option(s)).ToList())" />
+        </div>
+
+        <CheckField Label="Use a Spot instance"
+                    Path=@ServerPath(server, "useSpotInstance")
+                    Value="@server.UseSpotInstance"
+                    ValueChanged="@(v => Set(() => server.UseSpotInstance = v))"
+                    Hint="Cheaper, but Azure can evict it at any time." />
+
+        <RoleSettings Server="server" />
+    </div>
+    }
+}
+
+@code {
+    private DeploymentPlan Plan => PlanState.Plan;
+
+    /// <summary>
+    /// The dotted path the validator reports a server's field under.
+    /// </summary>
+    /// <remarks>
+    /// Indexed by position in <c>Plan.Servers</c>, which is what the validator uses - not by
+    /// position within the trust-tier group the card is rendered in. Those differ as soon as a
+    /// plan has more than one tier, and using the wrong one would outline whichever server
+    /// happened to share the index.
+    /// </remarks>
+    private string ServerPath(ServerSpec server, string field) =>
+        $"servers[{Plan.Servers.IndexOf(server)}].{field}";
+
+    private sealed record ServerGroup(string Heading, List<ServerSpec> Servers);
+
+    /// <summary>
+    /// Servers bucketed by the trust tier of their role, most privileged first. A role that is
+    /// no longer registered has no tier, so those are collected at the end rather than dropped -
+    /// silently hiding a server that is still in the plan would be worse than showing it.
+    /// </summary>
+    private List<ServerGroup> GroupedServers()
+    {
+        var groups = new List<ServerGroup>();
+
+        foreach (var tier in TrustTiers.InOrder)
+        {
+            var servers = Plan.Servers
+                .Where(s => RoleCatalog.TryGet(s.Role, out var d) && d.Tier == tier)
+                .ToList();
+
+            if (servers.Count > 0)
+            {
+                groups.Add(new ServerGroup(TrustTiers.DisplayNameOf(tier), servers));
+            }
+        }
+
+        var orphans = Plan.Servers
+            .Where(s => !RoleCatalog.TryGet(s.Role, out _))
+            .ToList();
+
+        if (orphans.Count > 0)
+        {
+            groups.Add(new ServerGroup("Unsupported roles", orphans));
+        }
+
+        return groups;
+    }
+
+    protected override void OnInitialized()
+    {
+        PlanState.Changed += Refresh;
+        Catalog.Changed += Refresh;
+        Prices.Changed += Refresh;
+    }
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        PlanState.Changed -= Refresh;
+        Catalog.Changed -= Refresh;
+        Prices.Changed -= Refresh;
+    }
+
+    private static readonly string[] DiskSkus = DiskTypes.All;
+
+    /// <summary>
+    /// Every size the region offers, grouped by series so several hundred entries stay readable,
+    /// and labelled with cores, memory and monthly cost.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately unfiltered. The previous control was a datalist, which the browser narrows to
+    /// whatever is already typed in the box - so opening it with a size already chosen showed
+    /// almost nothing and looked as though the tool was hiding sizes. It never was.
+    /// </remarks>
+    private IReadOnlyList<PickField.Option> SizeOptions()
+    {
+        var region = Plan.Azure.Location;
+
+        return Catalog.VmSizes(region)
+            .OrderBy(s => s.Series, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(s => s.Cores)
+            .ThenBy(s => s.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(s => new PickField.Option(
+                s.Name,
+                SizeLabel(region, s),
+                string.IsNullOrEmpty(s.Series) ? "Other" : s.Series + "-series"))
+            .ToList();
+    }
+
+    private string SizeLabel(string region, VmSizeInfo size)
+    {
+        var label = size.Name;
+
+        if (size.Cores > 0)
+        {
+            label += $" - {size.Cores} vCPU, {size.MemoryGb} GB";
+        }
+
+        var price = Prices.Find(region, size.Name)?.PerMonth(false);
+        if (price is > 0)
+        {
+            label += $", ~{price.Value:N0} {Prices.Currency(region)}/mo";
+        }
+
+        if (size.KnownToRejectPremium)
+        {
+            label += " - no Premium SSD";
+        }
+
+        return label;
+    }
+
+    private IReadOnlyList<PickField.Option> DiskOptions(ServerSpec server) =>
+        DiskTypes.For(SizeOf(server))
+            .Select(d => new PickField.Option(d))
+            .ToList();
+
+    private VmSizeInfo? SizeOf(ServerSpec server) =>
+        Catalog.VmSize(Plan.Azure.Location, server.VmSize);
+
+    /// <summary>
+    /// Changing the size can invalidate the disk type, so it is corrected here rather than left
+    /// for Azure to reject minutes into a deployment. Only ever downgrades: a size that gains
+    /// Premium support does not silently upgrade a disk the operator chose on purpose.
+    /// </summary>
+    private void ChangeSize(ServerSpec server, string? size) => Set(() =>
+    {
+        server.VmSize = size ?? "";
+
+        var info = Catalog.VmSize(Plan.Azure.Location, server.VmSize);
+        if (!DiskTypes.IsSupported(info, server.DiskType))
+        {
+            server.DiskType = DiskTypes.BestAvailable(info);
+        }
+    });
+
+    private string SizeHint(ServerSpec server)
+    {
+        var region = Plan.Azure.Location;
+
+        if (string.IsNullOrWhiteSpace(region))
+        {
+            return "Pick a region on the Azure page to load sizes.";
+        }
+
+        if (!Prices.Enabled)
+        {
+            return "Prices are turned off on the Azure page.";
+        }
+
+        var price = Prices.Find(region, server.VmSize);
+        if (price?.PerHour(server.UseSpotInstance) is { } hourly and > 0)
+        {
+            var monthly = hourly * VmPrice.HoursPerMonth;
+            var basis = server.UseSpotInstance ? "Spot" : "pay-as-you-go";
+            return $"About {monthly:N0} {Prices.Currency(region)} a month ({hourly:N3}/hour, {basis}, Windows, compute only).";
+        }
+
+        return Prices.Unavailable
+            ? "Prices unavailable - the retail feed could not be reached from this machine."
+            : Prices.HasPrices(region) ? "No published price for this size." : "Loading prices...";
+    }
+
+    /// <summary>
+    /// Says why the Premium options are missing, because a dropdown that silently offers two
+    /// entries instead of four reads as a broken catalog rather than a real constraint.
+    /// </summary>
+    private string DiskHint(ServerSpec server) =>
+        SizeOf(server) is { KnownToRejectPremium: true } size
+            ? $"{size.Name} does not support Premium SSD, so only Standard options are offered."
+            : "Premium SSD unless the size cannot take it.";
+
+    /// <summary>The whole plan's compute cost, so a lab's price is visible before deploying it.</summary>
+    private decimal? MonthlyTotal()
+    {
+        var region = Plan.Azure.Location;
+        decimal total = 0;
+        var any = false;
+
+        foreach (var server in Plan.Servers.Where(s => s.Enabled))
+        {
+            var monthly = Prices.Find(region, server.VmSize)?.PerMonth(server.UseSpotInstance);
+            if (monthly is > 0)
+            {
+                total += monthly.Value;
+                any = true;
+            }
+        }
+
+        return any ? total : null;
+    }
+
+    /// <summary>
+    /// True when at least one enabled server has no price, so the total can be shown as a floor
+    /// rather than presented as complete.
+    /// </summary>
+    private bool TotalIsPartial() =>
+        Plan.Servers.Any(s => s.Enabled && Prices.Find(Plan.Azure.Location, s.VmSize)?.PerMonth(s.UseSpotInstance) is not > 0);
+
+    /// <summary>
+    /// Says where the image lists came from. The built-in list is the one worth calling out:
+    /// it is a starting point rather than a statement about what this region actually offers,
+    /// because image availability varies by region and sovereign clouds lag the commercial
+    /// catalog. Any publisher, offer or SKU can still be typed in every case.
+    /// </summary>
+    private string ImageHint =>
+        string.IsNullOrWhiteSpace(Plan.Azure.Location)
+            ? "Pick a region on the Azure page to load images."
+            : Catalog.ImagePublishersAreBuiltIn(Plan.Azure.Location)
+                ? "Common images, not yet checked against " + Plan.Azure.Location
+                    + ". Sign in and refresh to list what the region really offers, or type any value."
+                : Catalog.ServedFromCache
+                    ? "From the offline snapshot. Any publisher, offer or SKU can still be typed."
+                    : "Live from Azure for " + Plan.Azure.Location + ".";
+
+    private void Set(Action mutate)
+    {
+        mutate();
+        PlanState.NotifyChanged();
+    }
+
+    private void Add(ServerRole role) => Set(() => PlanFactory.AddServer(Plan, role));
+
+    private void Remove(ServerSpec server) => Set(() => Plan.Servers.Remove(server));
+
+    private static string Prerequisites(RoleDefinition role) =>
+        role.DependsOnRoles.Count == 0
+            ? "No prerequisites."
+            : "Requires " + string.Join(", ", role.DependsOnRoles.Select(r => RoleCatalog.Get(r).DisplayName)) + ".";
+
+    /// <summary>
+    /// Answers the question the operator actually has while typing: does this address belong to
+    /// the subnet on the Network page? ValidationPanel catches it too, but only after the fact
+    /// and without saying what the acceptable range is.
+    /// </summary>
+    private string PrivateIpHint(ServerSpec server)
+    {
+        if (!Cidr.TryParse(Plan.Network.SubnetPrefix, out var subnet))
+        {
+            return "Set a valid workload subnet on the Network page first.";
+        }
+
+        var range = subnet.FirstUsableAddress() is { } first && subnet.LastUsableAddress() is { } last
+            ? $"{first} - {last}"
+            : "none - the subnet is too small";
+
+        var where = $"{Plan.Network.SubnetName} ({Plan.Network.SubnetPrefix})";
+
+        if (string.IsNullOrWhiteSpace(server.PrivateIpAddress))
+        {
+            return $"In {where}. Assignable {range}.";
+        }
+
+        if (!IPAddress.TryParse(server.PrivateIpAddress, out var address))
+        {
+            return $"Not an IP address. Assignable {range}.";
+        }
+
+        if (!subnet.Contains(address))
+        {
+            return $"Outside {where}. Assignable {range}.";
+        }
+
+        if (subnet.IsAzureReserved(address))
+        {
+            return $"Azure reserves this address. Assignable {range}.";
+        }
+
+        var clash = Plan.Servers.FirstOrDefault(other =>
+            !ReferenceEquals(other, server) &&
+            string.Equals(other.PrivateIpAddress, server.PrivateIpAddress, StringComparison.OrdinalIgnoreCase));
+
+        return clash is not null
+            ? $"Already used by {(string.IsNullOrWhiteSpace(clash.Name) ? "another server" : clash.Name)}."
+            : $"In {where}.";
+    }
+}
