@@ -615,7 +615,51 @@ public sealed class AzureDeploymentService : IAzureDeploymentService
             scopeLabel,
             permissions.Actions,
             permissions.NotActions,
-            await ReadCoresQuotaAsync(plan, ct)));
+            await ReadCoresQuotaAsync(plan, ct),
+            await ReadRestrictedSizesAsync(plan, ct)));
+    }
+
+    /// <summary>
+    /// VM sizes this subscription may not deploy in the target region.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Read live rather than from the catalog snapshot, because a restriction is a fact about this
+    /// subscription right now: it can be lifted by a support request, and a snapshot captured from
+    /// a different subscription would be actively wrong.
+    /// </para>
+    /// <para>
+    /// Only <c>Location</c> restrictions count. A <c>Zone</c> restriction means some availability
+    /// zones lack the size, which is irrelevant to a deployment that does not pin a zone - and this
+    /// tool does not pin one. Counting those would block dozens of sizes that deploy perfectly.
+    /// </para>
+    /// <para>
+    /// Returns null on any failure. An unreadable SKU list must look like "unknown", never like
+    /// "nothing is restricted" and never like a block.
+    /// </para>
+    /// </remarks>
+    private async Task<IReadOnlySet<string>?> ReadRestrictedSizesAsync(
+        DeploymentPlan plan,
+        CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(plan.Azure.Location))
+        {
+            return null;
+        }
+
+        var location = plan.Azure.Location;
+        var filter = Uri.EscapeDataString($"location eq '{location}'");
+
+        using var json = await GetArmJsonAsync(
+            $"subscriptions/{plan.Azure.SubscriptionId}/providers/Microsoft.Compute/skus" +
+            $"?api-version=2021-07-01&$filter={filter}", ct);
+
+        if (json is null || !json.RootElement.TryGetProperty("value", out var skus))
+        {
+            return null;
+        }
+
+        return ComputeSkuRestrictions.Read(skus, location);
     }
 
     /// <summary>

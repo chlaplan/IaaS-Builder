@@ -216,7 +216,7 @@ public sealed class CatalogState
 
     public IReadOnlyList<string> VmSizeNames(string location)
     {
-        var sizes = Catalog.GetVmSizes(location);
+        var sizes = Deployable(Catalog.GetVmSizes(location));
         return sizes.Count > 0 ? sizes.Select(s => s.Name).ToList() : FallbackVmSizes;
     }
 
@@ -232,11 +232,59 @@ public sealed class CatalogState
     /// </remarks>
     public IReadOnlyList<VmSizeInfo> VmSizes(string location)
     {
-        var sizes = Catalog.GetVmSizes(location);
+        var sizes = Deployable(Catalog.GetVmSizes(location));
 
         return sizes.Count > 0
             ? sizes
             : FallbackVmSizes.Select(name => new VmSizeInfo(name, 0, 0, 0)).ToList();
+    }
+
+    /// <summary>
+    /// True when there are sizes to show but none of them carry a definite answer about whether
+    /// this subscription may deploy them, so the size list is necessarily unfiltered.
+    /// </summary>
+    /// <remarks>
+    /// Worth surfacing rather than hiding. Signed in, a refresh fixes it and the operator should
+    /// be told to do that; air-gapped, no refresh is possible and the operator needs to know the
+    /// dropdown is listing everything the region has rather than everything they can have.
+    /// </remarks>
+    public bool AvailabilityDataMissing =>
+        Catalog.VmSizesByLocation.Count > 0 && !Catalog.HasAvailabilityData;
+
+    /// <summary>
+    /// Every size the region lists, including ones this subscription may not deploy.
+    /// </summary>
+    /// <remarks>
+    /// Needed because a plan file can already name a restricted size, and the page still has to be
+    /// able to look it up to explain itself. Never use this to populate a dropdown.
+    /// </remarks>
+    public IReadOnlyList<VmSizeInfo> AllVmSizes(string location) =>
+        Catalog.GetVmSizes(location);
+
+    /// <summary>
+    /// Drops sizes Azure has positively said this subscription cannot deploy here.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Offering them was worse than useless: Azure refuses the virtual machine with
+    /// <c>SkuNotAvailable</c>, and for one real subscription in usgovvirginia that is 73 of the 952
+    /// sizes the region reports. "Available in this region" and "available to you in this region"
+    /// are different questions and the dropdown should only ever answer the second.
+    /// </para>
+    /// <para>
+    /// Only drops a positive statement of restriction. A snapshot captured before this field
+    /// existed leaves it null everywhere, and unknown has to mean "offer it" - the alternative is
+    /// an air-gapped enclave with an older catalog showing an empty size list.
+    /// </para>
+    /// </remarks>
+    private static IReadOnlyList<VmSizeInfo> Deployable(IReadOnlyList<VmSizeInfo> sizes)
+    {
+        if (!sizes.Any(s => s.KnownUnavailable))
+        {
+            return sizes;
+        }
+
+        return sizes.Where(s => !s.KnownUnavailable).ToList();
     }
 
     /// <summary>

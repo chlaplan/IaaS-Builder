@@ -80,17 +80,51 @@ public class PriceStateTests : IDisposable
         var state = Build(out var feed, out _);
 
         var changed = 0;
-        state.Changed += () => changed++;
+        var nudged = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        state.Changed += () =>
+        {
+            Interlocked.Increment(ref changed);
+            nudged.TrySetResult();
+        };
 
-        // What a render does: ask synchronously, get null because the store read has not finished.
-        Assert.Null(state.Find("usgovvirginia", "Standard_D2s_v5"));
+        // What a render does: ask synchronously, before anything has read the store. The return
+        // value is deliberately not asserted - see the class remarks on why it is a coin toss.
+        state.Find("usgovvirginia", "Standard_D2s_v5");
 
         await state.EnsureRegionAsync("usgovvirginia");
 
-        Assert.Equal(1, changed);
+        // Wait for the nudge rather than assuming it has already happened. Either of the two calls
+        // above can be the one that raises it, and when it is the first, nothing awaits it: Find
+        // starts the load and forgets it, so its Changed can still be sitting in the thread pool
+        // queue when the awaited call returns. Asserting the count straight after the await tests
+        // the scheduler, not the product, and fails a few runs in a hundred.
+        await nudged.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+        await SettleAsync();
+
+        Assert.Equal(1, Volatile.Read(ref changed));
         Assert.True(state.HasPrices("usgovvirginia"));
         Assert.Equal(0.213m, state.Find("usgovvirginia", "Standard_D2s_v5")!.WindowsPerHour);
         Assert.Equal(0, feed.Calls);
+    }
+
+    /// <summary>
+    /// Lets fire-and-forget continuations land before they are counted.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="PriceState.Find"/> starts the load and does not await it, by design - a render
+    /// must not block on a price. That leaves no handle to await in a test, so the only honest
+    /// options are to give the queued continuations a moment or to add a seam to the product
+    /// purely for testing. The wait is bounded and generous relative to the work, which is a
+    /// semaphore and a small file read.
+    /// </remarks>
+    private static async Task SettleAsync()
+    {
+        for (var i = 0; i < 10; i++)
+        {
+            await Task.Yield();
+            await Task.Delay(10);
+        }
     }
 
     [Fact]
@@ -99,7 +133,7 @@ public class PriceStateTests : IDisposable
         var state = Build(out var feed, out _);
 
         var changed = 0;
-        state.Changed += () => changed++;
+        state.Changed += () => Interlocked.Increment(ref changed);
 
         // A page rendering a region's whole size list, twice over.
         for (var i = 0; i < 500; i++)
@@ -108,7 +142,9 @@ public class PriceStateTests : IDisposable
             await state.EnsureRegionAsync("usgovvirginia");
         }
 
-        Assert.Equal(1, changed);
+        await SettleAsync();
+
+        Assert.Equal(1, Volatile.Read(ref changed));
         Assert.Equal(0, feed.Calls);
     }
 

@@ -119,6 +119,18 @@ public static class CatalogPreflight
                     "premium storage support, such as Standard_D2s_v5."));
             }
 
+            // Only fires on a positive statement of restriction, so a snapshot captured before
+            // this was recorded says nothing. Reported against the stale-snapshot severity because
+            // unlike Premium support, a restriction genuinely can be lifted - by a support
+            // request, or by Azure adding capacity - so old data must not harden into a block.
+            if (size is { KnownUnavailable: true })
+            {
+                issues.Add(new ValidationIssue(severity, $"servers[{position}].vmSize",
+                    $"VM size '{size.Name}' is not available to this subscription in '{location}'. " +
+                    "Azure refuses it with SkuNotAvailable. This is not a quota shortfall - more " +
+                    "quota will not help - so pick a different size or region."));
+            }
+
             var skus = catalog.GetImageSkus(location, server.Image.Publisher, server.Image.Offer);
 
             if (skus.Count > 0

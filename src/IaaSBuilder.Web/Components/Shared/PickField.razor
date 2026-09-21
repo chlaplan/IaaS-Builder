@@ -56,7 +56,7 @@
                 {
                     @foreach (var option in group)
                     {
-                        <option value="@option.Value">@option.Label</option>
+                        <option value="@option.Value">@option.Text</option>
                     }
                 }
                 else
@@ -64,7 +64,7 @@
                     <optgroup label="@group.Key">
                         @foreach (var option in group)
                         {
-                            <option value="@option.Value">@option.Label</option>
+                            <option value="@option.Value">@option.Text</option>
                         }
                     </optgroup>
                 }
@@ -87,6 +87,12 @@
     private bool _typing;
 
     /// <summary>One entry in the dropdown. <paramref name="Group"/> renders an optgroup.</summary>
+    /// <remarks>
+    /// Render <see cref="Text"/>, never <c>Label</c>. Label is the optional override and is null
+    /// for every option built as <c>new Option(value)</c> - which is most of them. Binding the
+    /// markup to Label produced a dropdown of blank rows that still selected correctly, so the
+    /// value was there and simply could not be read.
+    /// </remarks>
     public sealed record Option(string Value, string? Label = null, string? Group = null)
     {
         public string Text => Label ?? Value;

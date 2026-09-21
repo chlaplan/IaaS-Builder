@@ -140,7 +140,7 @@
                        Path=@ServerPath(server, "vmSize")
                        Value="@server.VmSize"
                        ValueChanged="@(v => ChangeSize(server, v))"
-                       Options="SizeOptions()"
+                       Options="SizeOptions(server)"
                        Hint="@SizeHint(server)" />
 
             @* Driven by DiskTypes.For, so a size that cannot do Premium never offers it. The
@@ -256,19 +256,27 @@
     private static readonly string[] DiskSkus = DiskTypes.All;
 
     /// <summary>
-    /// Every size the region offers, grouped by series so several hundred entries stay readable,
-    /// and labelled with cores, memory and monthly cost.
+    /// The sizes this subscription can actually deploy in the region, grouped by series so several
+    /// hundred entries stay readable, and labelled with cores, memory and monthly cost.
     /// </summary>
     /// <remarks>
-    /// Deliberately unfiltered. The previous control was a datalist, which the browser narrows to
-    /// whatever is already typed in the box - so opening it with a size already chosen showed
+    /// <para>
+    /// Not narrowed by what is already typed. The previous control was a datalist, which the
+    /// browser filters to whatever is in the box - so opening it with a size already chosen showed
     /// almost nothing and looked as though the tool was hiding sizes. It never was.
+    /// </para>
+    /// <para>
+    /// Sizes Azure says this subscription cannot have <em>are</em> dropped, because offering them
+    /// is worse than useless: picking one produces a <c>SkuNotAvailable</c> refusal and nothing
+    /// else. The one exception is a size already named by the plan, which stays visible and
+    /// labelled - a saved plan's bad choice has to explain itself rather than silently disappear.
+    /// </para>
     /// </remarks>
-    private IReadOnlyList<PickField.Option> SizeOptions()
+    private IReadOnlyList<PickField.Option> SizeOptions(ServerSpec server)
     {
         var region = Plan.Azure.Location;
 
-        return Catalog.VmSizes(region)
+        var options = Catalog.VmSizes(region)
             .OrderBy(s => s.Series, StringComparer.OrdinalIgnoreCase)
             .ThenBy(s => s.Cores)
             .ThenBy(s => s.Name, StringComparer.OrdinalIgnoreCase)
@@ -277,6 +285,16 @@
                 SizeLabel(region, s),
                 string.IsNullOrEmpty(s.Series) ? "Other" : s.Series + "-series"))
             .ToList();
+
+        if (SizeOf(server) is { KnownUnavailable: true } chosen)
+        {
+            options.Insert(0, new PickField.Option(
+                chosen.Name,
+                SizeLabel(region, chosen),
+                "Not available to this subscription"));
+        }
+
+        return options;
     }
 
     private string SizeLabel(string region, VmSizeInfo size)
@@ -299,6 +317,11 @@
             label += " - no Premium SSD";
         }
 
+        if (size.KnownUnavailable)
+        {
+            label += " - not available here";
+        }
+
         return label;
     }
 
@@ -307,6 +330,14 @@
             .Select(d => new PickField.Option(d))
             .ToList();
 
+    /// <summary>
+    /// The catalog entry for a server's chosen size.
+    /// </summary>
+    /// <remarks>
+    /// Looks in the unfiltered list on purpose. A plan can already name a size the subscription
+    /// cannot deploy, and the page still needs its details to say so and to keep the disk type
+    /// consistent - resolving it to null instead would silently drop both.
+    /// </remarks>
     private VmSizeInfo? SizeOf(ServerSpec server) =>
         Catalog.VmSize(Plan.Azure.Location, server.VmSize);
 
@@ -338,6 +369,22 @@
         if (!Prices.Enabled)
         {
             return "Prices are turned off on the Azure page.";
+        }
+
+        // Said before the price, because a monthly cost for a size Azure will refuse is noise.
+        if (SizeOf(server) is { KnownUnavailable: true } blocked)
+        {
+            return $"{blocked.Name} is not available to this subscription in {region}. " +
+                   "Azure refuses it at deployment time with SkuNotAvailable - pick another size.";
+        }
+
+        // An unfiltered list looks exactly like a filtered one, so say so rather than letting the
+        // operator assume every size offered here is a size they can actually deploy.
+        if (Catalog.AvailabilityDataMissing)
+        {
+            return "This catalog snapshot predates subscription availability data, so every size " +
+                   "the region offers is listed - including ones Azure may refuse. Sign in and " +
+                   "refresh the catalog on the Azure page to narrow it.";
         }
 
         var price = Prices.Find(region, server.VmSize);

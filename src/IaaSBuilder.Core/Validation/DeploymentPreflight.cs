@@ -47,6 +47,11 @@ public sealed record PreflightIssue(PreflightSeverity Severity, string Title, st
 /// <param name="Cores">
 /// Regional vCPU quota for the target location, or null when it could not be read.
 /// </param>
+/// <param name="RestrictedSizes">
+/// VM sizes Azure reports as restricted for this subscription in the target location, or null when
+/// the SKU list could not be read. Null and empty mean different things: null is "we do not know"
+/// and must not block anything.
+/// </param>
 public sealed record PreflightFacts(
     IReadOnlyList<string>? DataActions,
     IReadOnlyList<string> NotDataActions,
@@ -55,7 +60,8 @@ public sealed record PreflightFacts(
     string ScopeChecked,
     IReadOnlyList<string>? Actions = null,
     IReadOnlyList<string>? NotActions = null,
-    CoresQuota? Cores = null);
+    CoresQuota? Cores = null,
+    IReadOnlySet<string>? RestrictedSizes = null);
 
 /// <summary>
 /// The subscription's regional vCPU quota and what each VM size in the plan costs against it.
@@ -111,8 +117,87 @@ public static class DeploymentPreflight
         CheckResourceProviders(plan, facts, issues);
         CheckEncryptionAtHost(plan, facts, issues);
         CheckRegionalCoreQuota(plan, facts, issues);
+        CheckSizeAvailability(plan, facts, issues);
 
         return issues;
+    }
+
+    /// <summary>
+    /// Every distinct VM size the plan will ask Azure for, including AVD session hosts.
+    /// </summary>
+    public static IReadOnlyList<string> PlannedSizes(DeploymentPlan plan)
+    {
+        var sizes = new List<string>();
+
+        void Add(string? size)
+        {
+            if (!string.IsNullOrWhiteSpace(size) &&
+                !sizes.Contains(size, StringComparer.OrdinalIgnoreCase))
+            {
+                sizes.Add(size);
+            }
+        }
+
+        foreach (var server in plan.EnabledServers)
+        {
+            Add(server.VmSize);
+        }
+
+        if (plan.Avd is { Enabled: true } avd && avd.SessionHostCount > 0)
+        {
+            Add(avd.VmSize);
+        }
+
+        return sizes;
+    }
+
+    /// <summary>
+    /// VM sizes the subscription is not allowed to deploy in the target region.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Distinct from the quota check above, and it catches a case quota cannot: a size can be
+    /// entirely unavailable to a subscription with thousands of spare cores. Azure reports it as
+    /// <c>SkuNotAvailable</c> during template validation - after the resource group and the network
+    /// have been created - and the message suggests "try another size" without saying which ones
+    /// would work.
+    /// </para>
+    /// <para>
+    /// Only fires on a positive statement of restriction. An unreadable SKU list leaves
+    /// <see cref="PreflightFacts.RestrictedSizes"/> null and this check silent, because the cost of
+    /// a false block is far higher than the cost of letting Azure answer.
+    /// </para>
+    /// </remarks>
+    private static void CheckSizeAvailability(
+        DeploymentPlan plan,
+        PreflightFacts facts,
+        List<PreflightIssue> issues)
+    {
+        if (facts.RestrictedSizes is not { Count: > 0 } restricted)
+        {
+            return;
+        }
+
+        var blocked = PlannedSizes(plan).Where(restricted.Contains).ToList();
+        if (blocked.Count == 0)
+        {
+            return;
+        }
+
+        var subject = blocked.Count == 1
+            ? $"VM size {blocked[0]} is not available"
+            : $"{blocked.Count} VM sizes are not available";
+
+        issues.Add(new PreflightIssue(
+            PreflightSeverity.Blocking,
+            $"{subject} in {plan.Azure.Location}",
+            $"Azure reports {string.Join(", ", blocked)} as restricted for this subscription in " +
+            $"{plan.Azure.Location}, so it refuses the virtual machine with SkuNotAvailable during " +
+            "template validation - after the resource group and the network have been built. This " +
+            "is not a quota shortfall and more quota will not fix it: the size is simply not " +
+            "offered to this subscription here. Pick another size on the Servers page - the size " +
+            "dropdown now lists only sizes this subscription can actually deploy here - or " +
+            "deploy to a different region."));
     }
 
     /// <summary>

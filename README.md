@@ -134,6 +134,29 @@ So the disk list is filtered to what the selected size supports, changing to an 
 refuses the combination if a plan file arrives carrying it. The auto-correction lands on **Standard
 SSD**, not Standard HDD — the cheapest option that is not a performance cliff.
 
+**Existing is not the same as allowed.** Azure's SKU list answers "does this size exist in this
+region", and a subscription is routinely refused a slice of it — 73 of the 952 sizes in
+`usgovvirginia` on the subscription this was built against. The refusal arrives during template
+validation, seconds into a deployment that has already created a resource group and a virtual
+network:
+
+```
+SkuNotAvailable: The requested size ... is currently not available in location 'usgovvirginia'
+zones '' for subscription '...'. Please try another size or deploy to a different location.
+```
+
+That restriction is reported in the same response as the size list, so those sizes are now left
+out of the dropdown altogether — offering a choice that cannot work is worse than offering
+nothing. A size already named by a loaded plan file stays visible, grouped under **Not available
+to this subscription** and marked *not available here*, so a bad saved choice explains itself
+instead of silently disappearing, and the deploy gate blocks the plan before anything is created.
+This is **not** a quota shortfall and more quota will not fix it — which the message says, because
+the two failures look similar and the wrong fix takes days.
+
+Only *location* restrictions count. Azure also reports *zone* restrictions, meaning a size is
+absent from some availability zones; this tool does not pin a zone, so treating those as
+unavailable would hide a large number of sizes that deploy perfectly well.
+
 One distinction the code keeps carefully: "this size cannot take Premium" and "this snapshot does
 not say whether it can" are **not** the same thing. A snapshot captured before this field existed
 knows nothing about Premium support, and treating that as *no* would report every size in an
@@ -805,8 +828,119 @@ If you host it, note that the server holds visitors' Azure access tokens in memo
 their session, which makes it a target worth protecting — put it behind HTTPS and, ideally, behind
 your own sign-in. For IL6 use the offline executable instead.
 
-### Air-gapped / offline distribution
+### Releasing a signed executable
 
+`build\Publish-Release.ps1` produces everything a GitHub release needs: the single-file
+executable, a zip, and `SHA256SUMS.txt`.
+
+```powershell
+.\build\Publish-Release.ps1 -Version 2.0.0                 # publish, sign, package
+.\build\Publish-Release.ps1 -Version 2.0.0 -SkipSigning    # unsigned, for testing the packaging
+```
+
+The order inside that script is not arbitrary: **publish, prune, sign, then package.** Modifying a
+file after it has been signed breaks the signature, so the executable is signed only once it is
+byte-for-byte final and the zip is built around it afterwards. Pruning drops `.pdb` and `.lib`
+by-products, which is about 25 MB of a 79 MB output that nobody downloading a release has any use
+for.
+
+#### Signing uses Azure Artifact Signing
+
+Artifact Signing is the service formerly called Trusted Signing, and before that Azure Code
+Signing. The Azure resource provider is still `Microsoft.CodeSigning` and the portal blade is now
+**Artifact Signing Accounts**. There is no certificate file to guard: the private key never leaves
+Microsoft's HSMs and cannot be exported.
+
+Three facts about it shape how this repository uses it.
+
+**Its certificates live 72 hours and are renewed daily.** A signature without an RFC3161 timestamp
+therefore verifies perfectly on the machine that produced it and starts failing for everyone who
+downloaded it three days later — long after the release is out, and with nothing in the build log
+to suggest why. `Sign-File.ps1` treats a missing timestamp as a **build failure**, not a warning,
+and refuses to report success:
+
+```
+IaaSBuilder.exe
+  status      : Valid
+  signer      : CN=..., O=..., C=US
+  timestamped : True
+```
+
+For the same reason, never pin a thumbprint — it changes daily. Pin the identity EKU
+`1.3.6.1.4.1.311.97.<your-unique-value>` instead. And do not ship anything signed with a
+**Public Trust Test** profile: those carry the lifetime EKU `1.3.6.1.4.1.311.10.3.13`, which makes
+the signature die with the three-day certificate *even when it is timestamped*.
+
+**Owner and Contributor do not let you sign.** They are control-plane roles, the same trap as the
+storage upload elsewhere in this README. The signing identity needs
+`Artifact Signing Certificate Profile Signer` on the account or the profile:
+
+```powershell
+az role assignment create --assignee <upn-or-object-id> `
+  --role "Artifact Signing Certificate Profile Signer" `
+  --scope "/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.CodeSigning/codeSigningAccounts/<account>"
+```
+
+**It is commercial-cloud only.** Every endpoint is `*.codesigning.azure.net`; there are no US
+Government regions, and `Microsoft.CodeSigning` is not a valid resource namespace in Gov ARM at
+all — it returns `InvalidResourceNamespace`, not an empty list. That matters here because this
+tool is otherwise used almost entirely against Azure US Government, so the Azure CLI on a
+developer's machine is very likely pointed at Gov. `Sign-File.ps1` checks and says so, rather than
+letting you puzzle over an authentication error:
+
+```powershell
+az cloud set --name AzureCloud
+az login
+.\build\Publish-Release.ps1 -Version 2.0.0
+az cloud set --name AzureUSGovernment
+az login
+```
+
+If you authenticate some other way — a service principal, or CI — pass `-SkipCloudCheck`. The
+check is skipped automatically when `AZURE_CLIENT_ID` and `AZURE_TENANT_ID` are set, because
+`DefaultAzureCredential` prefers the environment credential and the CLI's cloud is then irrelevant.
+
+#### Configuring it
+
+Copy `build\signing.config.sample.json` to `build\signing.config.json` and fill it in; that file
+is gitignored. Settings can also come from `ARTIFACT_SIGNING_ENDPOINT`, `ARTIFACT_SIGNING_ACCOUNT`
+and `ARTIFACT_SIGNING_PROFILE`, which is how the CI workflow supplies them.
+
+The endpoint must be the **same region** as the account and the certificate profile. A mismatch
+produces a 403 and an internal `SignerSign()` failure rather than anything that names the cause.
+
+Nothing needs installing by hand. The script locates SignTool from the Windows SDK and fetches
+`Microsoft.ArtifactSigning.Client` (pinned to the version Microsoft's own GitHub action pins) into
+`%LOCALAPPDATA%\IaaSBuilder\signing-tools`, caching it between runs. It acquires that package
+through `dotnet restore` rather than a hardcoded `api.nuget.org` URL, because a managed
+workstation may well have nuget.org disabled in favour of an internal feed proxy — in which case a
+direct download fails at the TLS handshake with nothing useful to say.
+
+#### In CI
+
+`.github\workflows\release.yml` builds a release when you push a `v*` tag. It calls the *same*
+`Publish-Release.ps1`, so a release built by CI and one built on a workstation are the same thing
+by construction rather than two similar processes that drift.
+
+Authentication is OIDC — `azure/login` with a federated credential, no client secret stored
+anywhere. That leaves the Azure CLI authenticated on the runner, which is one of the two
+credentials the signing script leaves enabled. You need, once: an Entra app registration with a
+federated credential for the repository, the signer role granted to its service principal, the
+secrets `AZURE_CLIENT_ID` / `AZURE_TENANT_ID` / `AZURE_SUBSCRIPTION_ID`, and the variables
+`ARTIFACT_SIGNING_ENDPOINT` / `ARTIFACT_SIGNING_ACCOUNT` / `ARTIFACT_SIGNING_PROFILE`.
+
+#### What signing does not do
+
+It does not stop SmartScreen warning on a new release. Signing establishes *who* published a file;
+SmartScreen also wants reputation, which accrues from download volume and takes time. EV
+certificates no longer bypass it either, and Artifact Signing does not offer EV.
+
+Worth knowing before you rely on this: `Azure/artifact-signing-action` issue **#128** reports
+SmartScreen warnings appearing on correctly signed binaries after Microsoft silently moved
+certificate issuance between intermediate CAs in March 2026. It was still open as of September
+2026. `signtool verify /pa` passes on the affected files.
+
+### Air-gapped / offline distribution
 On a connected machine:
 
 ```powershell

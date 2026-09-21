@@ -1,0 +1,125 @@
+# Builds the single-file executable, signs it with Azure Artifact Signing, and attaches it to
+# a GitHub release.
+#
+# This calls the same build\Publish-Release.ps1 that you run locally rather than re-expressing
+# the steps in YAML. A release built by CI and one built on a workstation are then the same
+# thing by construction, instead of two similar processes that drift apart.
+#
+# Setting this up requires, once:
+#
+#   1. An Entra app registration with a federated credential for this repository.
+#      See https://github.com/Azure/artifact-signing-action/blob/main/docs/OIDC.md
+#   2. The 'Artifact Signing Certificate Profile Signer' role granted to that app's service
+#      principal on the signing account. Owner and Contributor do NOT grant signing.
+#   3. Repository variables and secrets, below.
+#
+# Note that Azure Artifact Signing is commercial-cloud only. If your signing account lives in
+# a different tenant from everything else you use, AZURE_TENANT_ID here is that tenant.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build, without the leading v (e.g. 2.0.0)'
+        required: true
+        type: string
+      sign:
+        description: 'Sign the executable'
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  id-token: write   # required for OIDC federated credential
+  contents: write   # required to create the release
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Determine version
+        id: version
+        shell: pwsh
+        run: |
+          if ('${{ github.event_name }}' -eq 'push') {
+            $v = '${{ github.ref_name }}' -replace '^v', ''
+          } else {
+            $v = '${{ inputs.version }}'
+          }
+          if ($v -notmatch '^\d+\.\d+\.\d+(-[A-Za-z0-9\.\-]+)?$') {
+            throw "Version '$v' is not a valid semantic version."
+          }
+          "version=$v" | Out-File $env:GITHUB_OUTPUT -Append
+          Write-Host "Building $v"
+
+      - name: Run tests
+        shell: pwsh
+        run: dotnet test tests/IaaSBuilder.Core.Tests --nologo
+
+      # Signing is optional so that a fork, or a dry run, still produces a usable build.
+      - name: Azure login (OIDC)
+        if: ${{ github.event_name == 'push' || inputs.sign }}
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # azure/login leaves the Azure CLI authenticated, which is one of the two credentials
+      # Sign-File.ps1 leaves enabled. No client secret is involved anywhere.
+      - name: Publish, sign and package
+        shell: pwsh
+        env:
+          ARTIFACT_SIGNING_ENDPOINT: ${{ vars.ARTIFACT_SIGNING_ENDPOINT }}
+          ARTIFACT_SIGNING_ACCOUNT: ${{ vars.ARTIFACT_SIGNING_ACCOUNT }}
+          ARTIFACT_SIGNING_PROFILE: ${{ vars.ARTIFACT_SIGNING_PROFILE }}
+        run: |
+          $sign = '${{ github.event_name }}' -eq 'push' -or '${{ inputs.sign }}' -eq 'true'
+          $splat = @{
+            Version       = '${{ steps.version.outputs.version }}'
+            CorrelationId = '${{ github.repository }}@${{ github.sha }}'
+          }
+          if (-not $sign) { $splat['SkipSigning'] = $true }
+          ./build/Publish-Release.ps1 @splat
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: IaaSBuilder-${{ steps.version.outputs.version }}
+          path: artifacts/release-${{ steps.version.outputs.version }}/*
+
+      - name: Create the release
+        if: ${{ github.event_name == 'push' }}
+        uses: softprops/action-gh-release@v3
+        with:
+          files: artifacts/release-${{ steps.version.outputs.version }}/*
+          generate_release_notes: true
+          body: |
+            ## IaaS Builder ${{ steps.version.outputs.version }}
+
+            `IaaSBuilder.exe` is a self-contained Windows x64 build. It needs no .NET install.
+
+            The executable is signed with Azure Artifact Signing. Verify it before running:
+
+            ```powershell
+            Get-AuthenticodeSignature .\IaaSBuilder.exe | Format-List Status, SignerCertificate, TimeStamperCertificate
+            ```
+
+            `Status` must be `Valid` and `TimeStamperCertificate` must not be empty.
+            Checksums are in `SHA256SUMS.txt`.
+
+            > Windows SmartScreen may still warn on a new release. Signing establishes who
+            > published the file; reputation accrues separately, from download volume, and a
+            > fresh build starts without it.

@@ -1,0 +1,14 @@
+{
+  "//": "Copy this to signing.config.json (gitignored) and fill in your own values.",
+  "//endpoint": "Must match the region your Artifact Signing account was created in. A mismatch gives HTTP 403 and a SignerSign() failure, not a helpful error.",
+  "endpoint": "https://eus.codesigning.azure.net",
+
+  "//accountName": "The Artifact Signing account name, not the resource id.",
+  "accountName": "my-signing-account",
+
+  "//certificateProfileName": "Use a Public Trust profile for anything you ship. A 'Public Trust Test' profile carries the lifetime EKU 1.3.6.1.4.1.311.10.3.13, which makes the signature expire with the 3-day certificate even when timestamped.",
+  "certificateProfileName": "my-public-trust-profile",
+
+  "//subscriptionId": "Optional. Only used to check you are signed in to the right place before signing.",
+  "subscriptionId": ""
+}

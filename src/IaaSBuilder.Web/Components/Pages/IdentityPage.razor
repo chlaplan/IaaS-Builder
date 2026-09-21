@@ -80,9 +80,15 @@
             </button>
             <button type="button" @onclick="CopyPassword"
                     disabled="@(PlanState.AdminPassword.Length == 0)">Copy</button>
-            @if (_passwordCopied)
+            @if (_passwordCopied == true)
             {
                 <span class="badge ok">Copied</span>
+            }
+            else if (_passwordCopied == false)
+            {
+                <span class="badge warn">
+                    The browser refused the clipboard - select the password above and copy it
+                </span>
             }
         </div>
         @if (_generated)
@@ -120,7 +126,11 @@
 
     private bool _showPassword;
     private bool _generated;
-    private bool _passwordCopied;
+    /// <summary>
+    /// null until a copy is attempted for the current password, then whether it reached the
+    /// clipboard. Tri-state so that "not tried" and "tried and refused" do not look identical.
+    /// </summary>
+    private bool? _passwordCopied;
 
     protected override void OnInitialized() => PlanState.Changed += Refresh;
 
@@ -168,10 +178,27 @@
         PlanState.AdminPassword = PasswordGenerator.Generate(Plan.Identity.AdminUsername);
         _showPassword = true;
         _generated = true;
-        _passwordCopied = false;
+        _passwordCopied = null;
         PlanState.NotifyChanged();
     }
 
+    /// <summary>
+    /// Copies the generated password to the clipboard.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The function is <c>iaasBuilder.copyText</c>, not <c>copyText</c>. app.js hangs everything
+    /// off a single <c>window.iaasBuilder</c> object, so the bare name resolved to undefined, the
+    /// interop threw, and the catch below swallowed it - a Copy button that did nothing at all and
+    /// did not even say so.
+    /// </para>
+    /// <para>
+    /// The result is read rather than discarded. copyText returns false when the browser refuses
+    /// the clipboard - a non-loopback http origin is not a secure context - and reporting "Copied"
+    /// for a password that is not on the clipboard is worse than reporting nothing, because the
+    /// operator closes the page believing they have it.
+    /// </para>
+    /// </remarks>
     private async Task CopyPassword()
     {
         if (PlanState.AdminPassword is not { Length: > 0 } password)
@@ -181,12 +208,12 @@
 
         try
         {
-            await JS.InvokeVoidAsync("copyText", password);
-            _passwordCopied = true;
+            _passwordCopied = await JS.InvokeAsync<bool>("iaasBuilder.copyText", password);
         }
         catch (JSException)
         {
             // Clipboard access can be refused; the value is on screen either way.
+            _passwordCopied = false;
         }
     }
 }

@@ -160,7 +160,8 @@ public sealed class AzureCatalogSource : ICatalogSource
                         GetCapabilityInt(sku, "vCPUs"),
                         GetCapabilityInt(sku, "MemoryGB") * 1024,
                         GetCapabilityInt(sku, "MaxDataDiskCount"),
-                        GetCapabilityBool(sku, "PremiumIO")));
+                        GetCapabilityBool(sku, "PremiumIO"),
+                        IsRestrictedIn(sku, location)));
                 }
                 else if (string.Equals(sku.ResourceType, "hostGroups/hosts", StringComparison.OrdinalIgnoreCase))
                 {
@@ -413,6 +414,56 @@ public sealed class AzureCatalogSource : ICatalogSource
             ? value
             : null;
     }
+
+    /// <summary>
+    /// Whether Azure says this subscription may not deploy this size in this region.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Azure's SKU list answers "does this exist here", not "may you have it". The restriction
+    /// array on the same response answers the second question and was simply being ignored, so the
+    /// size dropdown offered every size the region has ever heard of. For one real subscription in
+    /// usgovvirginia that is 952 sizes of which <b>73 are refused</b> - and the refusal arrives as
+    /// a <c>SkuNotAvailable</c> two seconds into a deployment that has already created a resource
+    /// group and a virtual network.
+    /// </para>
+    /// <para>
+    /// Only <see cref="ComputeResourceSkuRestrictionsType.Location"/> counts. A Zone restriction
+    /// means the size is unavailable in <em>some</em> availability zones, which says nothing about
+    /// a deployment that does not pin one - and this tool does not pin one. Treating zone
+    /// restrictions as unavailability would hide a large number of perfectly deployable sizes.
+    /// </para>
+    /// </remarks>
+    private static bool IsRestrictedIn(ComputeResourceSku sku, string location)
+    {
+        if (sku.Restrictions is null)
+        {
+            return false;
+        }
+
+        foreach (var restriction in sku.Restrictions)
+        {
+            if (restriction.RestrictionsType != ComputeResourceSkuRestrictionsType.Location)
+            {
+                continue;
+            }
+
+            // RestrictionInfo.Locations is the precise answer; Values is the older shape and is
+            // still populated. Either naming the region means this size is off limits here.
+            var named =
+                restriction.RestrictionInfo?.Locations?.Any(
+                    l => string.Equals(l, location, StringComparison.OrdinalIgnoreCase)) == true
+                || restriction.Values?.Any(
+                    v => string.Equals(v, location, StringComparison.OrdinalIgnoreCase)) == true;
+
+            if (named)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
 
 /// <summary>
@@ -471,7 +522,13 @@ public sealed class ResilientCatalogSource : ICatalogSource
         var usable = cached is not null && MatchesExpectedCloud(cached);
         DiscardedForeignSnapshot = cached is not null && !usable;
 
-        if (usable && !_forceRefresh && !cached!.IsStale(_maxAge))
+        // The age shortcut is not enough on its own. A snapshot captured yesterday by an older
+        // build carries no subscription availability data, so taking it here left the size list
+        // unfiltered and sent the operator to a SkuNotAvailable failure - with nothing on screen
+        // suggesting a refresh would help, because by every visible measure the data was fresh.
+        // Falling through costs one round trip when signed in, and changes nothing when offline:
+        // the live source is null there and the cached snapshot is returned below regardless.
+        if (usable && !_forceRefresh && !cached!.IsStale(_maxAge) && !cached.PredatesCurrentSchema)
         {
             ServedFromCache = true;
             return cached;

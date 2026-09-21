@@ -104,3 +104,19 @@ desktop.ini
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# ---------------------------------------------------------------------------
+# Code signing
+# ---------------------------------------------------------------------------
+
+# Names your Artifact Signing account and certificate profile. Not secret, but it is per
+# operator; build\signing.config.sample.json is the committed template.
+build/signing.config.json
+
+# The metadata file the signing dlib consumes is written to a temp path, never here. If one
+# ever appears in the tree, something wrote it to the wrong place.
+metadata.json
+artifact-signing-*.json
+
+# Scratch build output, used to compile while the app is running and holding bin\Debug
+.verify/

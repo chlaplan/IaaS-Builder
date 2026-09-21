@@ -9,14 +9,29 @@ namespace IaaSBuilder.Core.Catalog;
 /// treated as "no", or an offline enclave running an older snapshot would have every size
 /// reported as incapable.
 /// </param>
+/// <param name="Restricted">
+/// Whether Azure reports this size as restricted for this subscription in this region. Azure's SKU
+/// list is a catalogue of what exists, not of what you may deploy: a subscription routinely sees
+/// several dozen sizes it will be refused. <see langword="null"/> means unknown - an older snapshot,
+/// or a fallback list - and must be treated as allowed, because blocking on missing metadata is
+/// worse than letting Azure have the final word.
+/// </param>
 public sealed record VmSizeInfo(
     string Name,
     int Cores,
     int MemoryMb,
     int MaxDataDisks,
-    bool? PremiumIo = null)
+    bool? PremiumIo = null,
+    bool? Restricted = null)
 {
     public string Family => Name.Split('_').Length > 1 ? Name.Split('_')[1] : Name;
+
+    /// <summary>
+    /// True only when Azure positively said this size is off limits here. Deliberately not the
+    /// truth of <see cref="Restricted"/> alone, for the same reason as
+    /// <see cref="KnownToRejectPremium"/>: unknown behaves like "allow".
+    /// </summary>
+    public bool KnownUnavailable => Restricted == true;
 
     /// <summary>
     /// True when this size is known <em>not</em> to support Premium SSD. Deliberately not the
@@ -79,7 +94,13 @@ public sealed record LocationInfo(string Name, string DisplayName, IReadOnlyList
 /// </remarks>
 public sealed class ResourceCatalog
 {
-    public const string CurrentSchemaVersion = "1.0";
+    /// <summary>
+    /// Bumped to 1.1 when <see cref="VmSizeInfo.Restricted"/> was added. Unlike the plan's schema
+    /// version this is never enforced on load - an older snapshot still deserializes and is still
+    /// used, because in an air-gapped enclave it is the only data there is. It only marks the
+    /// snapshot as worth replacing when a live refresh is possible.
+    /// </summary>
+    public const string CurrentSchemaVersion = "1.1";
 
     public string SchemaVersion { get; set; } = CurrentSchemaVersion;
     public DateTimeOffset CapturedUtc { get; set; } = DateTimeOffset.UtcNow;
@@ -133,4 +154,28 @@ public sealed class ResourceCatalog
 
     /// <summary>True when the snapshot is old enough that it is worth refreshing.</summary>
     public bool IsStale(TimeSpan maxAge) => Age > maxAge;
+
+    /// <summary>
+    /// True when the snapshot was written by a build that did not know about a field this one
+    /// relies on.
+    /// </summary>
+    /// <remarks>
+    /// Age alone is not enough. A snapshot captured two days ago looks perfectly fresh, but if it
+    /// predates <see cref="VmSizeInfo.Restricted"/> it carries no availability data at all, so the
+    /// size list silently goes unfiltered and Azure refuses the deployment with SkuNotAvailable.
+    /// A missing field is not the same as a field that says "nothing is restricted".
+    /// </remarks>
+    public bool PredatesCurrentSchema =>
+        !string.Equals(SchemaVersion, CurrentSchemaVersion, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// True when at least one size carries a definite answer about subscription availability, so
+    /// the size list can actually be filtered.
+    /// </summary>
+    /// <remarks>
+    /// Checked separately from <see cref="PredatesCurrentSchema"/> because a hand-built or
+    /// partially refreshed snapshot can carry the current version and still have nothing to say.
+    /// </remarks>
+    public bool HasAvailabilityData =>
+        VmSizesByLocation.Values.Any(sizes => sizes.Any(s => s.Restricted is not null));
 }
