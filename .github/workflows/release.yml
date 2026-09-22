@@ -31,7 +31,7 @@ on:
       sign:
         description: 'Sign the executable'
         required: false
-        default: true
+        default: false
         type: boolean
 
 permissions:
