@@ -38,6 +38,16 @@ permissions:
   id-token: write   # required for OIDC federated credential
   contents: write   # required to create the release
 
+env:
+  # ── Azure Artifact Signing (formerly Trusted Signing) ──
+  # Not secrets: these are resource names, not credentials. The credential is a
+  # short-lived OIDC token obtained at run time - see the 'Azure login' step.
+  SIGNING_ENDPOINT: 'https://eus.codesigning.azure.net/'
+  # Azure Trusted Signing resource names - these are live Azure resources, NOT branding.
+  # Do not rename them here unless the Azure resources are renamed first.
+  SIGNING_ACCOUNT: 'MDEToolkit-Cert'
+  SIGNING_PROFILE: 'MDEToolKit'
+
 jobs:
   release:
     runs-on: windows-latest
