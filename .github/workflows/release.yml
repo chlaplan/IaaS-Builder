@@ -95,9 +95,9 @@ jobs:
       - name: Publish, sign and package
         shell: pwsh
         env:
-          ARTIFACT_SIGNING_ENDPOINT: ${{ vars.ARTIFACT_SIGNING_ENDPOINT }}
-          ARTIFACT_SIGNING_ACCOUNT: ${{ vars.ARTIFACT_SIGNING_ACCOUNT }}
-          ARTIFACT_SIGNING_PROFILE: ${{ vars.ARTIFACT_SIGNING_PROFILE }}
+          ARTIFACT_SIGNING_ENDPOINT: ${{ env.SIGNING_ENDPOINT }}
+          ARTIFACT_SIGNING_ACCOUNT: ${{ env.SIGNING_ACCOUNT }}
+          ARTIFACT_SIGNING_PROFILE: ${{ env.SIGNING_PROFILE }}
         run: |
           $sign = '${{ github.event_name }}' -eq 'push' -or '${{ inputs.sign }}' -eq 'true'
           $splat = @{
