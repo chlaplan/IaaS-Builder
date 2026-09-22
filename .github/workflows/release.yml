@@ -42,11 +42,11 @@ env:
   # ── Azure Artifact Signing (formerly Trusted Signing) ──
   # Not secrets: these are resource names, not credentials. The credential is a
   # short-lived OIDC token obtained at run time - see the 'Azure login' step.
-  SIGNING_ENDPOINT: 'https://eus.codesigning.azure.net/'
+  ARTIFACT_SIGNING_ENDPOINT: 'https://eus.codesigning.azure.net/'
   # Azure Trusted Signing resource names - these are live Azure resources, NOT branding.
   # Do not rename them here unless the Azure resources are renamed first.
-  SIGNING_ACCOUNT: 'MDEToolkit-Cert'
-  SIGNING_PROFILE: 'MDEToolKit'
+  ARTIFACT_SIGNING_ACCOUNT: 'MDEToolkit-Cert'
+  ARTIFACT_SIGNING_PROFILE: 'MDEToolKit'
 
 jobs:
   release:
@@ -94,10 +94,6 @@ jobs:
       # Sign-File.ps1 leaves enabled. No client secret is involved anywhere.
       - name: Publish, sign and package
         shell: pwsh
-        env:
-          ARTIFACT_SIGNING_ENDPOINT: ${{ env.SIGNING_ENDPOINT }}
-          ARTIFACT_SIGNING_ACCOUNT: ${{ env.SIGNING_ACCOUNT }}
-          ARTIFACT_SIGNING_PROFILE: ${{ env.SIGNING_PROFILE }}
         run: |
           $sign = '${{ github.event_name }}' -eq 'push' -or '${{ inputs.sign }}' -eq 'true'
           $splat = @{
