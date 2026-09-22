@@ -42,6 +42,9 @@ jobs:
   release:
     runs-on: windows-latest
 
+    environment:
+      name: ${{ github.event_name != 'pull_request' && 'SigningAccount' || '' }}
+
     steps:
       - uses: actions/checkout@v7
 
